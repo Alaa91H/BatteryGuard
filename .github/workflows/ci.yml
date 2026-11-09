@@ -38,7 +38,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version="$(sed -n 's/^version = "\([^"]*\)"$/\1/p' Cargo.toml | head -n 1)"
+          version="$(sed -n 's/^version = "\([^"]*\)"$/\1/p' portable/Cargo.toml | head -n 1)"
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Cargo.toml version must be a three-part numeric version; got '$version'"
             exit 1
@@ -158,9 +158,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo build --release --locked --target "$TARGET"
+          cargo build --manifest-path portable/Cargo.toml --release --locked --target "$TARGET"
           if [[ "${{ matrix.test }}" == "true" ]]; then
-            cargo test --release --locked --target "$TARGET"
+            cargo test --manifest-path portable/Cargo.toml --release --locked --target "$TARGET"
           fi
 
       - name: Package Windows MSI
@@ -171,7 +171,7 @@ jobs:
           $stage = Join-Path (Get-Location) 'packaging/windows/staging'
           $dist = Join-Path (Get-Location) 'dist'
           New-Item -ItemType Directory -Force -Path $stage, $dist | Out-Null
-          Copy-Item "target/$env:TARGET/release/batteryguard.exe" (Join-Path $stage 'batteryguard.exe') -Force
+          Copy-Item "portable/target/$env:TARGET/release/batteryguard.exe" (Join-Path $stage 'batteryguard.exe') -Force
           Copy-Item 'battery/resources/application.ico' (Join-Path $stage 'batteryguard.ico') -Force
           $msi = Join-Path $dist "BatteryGuard-$env:VERSION$env:VERSION_SUFFIX-windows-${{ matrix.arch }}.msi"
           wix build -arch ${{ matrix.msi_arch }} -d "Version=$env:VERSION" -d "SourceDir=$stage" -o $msi packaging/windows/Product.wxs
