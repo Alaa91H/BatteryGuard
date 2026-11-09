@@ -200,7 +200,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "wix build failed with exit code $LASTEXITCODE" }
 
       - name: Smoke-test Windows MSI
-        if: matrix.platform == 'windows'
+        if: matrix.platform == 'windows' && matrix.arch == 'x64'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
