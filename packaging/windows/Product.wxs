@@ -31,7 +31,7 @@
       </Directory>
     </StandardDirectory>
 
-    <StandardDirectory Id="CommonProgramsFolder">
+    <StandardDirectory Id="ProgramMenuFolder">
       <Directory Id="BatteryGuardProgramsFolder" Name="BatteryGuard" />
     </StandardDirectory>
 

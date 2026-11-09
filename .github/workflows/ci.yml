@@ -249,6 +249,31 @@ jobs:
             "portable/target/$TARGET/release/batteryguard" \
             "$VERSION" "$VERSION_SUFFIX" "${{ matrix.arch }}" "dist"
 
+      - name: Smoke-test native package
+        if: matrix.platform != 'windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ matrix.platform }}" in
+            linux)
+              deb="$(find dist -maxdepth 1 -name '*.deb' -print -quit)"
+              rpm="$(find dist -maxdepth 1 -name '*.rpm' -print -quit)"
+              appimage="$(find dist -maxdepth 1 -name '*.AppImage' -print -quit)"
+              [ -n "$deb" ] && [ -n "$rpm" ] && [ -n "$appimage" ]
+              rpm -qip "$rpm" >/dev/null
+              sudo dpkg -i "$deb"
+              batteryguard --version
+              APPIMAGE_EXTRACT_AND_RUN=1 "$appimage" --version
+              sudo dpkg -r batteryguard
+              ;;
+            macos)
+              pkg="$(find dist -maxdepth 1 -name '*.pkg' -print -quit)"
+              [ -n "$pkg" ]
+              sudo installer -pkg "$pkg" -target /
+              /usr/local/bin/batteryguard --version
+              ;;
+          esac
+
       - name: Keep only installer payload
         shell: bash
         run: |
