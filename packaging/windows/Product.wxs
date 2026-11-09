@@ -8,7 +8,7 @@
       UpgradeCode="80CE0D95-B964-493D-8C19-B18889CA61A0"
       Scope="perMachine"
       Compressed="yes">
-    <MajorUpgrade DowngradeErrorMessage="A newer version of BatteryGuard is already installed." />
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of BatteryGuard is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
     <Icon Id="BatteryGuard.ico" SourceFile="$(var.SourceDir)\batteryguard.ico" />

@@ -163,6 +163,7 @@ jobs:
         run: |
           dotnet tool install --global wix --version 5.0.2
           "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          wix extension add -g WixToolset.BootstrapperApplications.wixext/5.0.2
           wix --version
 
       - name: Build and test
@@ -312,6 +313,60 @@ jobs:
             Remove-Item -LiteralPath $pfx -Force -ErrorAction SilentlyContinue
           }
 
+      - name: Package Windows EXE
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dist = Join-Path (Get-Location) 'dist'
+          $msi = Get-ChildItem 'dist/*.msi' | Select-Object -First 1
+          if (-not $msi) { throw 'No MSI was produced for the EXE bundle' }
+          $icon = Join-Path (Get-Location) 'battery/resources/application.ico'
+          if (-not (Test-Path -LiteralPath $icon)) { throw "Missing bundle icon: $icon" }
+          $bundle = Join-Path $dist "BatteryGuard-$env:VERSION$env:VERSION_SUFFIX-windows-${{ matrix.arch }}.exe"
+          wix build -arch ${{ matrix.msi_arch }} -ext WixToolset.BootstrapperApplications.wixext `
+            -d "Version=$env:VERSION" -d "MsiPath=$($msi.FullName)" -d "IconPath=$icon" `
+            -o $bundle packaging/windows/Bundle.wxs
+          if ($LASTEXITCODE -ne 0) { throw "wix bundle build failed with exit code $LASTEXITCODE" }
+
+      - name: Sign Windows EXE
+        if: matrix.platform == 'windows' && env.WINDOWS_CERTIFICATE_BASE64 != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $pfx = Join-Path $env:RUNNER_TEMP 'batteryguard-codesign.pfx'
+          $engine = Join-Path $env:RUNNER_TEMP 'batteryguard-burn-engine.exe'
+          $reattached = Join-Path $env:RUNNER_TEMP 'batteryguard-bundle-reattached.exe'
+          try {
+            [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
+            $tool = (Get-Command signtool.exe -ErrorAction SilentlyContinue | Select-Object -First 1).Source
+            if (-not $tool) {
+              $kit = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'
+              $tool = Get-ChildItem -Path $kit -Filter signtool.exe -Recurse -ErrorAction SilentlyContinue |
+                Where-Object { $_.FullName -match '\x64\' } |
+                Sort-Object FullName -Descending |
+                Select-Object -First 1 -ExpandProperty FullName
+            }
+            if (-not $tool) { throw 'signtool.exe was not found' }
+            $bundle = Get-ChildItem 'dist/*.exe' | Select-Object -First 1
+            if (-not $bundle) { throw 'No EXE bundle was produced' }
+
+            wix burn detach $bundle.FullName -engine $engine
+            if ($LASTEXITCODE -ne 0) { throw "wix burn detach failed with exit code $LASTEXITCODE" }
+            & $tool sign /fd SHA256 /f $pfx /p $env:WINDOWS_CERTIFICATE_PASSWORD /tr 'http://timestamp.digicert.com' /td SHA256 $engine
+            if ($LASTEXITCODE -ne 0) { throw "Burn engine signing failed with exit code $LASTEXITCODE" }
+            wix burn reattach $bundle.FullName -engine $engine -o $reattached
+            if ($LASTEXITCODE -ne 0) { throw "wix burn reattach failed with exit code $LASTEXITCODE" }
+            Move-Item -LiteralPath $reattached -Destination $bundle.FullName -Force
+            & $tool sign /fd SHA256 /f $pfx /p $env:WINDOWS_CERTIFICATE_PASSWORD /tr 'http://timestamp.digicert.com' /td SHA256 $bundle.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Bundle signing failed with exit code $LASTEXITCODE" }
+            & $tool verify /pa /all $bundle.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Bundle signature verification failed with exit code $LASTEXITCODE" }
+          }
+          finally {
+            Remove-Item -LiteralPath $pfx, $engine, $reattached -Force -ErrorAction SilentlyContinue
+          }
+
       - name: Smoke-test Windows MSI
         if: matrix.platform == 'windows' && matrix.arch == 'x64'
         shell: pwsh
@@ -345,6 +400,36 @@ jobs:
           $remove = Start-Process -FilePath msiexec.exe -ArgumentList @('/x', ('"' + $msi.FullName + '"'), '/qn', '/norestart') -Wait -PassThru
           if ($remove.ExitCode -ne 0) { throw "MSI uninstall failed with exit code $($remove.ExitCode)" }
           if (Test-Path -LiteralPath $installDir) { throw "Install directory remains after uninstall: $installDir" }
+
+      - name: Smoke-test Windows EXE
+        if: matrix.platform == 'windows' && matrix.arch == 'x64'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $bundle = Get-ChildItem 'dist/*.exe' | Select-Object -First 1
+          if (-not $bundle) { throw 'No EXE bundle was produced' }
+          $installLog = Join-Path $env:RUNNER_TEMP 'batteryguard-bundle-install.log'
+          $removeLog = Join-Path $env:RUNNER_TEMP 'batteryguard-bundle-uninstall.log'
+          $install = Start-Process -FilePath $bundle.FullName -ArgumentList @('/install', '/quiet', '/norestart', '/log', ('"' + $installLog + '"')) -Wait -PassThru
+          if ($install.ExitCode -notin @(0, 3010)) {
+              Get-Content $installLog -Tail 100 -ErrorAction SilentlyContinue
+              throw "EXE bundle install failed with exit code $($install.ExitCode)"
+          }
+
+          $installDir = Join-Path ${env:ProgramFiles} 'BatteryGuard'
+          foreach ($relative in @('application.exe', 'batteryguard.exe', 'resources\application.ico', 'locales\ar.json', 'locales\zh-CN.json')) {
+              $path = Join-Path $installDir $relative
+              if (-not (Test-Path -LiteralPath $path)) { throw "Missing EXE-installed payload: $path" }
+          }
+          $shortcut = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\BatteryGuard\BatteryGuard.lnk'
+          if (-not (Test-Path -LiteralPath $shortcut)) { throw "Missing EXE Start Menu shortcut: $shortcut" }
+
+          $remove = Start-Process -FilePath $bundle.FullName -ArgumentList @('/uninstall', '/quiet', '/norestart', '/log', ('"' + $removeLog + '"')) -Wait -PassThru
+          if ($remove.ExitCode -notin @(0, 3010)) {
+              Get-Content $removeLog -Tail 100 -ErrorAction SilentlyContinue
+              throw "EXE bundle uninstall failed with exit code $($remove.ExitCode)"
+          }
+          if (Test-Path -LiteralPath $installDir) { throw "Install directory remains after EXE uninstall: $installDir" }
 
       - name: Package Linux DEB, RPM and AppImage
         if: matrix.platform == 'linux'
@@ -451,6 +536,7 @@ jobs:
           # the exact release allowlist instead of carrying debug metadata.
           find dist -maxdepth 1 -type f \
             ! -name '*.msi' \
+            ! -name '*.exe' \
             ! -name '*.deb' \
             ! -name '*.rpm' \
             ! -name '*.AppImage' \
@@ -505,7 +591,7 @@ jobs:
           fi
           for file in "${files[@]}"; do
             case "$file" in
-              *.msi|*.deb|*.rpm|*.AppImage|*.pkg) ;;
+              *.msi|*.exe|*.deb|*.rpm|*.AppImage|*.pkg) ;;
               *)
                 echo "::error::Unexpected non-installer release asset: $file"
                 exit 1
@@ -527,7 +613,7 @@ jobs:
             BatteryGuard ${{ needs.prepare.outputs.version }}
 
             Installers are attached only as platform-native packages:
-            `.msi` for Windows, `.deb`/`.rpm`/`.AppImage` for Linux, and `.pkg` for macOS.
+            `.exe` or `.msi` for Windows, `.deb`/`.rpm`/`.AppImage` for Linux, and `.pkg` for macOS.
 
             Every installer is covered by a GitHub/Sigstore build-provenance
             attestation from this workflow run.

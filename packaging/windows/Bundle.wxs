@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+  <!-- A single per-machine EXE bootstrapper around the tray+CLI MSI. -->
+  <Bundle Name="BatteryGuard"
+          Version="$(var.Version)"
+          Manufacturer="BatteryGuard"
+          UpgradeCode="E9D2C3B1-7A64-4F28-9C15-6B8E0D4A2F73"
+          ProviderKey="BatteryGuard.Setup"
+          IconSourceFile="$(var.IconPath)"
+          AboutUrl="https://github.com/Alaa91H/BatteryGuard"
+          Compressed="yes">
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication
+          Theme="hyperlinkLicense"
+          LicenseUrl=""
+          ShowVersion="yes"
+          SuppressOptionsUI="yes"
+          LaunchTarget="[ProgramFiles6432Folder]BatteryGuard\application.exe"
+          LaunchWorkingFolder="[ProgramFiles6432Folder]BatteryGuard" />
+    </BootstrapperApplication>
+    <Chain>
+      <MsiPackage Id="BatteryGuardMsi"
+                  DisplayName="BatteryGuard"
+                  SourceFile="$(var.MsiPath)"
+                  Vital="yes"
+                  Compressed="yes"
+                  ForcePerMachine="yes" />
+    </Chain>
+  </Bundle>
+</Wix>
