@@ -132,9 +132,10 @@ jobs:
       SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
       SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
       SIGNPATH_ARTIFACT_CONFIGURATION_BINARIES: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_BINARIES }}
+      SIGNPATH_ARTIFACT_CONFIGURATION_MSI: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_MSI }}
       SIGNPATH_ARTIFACT_CONFIGURATION_ENGINE: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_ENGINE }}
-      SIGNPATH_ARTIFACT_CONFIGURATION_INSTALLERS: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_INSTALLERS }}
-      SIGNPATH_ENABLED: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' && vars.SIGNPATH_PROJECT_SLUG != '' && vars.SIGNPATH_SIGNING_POLICY_SLUG != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_BINARIES != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_ENGINE != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_INSTALLERS != '' }}
+      SIGNPATH_ARTIFACT_CONFIGURATION_EXE: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_EXE }}
+      SIGNPATH_ENABLED: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' && vars.SIGNPATH_PROJECT_SLUG != '' && vars.SIGNPATH_SIGNING_POLICY_SLUG != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_BINARIES != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_MSI != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_ENGINE != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_EXE != '' }}
       WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
       WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
       MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
@@ -320,7 +321,7 @@ jobs:
             if (-not $tool) {
               $kit = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'
               $tool = Get-ChildItem -Path $kit -Filter signtool.exe -Recurse -ErrorAction SilentlyContinue |
-                Where-Object { $_.FullName -match '\x64\' } |
+                Where-Object { $_.FullName -match '\\x64\\' } |
                 Sort-Object FullName -Descending |
                 Select-Object -First 1 -ExpandProperty FullName
             }
@@ -374,7 +375,7 @@ jobs:
             if (-not $tool) {
               $kit = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'
               $tool = Get-ChildItem -Path $kit -Filter signtool.exe -Recurse -ErrorAction SilentlyContinue |
-                Where-Object { $_.FullName -match '\x64\' } |
+                Where-Object { $_.FullName -match '\\x64\\' } |
                 Sort-Object FullName -Descending |
                 Select-Object -First 1 -ExpandProperty FullName
             }
@@ -389,6 +390,54 @@ jobs:
           finally {
             Remove-Item -LiteralPath $pfx -Force -ErrorAction SilentlyContinue
           }
+
+      - name: Upload unsigned Windows MSI
+        id: signpath_upload_msi
+        if: matrix.platform == 'windows' && env.SIGNPATH_ENABLED == 'true' && env.SIGNPATH_API_TOKEN != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: signpath-msi-${{ matrix.id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist/*.msi
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Sign Windows MSI with SignPath
+        id: signpath_sign_msi
+        if: matrix.platform == 'windows' && env.SIGNPATH_ENABLED == 'true' && env.SIGNPATH_API_TOKEN != ''
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_MSI }}
+          github-artifact-id: ${{ steps.signpath_upload_msi.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: "3600"
+          output-artifact-directory: .signpath/msi-signed
+
+      - name: Install SignPath-signed Windows MSI
+        if: matrix.platform == 'windows' && env.SIGNPATH_ENABLED == 'true' && env.SIGNPATH_API_TOKEN != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $signedDir = Join-Path (Get-Location) '.signpath/msi-signed'
+          $signedMsi = Get-ChildItem -LiteralPath $signedDir -Filter '*.msi' -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $signedMsi) { throw 'SignPath did not return the MSI' }
+          $msi = Get-ChildItem 'dist/*.msi' | Select-Object -First 1
+          if (-not $msi) { throw 'No MSI was produced' }
+          Copy-Item -LiteralPath $signedMsi.FullName -Destination $msi.FullName -Force
+          $tool = (Get-Command signtool.exe -ErrorAction SilentlyContinue | Select-Object -First 1).Source
+          if (-not $tool) {
+            $kit = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'
+            $tool = Get-ChildItem -Path $kit -Filter signtool.exe -Recurse -ErrorAction SilentlyContinue |
+              Where-Object { $_.FullName -match '\\x64\\' } |
+              Sort-Object FullName -Descending |
+              Select-Object -First 1 -ExpandProperty FullName
+          }
+          if (-not $tool) { throw 'signtool.exe was not found' }
+          & $tool verify /pa /all $msi.FullName
+          if ($LASTEXITCODE -ne 0) { throw "SignPath MSI verification failed with exit code $LASTEXITCODE" }
 
       - name: Package Windows EXE
         if: matrix.platform == 'windows'
@@ -470,27 +519,27 @@ jobs:
           & $tool verify /pa /all $engine
           if ($LASTEXITCODE -ne 0) { throw "SignPath engine verification failed with exit code $LASTEXITCODE" }
 
-      - name: Stage Windows installers for SignPath
+      - name: Stage Windows EXE for SignPath
         if: matrix.platform == 'windows' && env.SIGNPATH_ENABLED == 'true' && env.SIGNPATH_API_TOKEN != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $stage = Join-Path (Get-Location) '.signpath/installers'
+          $stage = Join-Path (Get-Location) '.signpath/exe'
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
-          Get-ChildItem 'dist/*.msi', 'dist/*.exe' | Copy-Item -Destination $stage -Force
+          Get-ChildItem 'dist/*.exe' | Copy-Item -Destination $stage -Force
 
-      - name: Upload unsigned Windows installers
-        id: signpath_upload_installers
+      - name: Upload unsigned Windows EXE
+        id: signpath_upload_exe
         if: matrix.platform == 'windows' && env.SIGNPATH_ENABLED == 'true' && env.SIGNPATH_API_TOKEN != ''
         uses: actions/upload-artifact@v7
         with:
-          name: signpath-installers-${{ matrix.id }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .signpath/installers
+          name: signpath-exe-${{ matrix.id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .signpath/exe
           if-no-files-found: error
           retention-days: 1
 
-      - name: Sign Windows installers with SignPath
-        id: signpath_sign_installers
+      - name: Sign Windows EXE with SignPath
+        id: signpath_sign_exe
         if: matrix.platform == 'windows' && env.SIGNPATH_ENABLED == 'true' && env.SIGNPATH_API_TOKEN != ''
         uses: signpath/github-action-submit-signing-request@v3
         with:
@@ -498,23 +547,23 @@ jobs:
           organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
           project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
           signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
-          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_INSTALLERS }}
-          github-artifact-id: ${{ steps.signpath_upload_installers.outputs.artifact-id }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_EXE }}
+          github-artifact-id: ${{ steps.signpath_upload_exe.outputs.artifact-id }}
           wait-for-completion: true
           wait-for-completion-timeout-in-seconds: "3600"
-          output-artifact-directory: .signpath/installers-signed
+          output-artifact-directory: .signpath/exe-signed
 
-      - name: Install SignPath-signed Windows installers
+      - name: Install SignPath-signed Windows EXE
         if: matrix.platform == 'windows' && env.SIGNPATH_ENABLED == 'true' && env.SIGNPATH_API_TOKEN != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $signedDir = Join-Path (Get-Location) '.signpath/installers-signed'
-          $signedFiles = @(Get-ChildItem -LiteralPath $signedDir -File -Recurse -ErrorAction SilentlyContinue)
-          if (-not $signedFiles) { throw 'SignPath did not return the installers' }
-          foreach ($file in $signedFiles) {
-            Copy-Item -LiteralPath $file.FullName -Destination (Join-Path (Get-Location) 'dist') -Force
-          }
+          $signedDir = Join-Path (Get-Location) '.signpath/exe-signed'
+          $signedExe = Get-ChildItem -LiteralPath $signedDir -Filter '*.exe' -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $signedExe) { throw 'SignPath did not return the EXE' }
+          $bundle = Get-ChildItem 'dist/*.exe' | Select-Object -First 1
+          if (-not $bundle) { throw 'No EXE bundle was produced' }
+          Copy-Item -LiteralPath $signedExe.FullName -Destination $bundle.FullName -Force
           $tool = (Get-Command signtool.exe -ErrorAction SilentlyContinue | Select-Object -First 1).Source
           if (-not $tool) {
             $kit = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'
@@ -524,11 +573,8 @@ jobs:
               Select-Object -First 1 -ExpandProperty FullName
           }
           if (-not $tool) { throw 'signtool.exe was not found' }
-          $msi = Get-ChildItem 'dist/*.msi' | Select-Object -First 1
-          $exe = Get-ChildItem 'dist/*.exe' | Select-Object -First 1
-          if (-not $msi -or -not $exe) { throw 'Signed MSI or EXE is missing' }
-          & $tool verify /pa /all $msi.FullName $exe.FullName
-          if ($LASTEXITCODE -ne 0) { throw "SignPath installer verification failed with exit code $LASTEXITCODE" }
+          & $tool verify /pa /all $bundle.FullName
+          if ($LASTEXITCODE -ne 0) { throw "SignPath EXE verification failed with exit code $LASTEXITCODE" }
 
       - name: Sign Windows EXE
         if: matrix.platform == 'windows' && env.SIGNPATH_ENABLED != 'true' && env.WINDOWS_CERTIFICATE_BASE64 != ''
@@ -544,7 +590,7 @@ jobs:
             if (-not $tool) {
               $kit = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'
               $tool = Get-ChildItem -Path $kit -Filter signtool.exe -Recurse -ErrorAction SilentlyContinue |
-                Where-Object { $_.FullName -match '\x64\' } |
+                Where-Object { $_.FullName -match '\\x64\\' } |
                 Sort-Object FullName -Descending |
                 Select-Object -First 1 -ExpandProperty FullName
             }

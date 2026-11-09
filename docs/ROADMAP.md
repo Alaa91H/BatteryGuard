@@ -3,7 +3,8 @@
 ## Now
 
 - **Hardware smoke tests.** Hosted CI now links, tests and runs the CLI on six native runners; run it against real batteries on Windows, Linux and macOS and record the readings. Do not treat a hosted build as a hardware test.
-- **Native signing credentials.** Authenticode and macOS Developer ID/notarization hooks are in the workflow, but no certificates are configured. Add the documented secrets and verify the signed artifacts; keep Sigstore provenance as an additional layer, not a substitute.
+- **SignPath Foundation signing.** The MIT license, optional four-request Windows path and `docs/SIGNPATH.md` are in place, but there is no SignPath account, project, artifact configuration or token. Apply to SignPath, configure the seven variables and API token, run a signed build and verify it on Windows 11 with Smart App Control. Keep Sigstore provenance as an additional layer, not a substitute.
+- **PFX and macOS signing.** The existing Windows Authenticode PFX fallback and macOS Developer ID/notarization hooks still have no certificates configured. Add the documented secrets and verify the signed artifacts if that path is used instead of SignPath.
 - **Native translation review.** Have the 30 catalogs reviewed by speakers, starting with the visible menu, settings labels and notification text. Keep the English source keys stable during review.
 - **Live language switch.** Rebuild or reload the open Settings window when the language changes so RTL/LTR and labels update immediately.
 - **Release checklist.** Build, run the hardware-independent suite, launch elevated, inspect the tray and settings windows in LTR and RTL, and verify log rotation.
@@ -33,7 +34,7 @@
 ## Next
 
 - **Linux/macOS widgets.** Add a tray or menu-bar interface after the read-only backends are verified on real hardware. The Windows tray remains the active UI.
-- **Distribution hardening.** Configure and verify native OS code-signing certificates, run the new MSI through a clean-VM install/upgrade/uninstall test, and extend package installation checks to x86/ARM64 and RPM where native runners exist. Without those secrets the workflow publishes unsigned installers with Sigstore build provenance only.
+- **Distribution hardening.** Complete the SignPath application and signed-build verification, or configure PFX and macOS certificates, run the new MSI through a clean-VM install/upgrade/uninstall test, and extend package installation checks to x86/ARM64 and RPM where native runners exist. Until then the workflow publishes unsigned installers with Sigstore build provenance only.
 - **Notification banner check.** Trigger a status balloon on a clean notification area and confirm the Windows app label visually; a UI Automation probe on this desktop did not expose a visible toast.
 - **BIOS charger wattage.** Add an optional adapter-input power reading only after a documented, model-specific BIOS/WMI field is confirmed and can be read without guessing. The existing electrical card remains pack voltage and charge/discharge power.
 - **Localization QA tooling.** Detect untranslated values, wrong placeholders, text expansion and RTL truncation. Add a catalog coverage report per language.

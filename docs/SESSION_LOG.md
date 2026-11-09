@@ -1,5 +1,52 @@
 # Session log
 
+## 2026-11-09 — SignPath Foundation signing path
+
+### Goal
+
+Enable a trusted Windows signature without requiring the maintainer to own a
+code-signing certificate, while keeping the normal build usable with no
+signing configuration.
+
+### Work performed
+
+1. Added the MIT `LICENSE` and the Cargo package license metadata required for
+   the public project's SignPath Foundation application.
+2. Added optional Windows steps for four SignPath requests: the tray/CLI
+   binaries before MSI packaging, the MSI before the EXE is built, the detached
+   Burn engine, and the final EXE. Each returned artifact is verified with
+   `signtool verify /pa /all`.
+3. Kept the existing PFX path as the fallback and made SignPath take precedence
+   only when all seven `SIGNPATH_*` variables are present. The unsigned path
+   still works when no signing configuration exists.
+4. Added `docs/SIGNPATH.md` with the application steps, artifact configuration
+   layout, required GitHub variables and Smart App Control verification notes.
+
+### Verification
+
+- Hosted run `42642577968` passed all seven packaging jobs with SignPath
+  unconfigured; the optional SignPath steps were skipped and the unsigned path
+  remained green. That run used the earlier three-request order. The current
+  four-request workflow still needs its own hosted run.
+- No SignPath account, project, artifact configuration or API token exists in
+  this repository, so no signing request ran and no signed artifact was
+  produced.
+
+### Limitations observed
+
+- The SignPath path is implemented but not exercised. Smart App Control will
+  still block the unsigned artifacts until a real request completes.
+- SignPath Foundation's publisher identity is **SignPath Foundation**, not a
+  personal certificate subject. Approval and artifact signing are human steps.
+- The interactive installer UI remains untested for the earlier reason: no
+  interactive clean Windows VM was available.
+
+### Next
+
+- Apply to SignPath, configure the four artifact configurations and GitHub
+  variables, then run and verify a signed build on Windows 11 with Smart App
+  Control enforcement.
+
 ## 2026-11-09 — Windows single-EXE bootstrapper
 
 ### Goal

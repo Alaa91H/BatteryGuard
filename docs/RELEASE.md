@@ -84,15 +84,17 @@ SignPath Foundation (free for this MIT-licensed public project):
 
 - Apply at [signpath.org/apply](https://signpath.org/apply) and install the
   SignPath GitHub App.
-- The workflow uses three signing requests: tray/CLI binaries, the detached Burn
-  engine, and the final MSI + EXE. The returned binaries are verified with
-  `signtool verify /pa /all` before they are packaged or published.
+- The workflow uses four signing requests: tray/CLI binaries, the MSI before
+  the EXE is built, the detached Burn engine, and the final EXE. The returned
+  binaries are verified with `signtool verify /pa /all` before they are
+  packaged or published.
 - Required repository secret: `SIGNPATH_API_TOKEN`.
 - Required repository variables: `SIGNPATH_ORGANIZATION_ID`,
   `SIGNPATH_PROJECT_SLUG`, `SIGNPATH_SIGNING_POLICY_SLUG`,
   `SIGNPATH_ARTIFACT_CONFIGURATION_BINARIES`,
+  `SIGNPATH_ARTIFACT_CONFIGURATION_MSI`,
   `SIGNPATH_ARTIFACT_CONFIGURATION_ENGINE` and
-  `SIGNPATH_ARTIFACT_CONFIGURATION_INSTALLERS`.
+  `SIGNPATH_ARTIFACT_CONFIGURATION_EXE`.
 - The publisher is **SignPath Foundation**. The path is implemented but has not
   been exercised because there is no SignPath account, project or token in this
   repository. It is not valid to describe a build as signed until a request
@@ -206,6 +208,11 @@ wizard or a physical clean VM.
 - Hosted run `42632698346` added the Windows x64 C# suite and kept all seven
   packaging jobs green. The optional signing steps were skipped (no secrets),
   so this run verifies the unsigned path only.
+- Hosted run `42642577968` passed all seven packaging jobs with the optional
+  SignPath configuration absent. The SignPath steps were skipped, the PFX steps
+  had no certificate, and the unsigned installers were built, installed,
+  upgraded and removed successfully. This validates the no-secret fallback,
+  not a signed artifact.
 - Hosted run `42638941970` passed all seven packaging jobs, built 14
   installers, and passed the x64 MSI/EXE install-uninstall checks plus the
   `v0.1.0` MSI → EXE upgrade test. The test confirmed the old product was gone,

@@ -14,15 +14,17 @@ unsigned and Smart App Control will continue to block them.
 
 ## What the pipeline signs
 
-The Windows job uses three SignPath requests, in this order:
+The Windows job uses four SignPath requests, in this order:
 
 1. `SIGNPATH_ARTIFACT_CONFIGURATION_BINARIES` — `application.exe` and
    `batteryguard.exe`, before they are placed in the MSI.
-2. `SIGNPATH_ARTIFACT_CONFIGURATION_ENGINE` — the detached WiX Burn engine,
+2. `SIGNPATH_ARTIFACT_CONFIGURATION_MSI` — the MSI after packaging and before
+   the EXE is built, so the bundle embeds a signed MSI.
+3. `SIGNPATH_ARTIFACT_CONFIGURATION_ENGINE` — the detached WiX Burn engine,
    after the bundle is built; the signed engine is reattached before the outer
    EXE is signed.
-3. `SIGNPATH_ARTIFACT_CONFIGURATION_INSTALLERS` — the MSI and the final EXE
-   bundle.
+4. `SIGNPATH_ARTIFACT_CONFIGURATION_EXE` — the final EXE bundle, after the
+   signed MSI and engine are inside it.
 
 Every signing request uses Authenticode. The existing PFX steps are skipped
 when SignPath is enabled; the PFX path remains the fallback when SignPath is
@@ -38,13 +40,13 @@ not configured.
    and link the GitHub.com trusted build system to the SignPath project.
 3. Create the SignPath project and a signing policy. Use an approval process
    for release signing. The CI waits up to one hour for each approval.
-4. Create three artifact configurations in SignPath. Upload a sample ZIP for
+4. Create four artifact configurations in SignPath. Upload a sample ZIP for
    each and review the generated configuration:
    - **binaries**: signs `application.exe` and `batteryguard.exe` with
      Authenticode. No deep signing is required.
+   - **msi**: signs the MSI after the signed binaries have been packaged.
    - **engine**: signs `burn-engine.exe`.
-   - **installers**: signs the MSI and the final EXE. No deep signing is
-     required because the binaries are signed before packaging.
+   - **exe**: signs the final EXE after the signed MSI and engine are embedded.
 5. Create a CI user with submitter permission and an API token.
 
 ## GitHub configuration
@@ -63,10 +65,11 @@ Create the repository variables:
 | `SIGNPATH_PROJECT_SLUG` | Project slug |
 | `SIGNPATH_SIGNING_POLICY_SLUG` | Release signing policy slug |
 | `SIGNPATH_ARTIFACT_CONFIGURATION_BINARIES` | Binaries artifact configuration slug |
+| `SIGNPATH_ARTIFACT_CONFIGURATION_MSI` | MSI artifact configuration slug |
 | `SIGNPATH_ARTIFACT_CONFIGURATION_ENGINE` | Burn engine artifact configuration slug |
-| `SIGNPATH_ARTIFACT_CONFIGURATION_INSTALLERS` | MSI + EXE artifact configuration slug |
+| `SIGNPATH_ARTIFACT_CONFIGURATION_EXE` | Final EXE artifact configuration slug |
 
-All six variables must be set for the SignPath path to activate. If
+All seven variables must be set for the SignPath path to activate. If
 `SIGNPATH_API_TOKEN` is missing after the variables are set, the workflow fails
 early with a configuration error. If the variables are absent, the Windows job
 follows the existing PFX-or-unsigned path.

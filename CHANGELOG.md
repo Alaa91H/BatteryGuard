@@ -2,6 +2,35 @@
 
 All notable changes to this project are documented here. The format follows the spirit of Keep a Changelog. Releases use the version from `portable/Cargo.toml` and a matching `v*` tag.
 
+## Unreleased — SignPath Foundation signing path
+
+### Added
+
+- MIT `LICENSE`, required for the public project's SignPath Foundation
+  application.
+- Optional Windows signing through SignPath Foundation, with four requests:
+  tray/CLI binaries, the MSI before the EXE is built, the detached Burn engine,
+  and the final EXE. The requests are driven by `SIGNPATH_*` repository
+  variables and the `SIGNPATH_API_TOKEN` secret.
+- `docs/SIGNPATH.md` documents eligibility, artifact configurations, GitHub
+  variables, verification and the unresolved Smart App Control test.
+
+### Changed
+
+- The SignPath path takes precedence when configured; the existing PFX path is
+  the fallback. Builds with neither configuration remain unsigned.
+
+### Verification
+
+- Hosted run `42642577968` passed all seven packaging jobs with SignPath
+  unconfigured. That run predated the current MSI-before-EXE order; the signing
+  steps were skipped and the installers remained unsigned. The four-request
+  workflow has not yet had its own hosted run; this validates the no-secret
+  path, not SignPath.
+- No SignPath account, project or token exists. No signing request was
+  submitted and no signed artifact was produced. The existing unsigned CI path
+  remains the only verified path.
+
 ## Unreleased — Windows single-EXE bootstrapper
 
 ### Added
