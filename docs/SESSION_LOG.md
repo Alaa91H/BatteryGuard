@@ -49,6 +49,11 @@ Keep the Windows tray, the read-only Rust core and the safety boundary intact.
 - The final logs contain no GitHub warning, Node deprecation warning, RPM
   missing-build-id warning or error. The earlier run's Node 20 and RPM warnings
   were corrected by the action upgrades and Linux build-id flag.
+- Tag run [`42624635716`](https://github.com/Alaa91H/BatteryGuard/actions/runs/42624635716)
+  completed successfully and published
+  [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with
+  exactly 11 assets: 3 MSI, 6 Linux packages and 2 PKG files. The tag points to
+  commit `449245b`.
 - No native Authenticode, Apple notarization or GPG signature was produced;
   there are no certificate secrets in this repository.
 
@@ -66,10 +71,10 @@ Keep the Windows tray, the read-only Rust core and the safety boundary intact.
 
 ### Next
 
-- Tag `v0.1.0` on the final documentation commit, wait for the release job and
-  verify the published asset list and release notes.
 - Add native OS signing and clean-VM install tests in a later release-hardening
-  pass.
+  pass. The current release carries Sigstore build provenance only.
+- Run the released installers on real Windows, Linux and macOS hardware; no
+  clean-VM install or hardware reading was performed for `v0.1.0`.
 
 ## 2026-11-09 — portable Rust core and support matrix
 

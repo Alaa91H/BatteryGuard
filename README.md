@@ -94,6 +94,8 @@ GitHub Actions builds native installers for all supported systems:
 | Linux x64, ARM64 | `.deb`, `.rpm`, `.AppImage` |
 | macOS Intel, Apple silicon | `.pkg` |
 
+The current release is [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0), with all 11 installers attached.
+
 Every branch build signs the installers with a keyless Sigstore build-provenance
 attestation and keeps them as workflow artifacts. A GitHub Release is created
 only from a matching `v*` tag; branch builds never publish. See
@@ -117,7 +119,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-Layout.ps
 ## Status
 
 - Build: `battery/application.exe`, 99,328 bytes at the last local build.
-- Release CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the only workflow. Hosted run [42623422341](https://github.com/Alaa91H/BatteryGuard/actions/runs/42623422341) passed all seven native packaging jobs and produced 11 installers: three MSI, six Linux packages and two macOS PKG files. Branch builds attest and upload artifacts; a matching `v*` tag is the only path that publishes a GitHub Release.
+- Release CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the only workflow. Hosted run [42623422341](https://github.com/Alaa91H/BatteryGuard/actions/runs/42623422341) passed all seven native packaging jobs and produced 11 installers: three MSI, six Linux packages and two macOS PKG files. Branch builds attest and upload artifacts; a matching `v*` tag is the only path that publishes a GitHub Release. The tag release [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) is published with these 11 assets.
 - Portable core: the read-only Rust library, CLI and test harness type-check on 12 Windows/Linux/macOS targets. The hosted CI links, tests and runs `batteryguard --version` on six native runners. No linked binary or test run was possible locally because the MSVC linker is absent and Application Control blocks Cargo and the available GNU/lld linkers. Linux/macOS widgets and native Authenticode/notarization remain later work.
 - Float policy: 13/13 decision cases pass; float starts only at the limit and holds until the resume point.
 - Electrical readings: the tooltip, tray menu, status balloon and Settings card show pack voltage and charge/discharge power; the real reading was `11.8 V · 0.0 W` while the charger held the battery idle.

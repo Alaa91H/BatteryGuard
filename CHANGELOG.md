@@ -43,6 +43,9 @@ All notable changes to this project are documented here. The format follows the 
   not executed on the x64 hosted runner.
 - The final logs contain no workflow warning, Node deprecation warning or RPM
   build-id warning.
+- Tag run `42624635716` published
+  [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with
+  exactly 11 installer assets; no raw binary or debug metadata was published.
 
 ### Known limitations
 

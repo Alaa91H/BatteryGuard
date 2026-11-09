@@ -3,7 +3,7 @@
 **Date:** 2026-11-09  
 **Application:** BatteryGuard tray monitor  
 **Build:** `battery/application.exe` — 99,328 bytes  
-**CI:** single tag-gated workflow; hosted run `42623422341` green with 11 installers
+**CI:** single tag-gated workflow; hosted run `42623422341` green with 11 installers; released as `v0.1.0`
 
 ## Completed
 
@@ -46,6 +46,7 @@ Passed in this session (2026-11-09):
 | `VisualCapture.ps1` | 13 images in English/Arabic and light/dark; Settings Arabic light/dark, English dark and the full Settings content re-inspected with the electrical value |
 | `build.ps1` | csc exit 0 |
 | GitHub Actions `42623422341` | All 7 packaging jobs succeeded; 11 installers; Rust/CLI smoke tests passed; no Node/RPM warnings |
+| GitHub Actions `42624635716` | Tag run succeeded; GitHub Release `v0.1.0` published with exactly 11 installer assets |
 
 Locale inventory: 30 JSON files, 151 keys in each file including the `Monitoring only` key; no missing keys and no placeholder mismatches.
 
@@ -67,7 +68,7 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 - `.github/workflows/ci.yml` is the only workflow. It validates the Cargo version, builds the full matrix, attests the installers and uploads branch artifacts.
 - The release job is skipped unless the ref is `refs/tags/v<Cargo version>`; it filters assets to `.msi`, `.deb`, `.rpm`, `.AppImage` and `.pkg`.
 - Branch run `42623422341` covered all 7 native packaging jobs and produced 11 installers without warnings. Earlier runs exposed missing Cargo paths (`42622500646`) and Unix packaging paths; both were fixed before this run.
-- `v0.1.0` is the release tag for the current `portable/Cargo.toml` version `0.1.0`.
+- Tag run `42624635716` passed all jobs and published [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with exactly the 11 installer files; the tag points to commit `449245b`.
 
 ## Known limitations
 

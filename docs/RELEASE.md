@@ -114,6 +114,9 @@ CI jobs use the platform tools installed on their hosted runner.
 - Hosted run `42623422341` passed all seven packaging jobs, produced 11
   installers and contains no workflow warnings. The release job was correctly
   skipped on the branch.
+- Tag run `42624635716` passed every job and published
+  [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with
+  exactly 11 installer assets. The tag points to commit `449245b`.
 - Runtime results, run IDs and release URLs are recorded in
   [`SESSION_LOG.md`](SESSION_LOG.md) after each hosted run.
 - A green workflow is the release gate. Do not create a tag if any native test
