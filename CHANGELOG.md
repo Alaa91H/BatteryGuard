@@ -10,8 +10,9 @@ All notable changes to this project are documented here. The format follows the 
   the tray+CLI MSI. The EXE uses the application icon, shows the version,
   suppresses install-directory options, offers launch-after-install and
   registers an Apps & Features uninstall entry.
-- CI builds the EXE for x86, x64 and ARM64, and installs/uninstalls the x64
-  bootstrapper in addition to the MSI.
+- CI builds the EXE for x86, x64 and ARM64, installs/uninstalls the x64
+  bootstrapper in addition to the MSI, and upgrades the published `v0.1.0`
+  MSI with the new EXE on a clean runner.
 - The optional Authenticode path signs the detached Burn engine, reattaches it
   and then signs the whole EXE bundle.
 
@@ -19,20 +20,26 @@ All notable changes to this project are documented here. The format follows the 
 
 - The MSI now allows same-version upgrades, so branch snapshots can replace an
   existing `0.1.0` installation instead of leaving duplicate products.
+- The bundle passes `ARPSYSTEMCOMPONENT=1` to its MSI, so Apps & Features shows
+  one BatteryGuard entry (the EXE) rather than the EXE and its MSI.
 - Release artifacts may include the Burn `.exe`; raw application binaries and
   archives remain forbidden.
 
 ### Verification
 
-- Hosted run `42636451138` passed all seven packaging jobs. The x64 job built
-  the EXE, installed/checked/uninstalled it, and also passed the MSI and C#
-  checks.
-- Downloaded x64 EXE: `BatteryGuard-0.1.0-snapshot.695f9bd-windows-x64.exe`,
-  1,309,379 bytes, SHA-256
-  `57b8e007d60279a8cb73101cd4fc5db32485c8218c4d762775612795d67ba9bb`.
+- Hosted run `42638941970` passed all seven packaging jobs. The x64 job built
+  and installed/checked/uninstalled the EXE, passed the MSI and C# checks, and
+  upgraded the published `v0.1.0` MSI with the new EXE. The upgrade left one
+  visible Apps & Features entry, removed the old product, and uninstalled
+  cleanly.
+- Downloaded x64 EXE: `BatteryGuard-0.1.0-snapshot.e281b0d-windows-x64.exe`,
+  1,309,331 bytes, SHA-256
+  `79b52985b64ee11011ed063c59bfc8e9d0f6119be7b540427c4920ad05d4d5aa`.
   `ProductVersion` is `0.1.0`; Authenticode status is `NotSigned`.
-- The CI install was a quiet command-line install/uninstall, not an
-  interactive visual inspection.
+- The CI install was a quiet command-line install/uninstall and upgrade, not an
+  interactive visual inspection. The wizard was not tested: this host has no
+  Windows Sandbox/VM and Application Control blocks the EXE; hosted runners
+  are non-interactive.
 
 ## Unreleased — C# CI gate, optional native signing and v0.1.0 checks
 

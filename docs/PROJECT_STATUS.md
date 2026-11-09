@@ -3,7 +3,7 @@
 **Date:** 2026-11-09  
 **Application:** BatteryGuard tray monitor  
 **Build:** `battery/application.exe` — 99,328 bytes  
-**CI:** single tag-gated workflow; hosted run `42636451138` green with 14 installers, the C# suite, the Windows tray MSI and the single-EXE bootstrapper; published release remains `v0.1.0` (CLI-only)
+**CI:** single tag-gated workflow; hosted run `42638941970` green with 14 installers, the C# suite, the Windows tray MSI and EXE, and a clean-runner upgrade from the published `v0.1.0` MSI; published release remains `v0.1.0` (CLI-only)
 
 ## Completed
 
@@ -53,6 +53,7 @@ Passed in this session (2026-11-09):
 | GitHub Actions `42629998330` | All 7 packaging jobs succeeded; 11 installers; Windows x64 MSI install/uninstall, DEB install/run and PKG install/run checks passed |
 | GitHub Actions `42632698346` | All 7 packaging jobs succeeded; Windows x64 C# suite, x64 MSI install/uninstall, DEB install/run and PKG install/run checks passed |
 | GitHub Actions `42636451138` | All 7 packaging jobs succeeded; 14 installers; Windows x64 C# suite, x64 MSI and EXE install/uninstall, DEB install/run and PKG install/run checks passed |
+| GitHub Actions `42638941970` | All 7 packaging jobs succeeded; 14 installers; x64 MSI and EXE install/uninstall plus the published `v0.1.0` → EXE upgrade passed with one visible Apps & Features entry and a clean uninstall |
 
 Locale inventory: 30 JSON files, 151 keys in each file including the `Monitoring only` key; no missing keys and no placeholder mismatches.
 
@@ -83,7 +84,7 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 - `portable/src/main.rs` provides a text/JSON/watch CLI; `Cargo.toml` and `rustc` build/test scripts are included.
 - `portable/scripts/check-targets.ps1` type-checks the library, test harness and CLI for 12 targets: x86/x64/ARM64 Windows, x86/x64/ARMv7/ARM64 Linux and Intel/Apple-silicon macOS.
 - The check passed 12/12. It uses `--emit=metadata`, so it validates conditional compilation and types but does not link or execute.
-- **Hosted verification:** GitHub Actions run `42636451138` linked and tested the Rust core on Windows x64/x86, Linux x64/ARM64 and macOS Intel/Apple silicon, ran the C# suite on Windows x64, built 3 EXE bootstrappers, 3 MSI, 6 Linux packages and 2 PKG files, installed the DEB and PKG and ran `batteryguard --version`, and installed/uninstalled both the x64 MSI and EXE with the C# tray payload. The CLI printed `BatteryGuard portable core 0.1.0` on every runnable target.
+- **Hosted verification:** GitHub Actions run `42638941970` linked and tested the Rust core on Windows x64/x86, Linux x64/ARM64 and macOS Intel/Apple silicon, ran the C# suite on Windows x64, built 3 EXE bootstrappers, 3 MSI, 6 Linux packages and 2 PKG files, installed the DEB and PKG and ran `batteryguard --version`, installed/uninstalled both the x64 MSI and EXE with the C# tray payload, and upgraded the published `v0.1.0` MSI with the new EXE. The upgrade check confirmed the old product disappeared, exactly one visible Apps & Features entry remained, and uninstall left no BatteryGuard product. The CLI printed `BatteryGuard portable core 0.1.0` on every runnable target.
 - **Not verified locally:** no linked `batteryguard` executable, no executed Rust tests and no local Linux/macOS runtime. This host has no MSVC linker; Application Control blocks Cargo, GNU rustc and the available lld/GNU linkers.
 - **Not included:** Linux/macOS widgets and cross-platform charge control. Native Authenticode/Apple notarization is implemented as an optional signing path, but no certificates are configured and it has not been exercised; the current installers carry Sigstore build-provenance attestations only.
 
@@ -93,7 +94,7 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 - The release job is skipped unless the ref is `refs/tags/v<Cargo version>`; it filters assets to `.exe`, `.msi`, `.deb`, `.rpm`, `.AppImage` and `.pkg`.
 - Branch run `42629998330` covered all 7 native packaging jobs and produced 11 installers. Its x64 MSI passed install, payload, Start Menu/uninstall-shortcut and uninstall checks; Linux DEB and macOS PKG install-and-run checks passed.
 - Branch run `42632698346` added the eight-test C# suite and kept all seven packaging jobs green, including the x64 MSI and native package checks. The optional signing steps were skipped because no certificate secrets are configured.
-- Branch run `42636451138` added the single-EXE Burn bootstrapper and produced 14 installers. The Windows x64 job built and passed install/uninstall for both the MSI and EXE; the optional signing steps were skipped because no certificates are configured. Earlier runs exposed missing Cargo paths (`42622500646`), Unix packaging paths, the invalid `CommonProgramsFolder` WiX id and cross-architecture MSI installation; all were fixed.
+- Branch run `42638941970` added the clean-runner `v0.1.0` → EXE upgrade test and produced 14 installers. The x64 job passed MSI/EXE install-uninstall and the upgrade, including one visible Apps & Features entry and a clean uninstall; the optional signing steps were skipped because no certificates are configured. Earlier runs exposed duplicate bundle/MSI registration, missing Cargo paths (`42622500646`), Unix packaging paths, the invalid `CommonProgramsFolder` WiX id and cross-architecture MSI installation; all were fixed.
 - Tag run `42624635716` passed all jobs and published [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with exactly the 11 installer files; the tag points to commit `449245b` and remains CLI-only.
 
 ## Known limitations
@@ -109,6 +110,7 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 9. **Smart App Control.** Unsigned `application.exe` may be blocked on this machine; the launcher falls back to compiling the same source in the signed PowerShell host.
 10. **Language switch layout.** Choosing a different language updates the tray after refresh, but an already-open Settings window keeps its original layout until reopened.
 11. **Undocumented firmware.** HP charge modes are model-specific. Unsupported models fail closed to monitoring.
+12. **Interactive installer UI.** CI exercises quiet install, upgrade and uninstall only. The wizard, launch-after-install checkbox and visual layout were not tested: this Windows 11 Home host has no Windows Sandbox/VM tools and Application Control blocks the EXE, while GitHub-hosted runners have no interactive desktop.
 
 ## Out of scope
 

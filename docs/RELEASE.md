@@ -61,9 +61,12 @@ The Windows x64 job also runs the hardware-independent C# suite (float policy,
 schedule conflicts, settings persistence, notification identity, log rotation,
 icon rendering and adaptive layout). The Windows x64 job installs the MSI and
 the EXE bootstrapper, verifies the tray, CLI, icon, locales and both Start Menu
-shortcuts, then uninstalls both. Linux and macOS jobs install their native
-package and run the installed `batteryguard --version`; the RPM metadata is
-checked, while the DEB and PKG are actually installed.
+shortcuts, then uninstalls both. It also installs the published `v0.1.0` MSI,
+upgrades it with the new EXE, requires the old product to disappear and exactly
+one visible Apps & Features entry to remain (the MSI is hidden behind the
+bundle), then uninstalls. Linux and macOS jobs install their native package and
+run the installed `batteryguard --version`; the RPM metadata is checked, while
+the DEB and PKG are actually installed.
 
 ## Native signing (optional)
 
@@ -155,8 +158,9 @@ The current branch MSI and EXE payload is the C# Windows tray plus the Rust
 `batteryguard` CLI. The Linux DEB/RPM/AppImage and macOS PKG payloads remain
 the Rust CLI only. The published `v0.1.0` assets predate the tray installers
 and are CLI-only; the tray MSI and EXE will be included in the next version
-tag. The branch run installs the x64 MSI and EXE but does not claim a clean-VM
-test.
+tag. The branch run installs the x64 MSI and EXE and upgrades the published
+`v0.1.0` MSI on a clean hosted runner, but it does not exercise the interactive
+wizard or a physical clean VM.
 
 ## Verification boundaries
 
@@ -179,9 +183,15 @@ test.
 - Hosted run `42632698346` added the Windows x64 C# suite and kept all seven
   packaging jobs green. The optional signing steps were skipped (no secrets),
   so this run verifies the unsigned path only.
-- Hosted run `42636451138` added the single-EXE Burn bootstrapper, built 14
-  installers and passed the x64 install/uninstall checks for both the MSI and
-  the EXE. The signing steps were skipped because no certificates are set.
+- Hosted run `42638941970` passed all seven packaging jobs, built 14
+  installers, and passed the x64 MSI/EXE install-uninstall checks plus the
+  `v0.1.0` MSI → EXE upgrade test. The test confirmed the old product was gone,
+  one visible Apps & Features entry remained and the MSI was a hidden
+  `SystemComponent`, then uninstalled cleanly. Signing steps were skipped
+  because no certificates are set.
+- Hosted run `42636451138` added the single-EXE Burn bootstrapper and passed
+  the initial x64 MSI/EXE install-uninstall checks. It remains the first green
+  run for the EXE; `42638941970` adds the upgrade result.
 - Tag run `42624635716` passed every job and published
   [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with
   exactly 11 installer assets. The tag points to commit `449245b`; it remains

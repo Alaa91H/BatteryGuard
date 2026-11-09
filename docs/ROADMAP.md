@@ -8,7 +8,7 @@
 - **Live language switch.** Rebuild or reload the open Settings window when the language changes so RTL/LTR and labels update immediately.
 - **Release checklist.** Build, run the hardware-independent suite, launch elevated, inspect the tray and settings windows in LTR and RTL, and verify log rotation.
 - **DPI visual pass.** The three dialogs are captured at 100% in light/dark and English/Arabic; repeat at 125% and 150%.
-- **Windows EXE/MSI on clean systems.** Exercise the new x64 EXE bootstrapper and MSI on a clean Windows VM and verify the Start Menu shortcut, uninstall shortcut, launch-after-install and upgrade path. The current CI check runs on a hosted runner.
+- **Interactive installer UI and physical clean VM.** The clean hosted runner now verifies the `v0.1.0` → EXE upgrade, shortcut and uninstall path. Still open: click through the wizard visually on an interactive desktop, verify launch-after-install, and repeat on a physical/VM Windows image rather than a hosted runner.
 
 ## Done
 
@@ -18,7 +18,9 @@
 
 - **C# CI test gate and optional native signing.** The Windows x64 job runs eight hardware-independent C# tests before packaging. The workflow optionally signs the tray, CLI, MSI and EXE bundle with Authenticode and signs/notarizes the macOS PKG when the documented secrets exist; Sigstore provenance remains mandatory.
 
-- **Windows single-EXE bootstrapper.** WiX Burn wraps the tray+CLI MSI in a per-machine EXE with the standard installer UI, icon, version, launch-after-install and Apps & Features registration. CI builds it for x86/x64/ARM64 and installs/uninstalls the x64 bundle; hosted run `42636451138` passed.
+- **Windows single-EXE bootstrapper.** WiX Burn wraps the tray+CLI MSI in a per-machine EXE with the standard installer UI, icon, version, launch-after-install and Apps & Features registration. CI builds it for x86/x64/ARM64 and installs/uninstalls the x64 bundle; hosted run `42638941970` passed.
+
+- **Clean-runner upgrade test.** The Windows x64 job installs the published `v0.1.0` CLI MSI, upgrades it with the new EXE, confirms the old product is removed and exactly one visible Apps & Features entry remains, then uninstalls cleanly.
 
 - **Portable Rust core (phase 1).** Added the shared battery model, formatting, 13-case policy, read-only Windows/Linux/macOS backends, text/JSON/watch CLI, build/test scripts and a 12-target metadata check. The 12 Windows/Linux/macOS targets type-check; no binary or runtime test was possible on this host.
 - **Voltage and power readout.** The tooltip, tray menu, status balloon and Settings battery card show pack voltage and charge/discharge power from `BatteryStatus`; the real idle reading was `11.8 V · 0.0 W`.

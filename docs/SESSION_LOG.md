@@ -22,26 +22,37 @@ MSI, and verify that it installs and uninstalls the tray and CLI.
    EXE. The signing steps were skipped because no certificate is configured.
 4. Added same-version MSI upgrades so a newer branch snapshot can replace an
    installed `0.1.0` package instead of leaving duplicate products.
-5. Downloaded and inspected the hosted x64 EXE locally:
-   `BatteryGuard-0.1.0-snapshot.695f9bd-windows-x64.exe`, 1,309,379 bytes,
-   SHA-256 `57b8e007d60279a8cb73101cd4fc5db32485c8218c4d762775612795d67ba9bb`.
+5. Added `packaging/windows/Test-WindowsUpgrade.ps1` and a Windows x64 CI step:
+   install the published `v0.1.0` MSI, verify its CLI, install the new EXE over
+   it, require the old product to disappear, require one visible Apps &
+   Features entry, then uninstall and verify no BatteryGuard product remains.
+6. The first upgrade run found two registered entries. The bundle now passes
+   `ARPSYSTEMCOMPONENT=1` to its MSI; the next run confirmed one visible bundle
+   entry and one hidden `SystemComponent` MSI.
+7. Downloaded and inspected the final hosted x64 EXE locally:
+   `BatteryGuard-0.1.0-snapshot.e281b0d-windows-x64.exe`, 1,309,331 bytes,
+   SHA-256 `79b52985b64ee11011ed063c59bfc8e9d0f6119be7b540427c4920ad05d4d5aa`.
    Its file/product version is `0.1.0`; Authenticode reports `NotSigned`.
 
 ### Verification
 
-- Hosted run `42636451138` passed all seven packaging jobs and produced 14
+- Hosted run `42638941970` passed all seven packaging jobs and produced 14
   installers: 3 EXE, 3 MSI, 6 Linux packages and 2 PKG.
-- The Windows x64 job's **Package Windows EXE** and **Smoke-test Windows EXE**
-  steps passed. The test used `/install /quiet /norestart` followed by
-  `/uninstall /quiet /norestart` and verified the installed files and Start
-  Menu shortcut.
-- The local EXE is saved under the ignored `dist/` directory for the user; it
-  is not committed to Git.
+- The Windows x64 job's **Package Windows EXE**, **Smoke-test Windows MSI**,
+  **Smoke-test Windows EXE** and **Test Windows v0.1.0 upgrade** steps passed.
+  The upgrade installed the published old MSI, verified its CLI, installed the
+  new EXE, confirmed the old product was gone and one visible Apps & Features
+  entry remained, then uninstalled cleanly.
+- The final local EXE is saved under the ignored `dist/` directory for the user;
+  it is not committed to Git.
 
 ### Limitations observed
 
-- The installer UI was not visually inspected; CI exercised the quiet path
-  only. A clean-VM interactive installation and upgrade test remains pending.
+- The interactive installer UI was not tested. This Windows 11 Home host has
+  no Windows Sandbox/VM tools, and Application Control blocks the EXE with
+  "An Application Control policy has blocked this file"; GitHub-hosted runners
+  have no interactive desktop. Only the quiet install/upgrade/uninstall path is
+  verified.
 - The EXE is unsigned because no Authenticode certificate is configured. Do
   not claim a trusted publisher or SmartScreen reputation.
 - The existing local `Program Files\BatteryGuard` installation was not replaced
@@ -52,7 +63,8 @@ MSI, and verify that it installs and uninstalls the tray and CLI.
 
 - Sign the EXE and Burn engine with a real certificate and verify both
   signatures on a clean Windows VM.
-- Exercise the interactive wizard and the upgrade path from an older MSI.
+- Exercise the interactive wizard on an interactive clean Windows VM and
+  verify launch-after-install and the visible layout.
 
 ## 2026-11-09 — C# CI gate, optional signing and v0.1.0 installer checks
 
