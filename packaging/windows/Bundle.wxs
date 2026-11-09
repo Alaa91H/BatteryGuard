@@ -25,7 +25,11 @@
                   SourceFile="$(var.MsiPath)"
                   Vital="yes"
                   Compressed="yes"
-                  ForcePerMachine="yes" />
+                  ForcePerMachine="yes"
+                  Visible="no">
+        <!-- Keep one Apps & Features entry: the Burn bundle, not its MSI. -->
+        <MsiProperty Name="ARPSYSTEMCOMPONENT" Value="1" />
+      </MsiPackage>
     </Chain>
   </Bundle>
 </Wix>

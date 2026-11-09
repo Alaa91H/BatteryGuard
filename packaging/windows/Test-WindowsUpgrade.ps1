@@ -107,6 +107,9 @@ try {
     Assert-File $uninstall
 
     $newProducts = @(Get-BatteryGuardProducts)
+    foreach ($product in $newProducts) {
+        Write-Output ("Apps & Features entry: " + $product.PSChildName + " version " + $product.DisplayVersion)
+    }
     $oldRemaining = @($newProducts | Where-Object { $oldCodes -contains $_.PSChildName })
     if ($oldRemaining.Count -gt 0) {
         throw ('The old MSI product remains after upgrade: ' + ($oldRemaining.PSChildName -join ', '))
