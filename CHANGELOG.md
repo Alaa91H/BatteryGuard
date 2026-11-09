@@ -2,6 +2,38 @@
 
 All notable changes to this project are documented here. The format follows the spirit of Keep a Changelog. Releases use the version from `portable/Cargo.toml` and a matching `v*` tag.
 
+## Unreleased — Windows single-EXE bootstrapper
+
+### Added
+
+- `packaging/windows/Bundle.wxs`: a per-machine WiX Burn bootstrapper around
+  the tray+CLI MSI. The EXE uses the application icon, shows the version,
+  suppresses install-directory options, offers launch-after-install and
+  registers an Apps & Features uninstall entry.
+- CI builds the EXE for x86, x64 and ARM64, and installs/uninstalls the x64
+  bootstrapper in addition to the MSI.
+- The optional Authenticode path signs the detached Burn engine, reattaches it
+  and then signs the whole EXE bundle.
+
+### Changed
+
+- The MSI now allows same-version upgrades, so branch snapshots can replace an
+  existing `0.1.0` installation instead of leaving duplicate products.
+- Release artifacts may include the Burn `.exe`; raw application binaries and
+  archives remain forbidden.
+
+### Verification
+
+- Hosted run `42636451138` passed all seven packaging jobs. The x64 job built
+  the EXE, installed/checked/uninstalled it, and also passed the MSI and C#
+  checks.
+- Downloaded x64 EXE: `BatteryGuard-0.1.0-snapshot.695f9bd-windows-x64.exe`,
+  1,309,379 bytes, SHA-256
+  `57b8e007d60279a8cb73101cd4fc5db32485c8218c4d762775612795d67ba9bb`.
+  `ProductVersion` is `0.1.0`; Authenticode status is `NotSigned`.
+- The CI install was a quiet command-line install/uninstall, not an
+  interactive visual inspection.
+
 ## Unreleased — C# CI gate, optional native signing and v0.1.0 checks
 
 ### Added

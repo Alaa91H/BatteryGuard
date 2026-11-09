@@ -42,9 +42,9 @@ git push origin v0.1.0
 
 | Runner | Target | Package |
 | --- | --- | --- |
-| `windows-2025` | `x86_64-pc-windows-msvc` | `.msi` x64 |
-| `windows-2025` | `i686-pc-windows-msvc` | `.msi` x86 |
-| `windows-2025` | `aarch64-pc-windows-msvc` | `.msi` ARM64 |
+| `windows-2025` | `x86_64-pc-windows-msvc` | `.exe` + `.msi` x64 |
+| `windows-2025` | `i686-pc-windows-msvc` | `.exe` + `.msi` x86 |
+| `windows-2025` | `aarch64-pc-windows-msvc` | `.exe` + `.msi` ARM64 |
 | `ubuntu-24.04` | `x86_64-unknown-linux-musl` | `.deb`, `.rpm`, `.AppImage` x64 |
 | `ubuntu-24.04-arm` | `aarch64-unknown-linux-musl` | `.deb`, `.rpm`, `.AppImage` ARM64 |
 | `macos-15-intel` | `x86_64-apple-darwin` | `.pkg` Intel |
@@ -59,11 +59,11 @@ architectures. Windows ARM64 is cross-compiled and packaged but cannot execute
 on the x64 hosted runner. `RUSTFLAGS=-D warnings` makes Rust warnings fatal.
 The Windows x64 job also runs the hardware-independent C# suite (float policy,
 schedule conflicts, settings persistence, notification identity, log rotation,
-icon rendering and adaptive layout). The Windows x64 job installs the MSI,
-verifies the tray, CLI, icon, locales and both Start Menu shortcuts, then
-uninstalls it. Linux and macOS jobs install their native package and run the
-installed `batteryguard --version`; the RPM metadata is checked, while the DEB
-and PKG are actually installed.
+icon rendering and adaptive layout). The Windows x64 job installs the MSI and
+the EXE bootstrapper, verifies the tray, CLI, icon, locales and both Start Menu
+shortcuts, then uninstalls both. Linux and macOS jobs install their native
+package and run the installed `batteryguard --version`; the RPM metadata is
+checked, while the DEB and PKG are actually installed.
 
 ## Native signing (optional)
 
@@ -82,7 +82,11 @@ Windows Authenticode:
 - `WINDOWS_CERTIFICATE_BASE64` — base64 of the PFX; `WINDOWS_CERTIFICATE_PASSWORD` — PFX password.
 - The tray and CLI are signed before the MSI is built, so their signatures are
   embedded in the package; the MSI is signed afterwards.
-- `signtool verify /pa /all` must pass for the two executables and the MSI.
+- The EXE bundle is signed in two stages: detach the Burn engine, sign it,
+  reattach it, then sign the whole bundle. This covers both the cached engine
+  and the outer installer.
+- `signtool verify /pa /all` must pass for the two executables, the MSI, the
+  Burn engine and the EXE bundle.
 
 macOS Developer ID and notarization:
 
@@ -113,24 +117,31 @@ The release job downloads all installer artifacts, rejects every unexpected
 extension, and only then creates the GitHub Release. A release therefore
 contains only:
 
+- `BatteryGuard-<version>-windows-<arch>.exe` (Burn bootstrapper)
 - `BatteryGuard-<version>-windows-<arch>.msi`
 - `BatteryGuard-<version>-linux-<arch>.deb`
 - `BatteryGuard-<version>-linux-<arch>.rpm`
 - `BatteryGuard-<version>-linux-<arch>.AppImage`
 - `BatteryGuard-<version>-macos-<arch>.pkg`
 
-There are no raw executables, ZIP files, symbol archives, debug builds,
-screenshots or test data in a release. Branch runs upload the same installers
+There are no raw application binaries, ZIP files, symbol archives, debug
+builds, screenshots or test data in a release. The allowed `.exe` is the Burn
+installer, not the tray or CLI itself. Branch runs upload the same installers
 as short-lived Actions artifacts, but never create a GitHub Release.
 
 ## Packaging implementation
 
 - Windows: WiX Toolset 5 builds a per-machine MSI with a stable UpgradeCode,
-  major-upgrade handling, an uninstall entry and a system `PATH` entry. The
-  payload includes the C# tray (`application.exe`), the Rust CLI
+  same-version major-upgrade handling, an uninstall entry and a system `PATH`
+  entry. The payload includes the C# tray (`application.exe`), the Rust CLI
   (`batteryguard.exe`), the application icon, all 30 locale catalogs, an
   all-users Start Menu shortcut with `BatteryGuard.Tray`, and an uninstall
   shortcut. `generate-locales.ps1` creates the locale WiX components.
+- Windows EXE: `packaging/windows/Bundle.wxs` wraps that MSI in a WiX Burn
+  bootstrapper with the application icon, version display, launch-after-install,
+  per-machine scope and an Apps & Features uninstall entry. The bootstrapper
+  uses `WixStandardBootstrapperApplication`; its Bal extension is pinned to
+  5.0.2 in the Windows job.
 - Linux: `packaging/linux/build-linux.sh` creates the `.deb` with `dpkg-deb`,
   the `.rpm` with `rpmbuild`, and a portable AppImage with
   `appimagetool` 1.9.1.
@@ -140,11 +151,12 @@ as short-lived Actions artifacts, but never create a GitHub Release.
 No packaging tool is run in the repository root on a normal local build; the
 CI jobs use the platform tools installed on their hosted runner.
 
-The current branch MSI payload is the C# Windows tray plus the Rust
+The current branch MSI and EXE payload is the C# Windows tray plus the Rust
 `batteryguard` CLI. The Linux DEB/RPM/AppImage and macOS PKG payloads remain
-the Rust CLI only. The published `v0.1.0` assets predate the tray MSI and are
-CLI-only; the tray MSI will be included in the next version tag. The branch
-run installs the x64 MSI but does not claim a clean-VM test.
+the Rust CLI only. The published `v0.1.0` assets predate the tray installers
+and are CLI-only; the tray MSI and EXE will be included in the next version
+tag. The branch run installs the x64 MSI and EXE but does not claim a clean-VM
+test.
 
 ## Verification boundaries
 
@@ -167,6 +179,9 @@ run installs the x64 MSI but does not claim a clean-VM test.
 - Hosted run `42632698346` added the Windows x64 C# suite and kept all seven
   packaging jobs green. The optional signing steps were skipped (no secrets),
   so this run verifies the unsigned path only.
+- Hosted run `42636451138` added the single-EXE Burn bootstrapper, built 14
+  installers and passed the x64 install/uninstall checks for both the MSI and
+  the EXE. The signing steps were skipped because no certificates are set.
 - Tag run `42624635716` passed every job and published
   [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with
   exactly 11 installer assets. The tag points to commit `449245b`; it remains

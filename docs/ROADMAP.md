@@ -8,7 +8,7 @@
 - **Live language switch.** Rebuild or reload the open Settings window when the language changes so RTL/LTR and labels update immediately.
 - **Release checklist.** Build, run the hardware-independent suite, launch elevated, inspect the tray and settings windows in LTR and RTL, and verify log rotation.
 - **DPI visual pass.** The three dialogs are captured at 100% in light/dark and English/Arabic; repeat at 125% and 150%.
-- **Windows MSI on clean systems.** Exercise the new x64 MSI on a clean Windows VM and verify the Start Menu shortcut, uninstall shortcut and upgrade path. The current CI check runs on a hosted runner.
+- **Windows EXE/MSI on clean systems.** Exercise the new x64 EXE bootstrapper and MSI on a clean Windows VM and verify the Start Menu shortcut, uninstall shortcut, launch-after-install and upgrade path. The current CI check runs on a hosted runner.
 
 ## Done
 
@@ -16,7 +16,9 @@
 
 - **Windows tray MSI and package install checks.** The per-machine MSI now bundles the C# tray, Rust CLI, all 30 locale catalogs, a Start Menu shortcut with `BatteryGuard.Tray` and an uninstall shortcut. CI installs/uninstalls the x64 MSI and installs/runs the DEB and PKG. Windows x86/ARM64 and RPM are build-only on the current runners.
 
-- **C# CI test gate and optional native signing.** The Windows x64 job runs eight hardware-independent C# tests before packaging. The workflow optionally signs the tray, CLI and MSI with Authenticode and signs/notarizes the macOS PKG when the documented secrets exist; Sigstore provenance remains mandatory.
+- **C# CI test gate and optional native signing.** The Windows x64 job runs eight hardware-independent C# tests before packaging. The workflow optionally signs the tray, CLI, MSI and EXE bundle with Authenticode and signs/notarizes the macOS PKG when the documented secrets exist; Sigstore provenance remains mandatory.
+
+- **Windows single-EXE bootstrapper.** WiX Burn wraps the tray+CLI MSI in a per-machine EXE with the standard installer UI, icon, version, launch-after-install and Apps & Features registration. CI builds it for x86/x64/ARM64 and installs/uninstalls the x64 bundle; hosted run `42636451138` passed.
 
 - **Portable Rust core (phase 1).** Added the shared battery model, formatting, 13-case policy, read-only Windows/Linux/macOS backends, text/JSON/watch CLI, build/test scripts and a 12-target metadata check. The 12 Windows/Linux/macOS targets type-check; no binary or runtime test was possible on this host.
 - **Voltage and power readout.** The tooltip, tray menu, status balloon and Settings battery card show pack voltage and charge/discharge power from `BatteryStatus`; the real idle reading was `11.8 V · 0.0 W`.

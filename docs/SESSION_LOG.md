@@ -1,5 +1,59 @@
 # Session log
 
+## 2026-11-09 — Windows single-EXE bootstrapper
+
+### Goal
+
+Provide a complete, professional Windows installer in EXE form, not only an
+MSI, and verify that it installs and uninstalls the tray and CLI.
+
+### Work performed
+
+1. Added `packaging/windows/Bundle.wxs`, a per-machine WiX Burn bootstrapper
+   around the existing tray+CLI MSI. It uses `WixStandardBootstrapperApplication`
+   with the application icon, version display, hidden install-directory
+   options, launch-after-install and Apps & Features registration.
+2. Added the Bal extension (`WixToolset.BootstrapperApplications.wixext`
+   5.0.2) and EXE build steps to the Windows matrix. The x86, x64 and ARM64
+   jobs all produce an EXE; the x64 job installs it quietly, checks the payload
+   and Start Menu shortcut, then uninstalls it.
+3. Added a two-stage Authenticode path for the bundle when signing secrets
+   exist: detach the Burn engine, sign it, reattach it, then sign the whole
+   EXE. The signing steps were skipped because no certificate is configured.
+4. Added same-version MSI upgrades so a newer branch snapshot can replace an
+   installed `0.1.0` package instead of leaving duplicate products.
+5. Downloaded and inspected the hosted x64 EXE locally:
+   `BatteryGuard-0.1.0-snapshot.695f9bd-windows-x64.exe`, 1,309,379 bytes,
+   SHA-256 `57b8e007d60279a8cb73101cd4fc5db32485c8218c4d762775612795d67ba9bb`.
+   Its file/product version is `0.1.0`; Authenticode reports `NotSigned`.
+
+### Verification
+
+- Hosted run `42636451138` passed all seven packaging jobs and produced 14
+  installers: 3 EXE, 3 MSI, 6 Linux packages and 2 PKG.
+- The Windows x64 job's **Package Windows EXE** and **Smoke-test Windows EXE**
+  steps passed. The test used `/install /quiet /norestart` followed by
+  `/uninstall /quiet /norestart` and verified the installed files and Start
+  Menu shortcut.
+- The local EXE is saved under the ignored `dist/` directory for the user; it
+  is not committed to Git.
+
+### Limitations observed
+
+- The installer UI was not visually inspected; CI exercised the quiet path
+  only. A clean-VM interactive installation and upgrade test remains pending.
+- The EXE is unsigned because no Authenticode certificate is configured. Do
+  not claim a trusted publisher or SmartScreen reputation.
+- The existing local `Program Files\BatteryGuard` installation was not replaced
+  to avoid changing the user's current installation; the clean-runner CI test
+  is the install/uninstall evidence.
+
+### Next
+
+- Sign the EXE and Burn engine with a real certificate and verify both
+  signatures on a clean Windows VM.
+- Exercise the interactive wizard and the upgrade path from an older MSI.
+
 ## 2026-11-09 — C# CI gate, optional signing and v0.1.0 installer checks
 
 ### Goal

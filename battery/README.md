@@ -75,14 +75,15 @@ The script uses the .NET Framework compiler that ships with Windows, fails on co
 
 ## Windows installer
 
-Branch CI builds a per-machine WiX MSI that installs the tray and the portable CLI together under `Program Files\BatteryGuard`:
+Branch CI builds a per-machine WiX MSI and a single-EXE Burn bootstrapper that install the tray and the portable CLI together under `Program Files\BatteryGuard`:
 
 - `application.exe` and `batteryguard.exe`;
 - `resources\application.ico` and all 30 `locales\*.json` catalogs;
 - an all-users Start Menu shortcut for the tray with `System.AppUserModel.ID=BatteryGuard.Tray`;
 - an **Uninstall BatteryGuard** Start Menu shortcut that runs `msiexec /x`.
+- a standard installer wizard with version display, per-machine scope, launch-after-install and an Apps & Features uninstall entry (EXE only).
 
-The workflow installs the x64 MSI, checks the payload and both shortcuts, then uninstalls it. The x86 and ARM64 MSIs are built in the matrix but are not cross-installed on the x64 runner. The Windows x64 job also runs the hardware-independent C# suite. Authenticode signing of the tray, CLI and MSI is optional and runs only when the documented certificate secrets exist. See [`../packaging/windows/Product.wxs`](../packaging/windows/Product.wxs) and [`../docs/RELEASE.md`](../docs/RELEASE.md). The published `v0.1.0` release predates this tray MSI and contains the CLI-only packages.
+The workflow installs the x64 MSI and EXE, checks the payload and shortcuts, then uninstalls both. The x86 and ARM64 installers are built in the matrix but are not cross-installed on the x64 runner. The Windows x64 job also runs the hardware-independent C# suite. Authenticode signing of the tray, CLI, MSI and EXE is optional and runs only when the documented certificate secrets exist; the EXE signing path also signs the detached Burn engine. See [`../packaging/windows/Product.wxs`](../packaging/windows/Product.wxs), [`../packaging/windows/Bundle.wxs`](../packaging/windows/Bundle.wxs) and [`../docs/RELEASE.md`](../docs/RELEASE.md). The published `v0.1.0` release predates these tray installers and contains the CLI-only packages.
 
 ## Run
 
