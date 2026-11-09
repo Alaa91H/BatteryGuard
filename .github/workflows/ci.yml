@@ -182,7 +182,7 @@ jobs:
         shell: bash
         run: |
           bash packaging/linux/build-linux.sh \
-            "target/$TARGET/release/batteryguard" \
+            "portable/target/$TARGET/release/batteryguard" \
             "$VERSION" "$VERSION_SUFFIX" "${{ matrix.arch }}" "dist"
 
       - name: Package macOS PKG
@@ -190,7 +190,7 @@ jobs:
         shell: bash
         run: |
           bash packaging/macos/build-pkg.sh \
-            "target/$TARGET/release/batteryguard" \
+            "portable/target/$TARGET/release/batteryguard" \
             "$VERSION" "$VERSION_SUFFIX" "${{ matrix.arch }}" "dist"
 
       - name: List installer payload
