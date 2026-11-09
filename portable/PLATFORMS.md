@@ -4,9 +4,9 @@
 
 | System | Architectures checked | Backend | Runtime status |
 | --- | --- | --- | --- |
-| Windows 10/11 | x86, x64, ARM64 | PowerShell + WMI | Hosted CI tests and CLI smoke test; local host cannot link |
-| Linux | x86, x64, ARMv7, ARM64 | `/sys/class/power_supply` | Hosted CI tests and CLI smoke test; no hardware battery |
-| macOS | Intel, Apple silicon | `pmset -g batt` | Hosted CI tests and CLI smoke test; no hardware battery |
+| Windows 10/11 | x86, x64, ARM64 | PowerShell + WMI | Hosted CI tests and CLI smoke test; x64 MSI install/uninstall smoke test; local host cannot link |
+| Linux | x86, x64, ARMv7, ARM64 | `/sys/class/power_supply` | Hosted CI tests, CLI smoke test and DEB install/run test; no hardware battery |
+| macOS | Intel, Apple silicon | `pmset -g batt` | Hosted CI tests, CLI smoke test and PKG install/run test; no hardware battery |
 
 The 12 exact Rust targets that passed `rustc --emit=metadata` are:
 
@@ -50,7 +50,10 @@ percentage nor voltage exists.
   taken on Linux or macOS. Do not treat a hosted runner as hardware coverage.
 - **Installers:** the current CI produces `.msi` (x86/x64/ARM64), `.deb`,
   `.rpm`, `.AppImage` (Linux x64/ARM64) and `.pkg` (macOS Intel/Apple silicon).
-  Arch, Flatpak and `.dmg` are not produced.
+  The Windows MSI bundles the C# tray and the CLI; Linux and macOS packages
+  bundle the CLI only. The x64 MSI is installed/uninstalled in CI, and the DEB
+  and PKG are installed and executed in CI. Arch, Flatpak and `.dmg` are not
+  produced.
 - **Signing:** installers carry GitHub/Sigstore build provenance; Windows
   Authenticode and Apple notarization are not configured.
 - **Widgets/UI:** the existing Windows tray is the only graphical interface.

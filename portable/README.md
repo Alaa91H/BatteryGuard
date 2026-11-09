@@ -11,10 +11,13 @@ existing Windows tray application remains in `battery/` and is unchanged.
 - **Cross-target type-check:** all 12 targets listed in
   [`PLATFORMS.md`](PLATFORMS.md) compile the library, test harness and CLI with
   `rustc --emit=metadata`.
-- **Hosted CI:** GitHub Actions run `42623422341` linked and tested the core,
+- **Hosted CI:** GitHub Actions run `42629998330` linked and tested the core,
   ran `batteryguard --version` on Windows x64/x86, Linux x64/ARM64 and macOS
-  Intel/Apple silicon, and built 3 MSI, 6 Linux packages and 2 PKG files. It
-  also attested each installer with GitHub/Sigstore build provenance.
+  Intel/Apple silicon, built 3 MSI, 6 Linux packages and 2 PKG files, and
+  installed/ran the DEB and PKG packages on their native runners. The Windows
+  x64 MSI also installs the C# tray and its Start Menu shortcuts; x86 and ARM64
+  are built but not cross-installed. Every installer is attested with
+  GitHub/Sigstore build provenance.
 - **Not yet executed locally:** the MSVC linker is not installed on this
   machine, and Application Control blocks `cargo`, the GNU Rust compiler and
   the available `lld`/GNU linkers. As a result no linked `batteryguard.exe` and
@@ -24,8 +27,9 @@ existing Windows tray application remains in `battery/` and is unchanged.
   control remains limited to the native Windows HP controller.
 - **Installers:** CI produces `.msi` for Windows x86/x64/ARM64, `.deb`, `.rpm`
   and `.AppImage` for Linux x64/ARM64, and `.pkg` for macOS Intel/Apple
-  silicon. Branch builds keep them as artifacts; only a matching `v*` tag
-  publishes a GitHub Release.
+  silicon. The Windows MSI now bundles the C# tray as well as the CLI; the
+  Linux and macOS packages remain CLI-only. Branch builds keep them as
+  artifacts; only a matching `v*` tag publishes a GitHub Release.
 
 No local binary was produced; the CI result is a hosted build and runtime
 smoke test, not a hardware test.
@@ -167,13 +171,16 @@ is the established Windows HP path, restricted to `0x00` (auto) and `0x05`
 probe the hardware interface and fail closed to monitoring when it cannot
 confirm support.
 
-## Not in this phase
+## Still missing
 
-- Linked Windows/macOS/Linux binaries and signed installers.
-- Linux `.deb`, `.rpm`, Arch, AppImage or Flatpak packages.
-- macOS `.pkg`, `.dmg` or a menu-bar widget.
-- Linux desktop widgets or a system tray.
-- Charge control outside the existing Windows HP controller.
+- **Native signing:** the packages are unsigned; they carry Sigstore build
+  provenance, not Authenticode or Apple notarization.
+- **Clean-machine and hardware runtime tests:** DEB and PKG installation is
+  exercised on hosted runners, but the runners have no battery. Windows x86
+  and ARM64 MSIs are built but not installed on the x64 runner.
+- **macOS `.dmg`, menu-bar widget and Linux desktop widget/tray.**
+- **Arch, Flatpak and other distribution formats.**
+- **Charge control outside the existing Windows HP controller.**
 
 These require the corresponding build hosts, signing identities, packaging
 tools and runtime tests; they are tracked in the roadmap rather than claimed

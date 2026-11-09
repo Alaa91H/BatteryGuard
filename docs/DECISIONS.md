@@ -111,3 +111,10 @@
 **Decision:** Use a single GitHub Actions workflow for validation, native builds, packaging, attestation and release. Build all installers on every push, upload them as workflow artifacts, and create a GitHub Release only for a tag that exactly matches the Cargo version. Restrict release assets to installer extensions.
 **Why:** Separate packaging workflows drift in versions and permissions, while publishing individual files invites raw binaries and debug artifacts into a release. A single matrix gives one reproducible path for every platform, and the tag/version check ties the published filenames to the source version.
 **Consequence:** A normal push spends CI time building every installer but publishes nothing. `v0.1.0` is the first valid tag for Cargo `0.1.0`. The signature is a keyless Sigstore build-provenance attestation; Windows Authenticode, Apple notarization and GPG signing require separate credentials and are not claimed.
+
+## ADR-017 — Windows MSI bundles the tray and CLI
+
+**Status:** accepted 2026-11-09
+**Decision:** Build a per-machine WiX MSI containing the C# tray, the Rust CLI, the application icon, all 30 locale catalogs, an all-users Start Menu shortcut with `System.AppUserModel.ID=BatteryGuard.Tray`, and an uninstall shortcut. Keep the Linux and macOS packages CLI-only. Install/uninstall the x64 MSI in CI; build x86 and ARM64 without cross-installing them.
+**Why:** The Windows application is the primary product, so a Windows installer that shipped only the CLI would be misleading. A single MSI keeps the tray and CLI versions aligned. Cross-architecture MSI installation is rejected by Windows Installer on the x64 runner, and the x86 package correctly targets Program Files (x86), so those packages need native test hosts rather than a fake pass.
+**Consequence:** The new MSI is branch-built and attested but not part of the published `v0.1.0` release. It has no native Authenticode signature. Linux/macOS widgets, BIOS adapter wattage and a banner-level notification test remain unverified.

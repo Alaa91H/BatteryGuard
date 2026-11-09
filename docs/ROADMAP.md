@@ -8,10 +8,13 @@
 - **Live language switch.** Rebuild or reload the open Settings window when the language changes so RTL/LTR and labels update immediately.
 - **Release checklist.** Build, run the hardware-independent suite, launch elevated, inspect the tray and settings windows in LTR and RTL, and verify log rotation.
 - **DPI visual pass.** The three dialogs are captured at 100% in light/dark and English/Arabic; repeat at 125% and 150%.
+- **Windows MSI on clean systems.** Exercise the new x64 MSI on a clean Windows VM and verify the Start Menu shortcut, uninstall shortcut and upgrade path. The current CI check runs on a hosted runner.
 
 ## Done
 
-- **One tag-gated CI pipeline.** Added `.github/workflows/ci.yml` to build Windows x86/x64/ARM64 MSI, Linux x64/ARM64 DEB/RPM/AppImage and macOS Intel/Apple-silicon PKG packages; attest every installer with GitHub/Sigstore provenance; upload branch artifacts; and publish only for a `v*` tag matching `portable/Cargo.toml`. Hosted run `42623422341` passed all seven packaging jobs with 11 installers and no warnings. Tag run `42624635716` published [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with exactly those 11 assets.
+- **One tag-gated CI pipeline.** Added `.github/workflows/ci.yml` to build Windows x86/x64/ARM64 MSI, Linux x64/ARM64 DEB/RPM/AppImage and macOS Intel/Apple-silicon PKG packages; attest every installer with GitHub/Sigstore provenance; upload branch artifacts; and publish only for a `v*` tag matching `portable/Cargo.toml`. Hosted run `42629998330` passed all seven packaging jobs and the native install checks. Tag run `42624635716` published [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with exactly those 11 assets.
+
+- **Windows tray MSI and package install checks.** The per-machine MSI now bundles the C# tray, Rust CLI, all 30 locale catalogs, a Start Menu shortcut with `BatteryGuard.Tray` and an uninstall shortcut. CI installs/uninstalls the x64 MSI and installs/runs the DEB and PKG. Windows x86/ARM64 and RPM are build-only on the current runners.
 
 - **Portable Rust core (phase 1).** Added the shared battery model, formatting, 13-case policy, read-only Windows/Linux/macOS backends, text/JSON/watch CLI, build/test scripts and a 12-target metadata check. The 12 Windows/Linux/macOS targets type-check; no binary or runtime test was possible on this host.
 - **Voltage and power readout.** The tooltip, tray menu, status balloon and Settings battery card show pack voltage and charge/discharge power from `BatteryStatus`; the real idle reading was `11.8 V · 0.0 W`.
@@ -24,13 +27,14 @@
 ## Next
 
 - **Linux/macOS widgets.** Add a tray or menu-bar interface after the read-only backends are verified on real hardware. The Windows tray remains the active UI.
-- **Distribution hardening.** Add native OS code signatures and a documented upgrade/uninstall test on clean VMs. The current workflow publishes installers with Sigstore build provenance only.
-- **Notification banner check.** Trigger a status balloon on a clean notification area and confirm the Windows app label visually.
+- **Distribution hardening.** Add native OS code signatures, run the new MSI through a clean-VM install/upgrade/uninstall test, and extend package installation checks to x86/ARM64 and RPM where native runners exist. The current workflow publishes installers with Sigstore build provenance only.
+- **Notification banner check.** Trigger a status balloon on a clean notification area and confirm the Windows app label visually; a UI Automation probe on this desktop did not expose a visible toast.
+- **BIOS charger wattage.** Add an optional adapter-input power reading only after a documented, model-specific BIOS/WMI field is confirmed and can be read without guessing. The existing electrical card remains pack voltage and charge/discharge power.
 - **Localization QA tooling.** Detect untranslated values, wrong placeholders, text expansion and RTL truncation. Add a catalog coverage report per language.
 - **UI automation.** Add a repeatable smoke test that opens the menu and dialogs and checks visible labels without depending on Arabic/English assertions.
 - **DPI matrix check.** Measure all three dialogs at 100%, 125%, 150% and 200% scaling and assert that no control falls outside the working area.
 - **Config schema version.** Add a `schemaVersion` field to `settings.json` and a migration path for future fields.
-- **Installer and signing.** Produce a signed per-user installer or a documented portable layout; keep the Smart App Control fallback.
+- **Installer hardening.** Add native signing and a clean-VM upgrade/uninstall test; keep the Smart App Control fallback.
 - **Log language.** Keep diagnostic lines stable and English even when the interface is localized.
 
 ## Later

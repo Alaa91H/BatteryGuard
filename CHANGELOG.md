@@ -2,6 +2,51 @@
 
 All notable changes to this project are documented here. The format follows the spirit of Keep a Changelog. Releases use the version from `portable/Cargo.toml` and a matching `v*` tag.
 
+## Unreleased — Windows tray MSI and native package checks
+
+### Added
+
+- The Windows MSI now bundles the C# tray (`application.exe`), the Rust CLI
+  (`batteryguard.exe`), the application icon, all 30 locale catalogs, an
+  all-users Start Menu shortcut with `System.AppUserModel.ID=BatteryGuard.Tray`
+  and an **Uninstall BatteryGuard** shortcut.
+- `packaging/windows/generate-locales.ps1` generates one WiX component per
+  locale catalog; the generated `ProductLocales.wxs` remains ignored.
+- CI installs the x64 MSI, checks the payload and both shortcuts, then
+  uninstalls it. Linux installs the DEB and runs the installed
+  `batteryguard --version`; macOS installs the PKG and runs it; RPM metadata is
+  checked.
+
+### Changed
+
+- The WiX standard directory is `ProgramMenuFolder`; the invalid
+  `CommonProgramsFolder` id was rejected by WiX 5.
+- The MSI install smoke test runs only on the native x64 package because
+  Windows Installer rejects the ARM64 package on the x64 runner (1633) and the
+  x86 package resolves under Program Files (x86).
+- The published `v0.1.0` assets remain CLI-only; the tray MSI will ship in the
+  next version tag.
+
+### Verification
+
+- Hosted run `42629998330` passed all seven packaging jobs and produced 11
+  installers. The x64 MSI install/uninstall check passed, and the DEB and PKG
+  installed and ran `BatteryGuard portable core 0.1.0` on their native runners.
+- Windows x86/Windows ARM64 MSIs and the RPM package were built but not
+  installed on the x64 runner.
+
+### Known limitations
+
+- No native Authenticode or Apple notarization is configured; only Sigstore
+  build provenance is attached.
+- No BIOS/AC adapter input wattage is displayed: Windows exposes pack voltage
+  and charge/discharge power, and no documented adapter-wattage BIOS field was
+  verified.
+- No Linux/macOS widget or menu-bar UI is included.
+- No reliable automated test opens the real Windows notification banner and
+  reads its app label; notification identity is still verified through the
+  shortcut and AUMID.
+
 ## 2026-11-09 — cross-platform installers and release CI (v0.1.0)
 
 ### Added
@@ -54,8 +99,9 @@ All notable changes to this project are documented here. The format follows the 
 - No installer was launched on a clean VM, and no real Linux/macOS battery
   reading was taken.
 - Linux/macOS widgets and charge control remain out of scope for this release.
-- The installers package the Rust `batteryguard` CLI, not the C# Windows tray;
-  the tray remains a separate source build.
+- The `v0.1.0` installers package the Rust `batteryguard` CLI, not the C#
+  Windows tray; the tray was added to the Windows MSI in the later unreleased
+  branch work.
 
 ## 2026-11-09 — portable Rust core
 

@@ -89,4 +89,6 @@ The `portable/` Rust core is a separate read-only layer for Windows, Linux and m
 - Non-HP hardware was not available in this environment, so the monitoring
   path was verified by code inspection and the shared battery reader, not on a
   second physical vendor device.- Window behavior was measured through reflection tests; pixel-level visual inspection on a non-HP machine was not performed.
-- The portable Rust code type-checks on 12 targets, but no linked binary or Rust test ran on this host; Linux and macOS hardware was not available. See `portable/PLATFORMS.md` for the exact boundary.
+- The portable Rust code type-checks on 12 targets; hosted CI links and tests it, but no linked binary or Rust test ran on this host and Linux/macOS hardware was not available. See `portable/PLATFORMS.md` for the exact boundary.
+- Windows `BatteryStatus` exposes pack voltage and charge/discharge power, not AC adapter input wattage. No documented HP BIOS adapter-wattage field was verified, and the BIOS provider was inaccessible without elevation, so no charger-input value is displayed or fabricated.
+- The notification identity is verified through the Start Menu shortcut and AUMID; a UI Automation probe did not find a visible toast, so no automated banner-label check is claimed.

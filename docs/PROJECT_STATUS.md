@@ -3,14 +3,15 @@
 **Date:** 2026-11-09  
 **Application:** BatteryGuard tray monitor  
 **Build:** `battery/application.exe` — 99,328 bytes  
-**CI:** single tag-gated workflow; hosted run `42623422341` green with 11 installers; released as `v0.1.0`
+**CI:** single tag-gated workflow; hosted run `42629998330` green with 11 installers and the new Windows tray MSI; published release remains `v0.1.0` (CLI-only)
 
 ## Completed
 
 - Native Win32 tray application with owner-drawn menus and WinForms settings, schedule, log and rule dialogs.
 - **Charge policy split into `ChargePolicy`.** Float mode activates only after the measured charge reaches the ceiling; charging below the limit is never inhibited by float. The latch holds until the resume point, then charging restarts.
 - **Device controller layer:** `IBatteryController`, `HpBios`, `GenericBatteryController` and `BatteryControllerFactory`. HP gets charge control; other vendors get full monitoring with an explicit **Monitoring only** state.
-- **Voltage and power readout.** The tray tooltip, menu, status balloon and Settings battery card show the current pack voltage and charge/discharge power, for example `11.8 V · 0.0 W`. Unavailable values are omitted; zero watts is shown when voltage confirms a battery reading.
+- **Voltage and power readout.** The tray tooltip, menu, status balloon and Settings battery card show the current pack voltage and charge/discharge power, for example `11.8 V · 0.0 W`. Unavailable values are omitted; zero watts is shown when voltage confirms a battery reading. This is battery-pack power, not AC adapter input wattage.
+- **Windows tray MSI.** The branch MSI installs `application.exe`, `batteryguard.exe`, the icon and all 30 locale catalogs under `Program Files\BatteryGuard`. It creates an all-users Start Menu shortcut with `BatteryGuard.Tray` and an **Uninstall BatteryGuard** shortcut. The x64 MSI install/uninstall path is tested in CI; x86 and ARM64 are built but not cross-installed on the x64 runner.
 - Charge ceiling, resume point, float mode, scheduled time windows, overlap detection and conflict banners.
 - Battery health, capacity, cycle, temperature and remaining-time display.
 - System notifications, test notification, log viewer, export and 1 MiB rotation.
@@ -47,6 +48,7 @@ Passed in this session (2026-11-09):
 | `build.ps1` | csc exit 0 |
 | GitHub Actions `42623422341` | All 7 packaging jobs succeeded; 11 installers; Rust/CLI smoke tests passed; no Node/RPM warnings |
 | GitHub Actions `42624635716` | Tag run succeeded; GitHub Release `v0.1.0` published with exactly 11 installer assets |
+| GitHub Actions `42629998330` | All 7 packaging jobs succeeded; 11 installers; Windows x64 MSI install/uninstall, DEB install/run and PKG install/run checks passed |
 
 Locale inventory: 30 JSON files, 151 keys in each file including the `Monitoring only` key; no missing keys and no placeholder mismatches.
 
@@ -59,7 +61,7 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 - `portable/src/main.rs` provides a text/JSON/watch CLI; `Cargo.toml` and `rustc` build/test scripts are included.
 - `portable/scripts/check-targets.ps1` type-checks the library, test harness and CLI for 12 targets: x86/x64/ARM64 Windows, x86/x64/ARMv7/ARM64 Linux and Intel/Apple-silicon macOS.
 - The check passed 12/12. It uses `--emit=metadata`, so it validates conditional compilation and types but does not link or execute.
-- **Hosted verification:** GitHub Actions run `42623422341` linked and tested the Rust core on Windows x64/x86, Linux x64/ARM64 and macOS Intel/Apple silicon, then built 3 MSI, 6 Linux packages and 2 PKG files. The CLI printed `BatteryGuard portable core 0.1.0` on every runnable target.
+- **Hosted verification:** GitHub Actions run `42629998330` linked and tested the Rust core on Windows x64/x86, Linux x64/ARM64 and macOS Intel/Apple silicon, built 3 MSI, 6 Linux packages and 2 PKG files, installed the DEB and PKG and ran `batteryguard --version`, and installed/uninstalled the x64 MSI with the C# tray payload. The CLI printed `BatteryGuard portable core 0.1.0` on every runnable target.
 - **Not verified locally:** no linked `batteryguard` executable, no executed Rust tests and no local Linux/macOS runtime. This host has no MSVC linker; Application Control blocks Cargo, GNU rustc and the available lld/GNU linkers.
 - **Not included:** Linux/macOS widgets, cross-platform charge control and native Authenticode/Apple notarization. The installers carry Sigstore build-provenance attestations, not OS code signatures.
 
@@ -67,8 +69,8 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 
 - `.github/workflows/ci.yml` is the only workflow. It validates the Cargo version, builds the full matrix, attests the installers and uploads branch artifacts.
 - The release job is skipped unless the ref is `refs/tags/v<Cargo version>`; it filters assets to `.msi`, `.deb`, `.rpm`, `.AppImage` and `.pkg`.
-- Branch run `42623422341` covered all 7 native packaging jobs and produced 11 installers without warnings. Earlier runs exposed missing Cargo paths (`42622500646`) and Unix packaging paths; both were fixed before this run.
-- Tag run `42624635716` passed all jobs and published [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with exactly the 11 installer files; the tag points to commit `449245b`.
+- Branch run `42629998330` covered all 7 native packaging jobs and produced 11 installers. Its x64 MSI passed install, payload, Start Menu/uninstall-shortcut and uninstall checks; Linux DEB and macOS PKG install-and-run checks passed. Earlier runs exposed missing Cargo paths (`42622500646`), Unix packaging paths, the invalid `CommonProgramsFolder` WiX id and cross-architecture MSI installation; all were fixed.
+- Tag run `42624635716` passed all jobs and published [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with exactly the 11 installer files; the tag points to commit `449245b` and remains CLI-only.
 
 ## Known limitations
 
@@ -76,10 +78,13 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 2. **Translation review.** The non-English catalogs are machine-generated; this pass corrected charge, health and schedule terminology, but long sentences and technical wording have not been reviewed by native speakers.
 3. **Portable runtime.** Hosted CI now links, runs the unit tests and invokes the CLI on six native runners. This Windows host still cannot link locally because Cargo and the available linkers are blocked by Application Control; no Linux/macOS hardware was available for a real battery reading.
 4. **Live visual check.** Settings Arabic light/dark, English dark and the full Settings content were re-inspected with the electrical reading; status balloon capture was not possible because browser notifications occupied the desktop, so the final Windows label was not visually confirmed. The native tray menu could not be captured; its RTL flags are set but its pixels were not reviewed. 125%/150% DPI was not exercised.
-5. **Elevation.** HP's WMI provider requires an elevated process. `start.ps1` requests elevation; `-NoElevate` is intended for the logon task or for hosts that are already elevated. Tests that write charge mode need elevation.
-6. **Smart App Control.** Unsigned `application.exe` may be blocked on this machine; the launcher falls back to compiling the same source in the signed PowerShell host.
-7. **Language switch layout.** Choosing a different language updates the tray after refresh, but an already-open Settings window keeps its original layout until reopened.
-8. **Undocumented firmware.** HP charge modes are model-specific. Unsupported models fail closed to monitoring.
+5. **Notification banner automation.** `Test-AppIdentity` verifies the shortcut and AUMID, but no reliable automated test currently opens the real Windows banner and reads its app label; a UI Automation probe did not find a visible toast on this desktop.
+6. **Elevation.** HP's WMI provider requires an elevated process. `start.ps1` requests elevation; `-NoElevate` is intended for the logon task or for hosts that are already elevated. Tests that write charge mode need elevation.
+7. **BIOS charger wattage.** Windows `BatteryStatus` exposes pack voltage and charge/discharge power, not AC adapter input power. HP BIOS settings were not accessible without elevation and no documented adapter-wattage field was verified, so the UI does not fabricate a charger-power value.
+8. **Linux/macOS widgets.** No menu-bar or tray widget is included; only the CLI is packaged on those systems.
+9. **Smart App Control.** Unsigned `application.exe` may be blocked on this machine; the launcher falls back to compiling the same source in the signed PowerShell host.
+10. **Language switch layout.** Choosing a different language updates the tray after refresh, but an already-open Settings window keeps its original layout until reopened.
+11. **Undocumented firmware.** HP charge modes are model-specific. Unsupported models fail closed to monitoring.
 
 ## Out of scope
 

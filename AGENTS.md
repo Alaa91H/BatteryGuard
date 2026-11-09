@@ -41,6 +41,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File portable/scripts/test.ps1
 
 - `.github/workflows/ci.yml` is the only workflow. Do not add a second workflow for packaging, attestation or releases; extend this file instead.
 - Every push builds the installer matrix, creates build-provenance attestations and uploads branch artifacts. Only a `v*` tag may create or update a GitHub Release.
+- The Windows MSI bundles the C# tray, Rust CLI, icon, locale catalogs, Start Menu shortcut and uninstall shortcut. Linux and macOS packages remain CLI-only. CI installs/uninstalls the x64 MSI and installs/runs the DEB and PKG; x86/ARM64 MSI and RPM are build-only on the current runners.
 - The tag must be exactly `v` plus the version in `portable/Cargo.toml` (currently `v0.1.0`). The prepare job rejects a mismatch before building.
 - Release assets are restricted to `.msi`, `.deb`, `.rpm`, `.AppImage` and `.pkg`. Do not publish raw executables, archives, `.wixpdb`, debug symbols, logs or test data.
 - The current signature is GitHub/Sigstore keyless build provenance through `actions/attest-build-provenance`. It is not Windows Authenticode or Apple notarization. Do not describe it as either, and do not add certificate secrets without explicit approval and a documented verification step.
@@ -51,7 +52,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File portable/scripts/test.ps1
 
 `battery/tests/Test-Layout.ps1` resizes the three dialogs through ten representative client sizes, from 780×601 down to 380×300. It checks pinned action bars, content scrolling, the 660 px Settings content width, the 360 px rule layout and the language/direction combo text. It shows the forms off-screen, so it needs no elevation and no hardware writes.
 
-`battery/tests/Test-AppIdentity.ps1` verifies the Windows notification identity: it runs `AppIdentity.Install()`, then checks the current user's Start Menu shortcut for `System.AppUserModel.ID=BatteryGuard.Tray`, the PowerShell/exe target, arguments and description. It creates or replaces `%APPDATA%\Microsoft\Windows\Start Menu\Programs\BatteryGuard.lnk`; it needs no elevation and no hardware writes.
+`battery/tests/Test-AppIdentity.ps1` verifies the Windows notification identity: it runs `AppIdentity.Install()`, then checks the current user's Start Menu shortcut for `System.AppUserModel.ID=BatteryGuard.Tray`, the PowerShell/exe target, arguments and description. It creates or replaces `%APPDATA%\Microsoft\Windows\Start Menu\Programs\BatteryGuard.lnk`; it needs no elevation and no hardware writes. It does not open the real notification banner; a UI Automation probe on this desktop did not expose a visible toast.
 
 PowerShell scripts that contain non-ASCII text must be UTF-8 (BOM is accepted). The C# compiler uses `-codepage:65001`.
 
@@ -78,7 +79,7 @@ PowerShell scripts that contain non-ASCII text must be UTF-8 (BOM is accepted). 
 
 ## Generated files
 
-`application.exe`, `settings.json`, `interface.ini`, `theme.ini`, `capacity.ini`, `application.log`, `application.previous.log`, test screenshots and logs are local/generated. They are ignored by `.gitignore` and must not be committed. `portable/target/`, `dist/`, `packaging/windows/staging/` and temporary CI API/log files are generated and ignored.
+`application.exe`, `settings.json`, `interface.ini`, `theme.ini`, `capacity.ini`, `application.log`, `application.previous.log`, test screenshots and logs are local/generated. They are ignored by `.gitignore` and must not be committed. `portable/target/`, `dist/`, `packaging/windows/staging/`, `packaging/windows/ProductLocales.wxs` and temporary CI API/log files are generated and ignored.
 
 ## Documentation
 

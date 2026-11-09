@@ -46,6 +46,7 @@ portable/
   PLATFORMS.md         OS, architecture and packaging matrix
 packaging/
   windows/Product.wxs  WiX MSI definition
+  windows/generate-locales.ps1  WiX locale component generator
   linux/               DEB, RPM, AppImage and desktop assets
   macos/build-pkg.sh   macOS installer builder
 .github/workflows/
@@ -94,7 +95,7 @@ GitHub Actions builds native installers for all supported systems:
 | Linux x64, ARM64 | `.deb`, `.rpm`, `.AppImage` |
 | macOS Intel, Apple silicon | `.pkg` |
 
-The current release is [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0), with all 11 installers attached. These packages install the cross-platform `batteryguard` CLI from `portable/`; the C# Windows tray in `battery/` is not linked into them and remains a separate source build.
+The published release is [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0), with all 11 installers attached. Those assets install the cross-platform `batteryguard` CLI from `portable/`. Branch builds now produce a Windows MSI that contains both the C# tray and the Rust CLI: `application.exe`, `batteryguard.exe`, the 30 locale catalogs, an all-users Start Menu shortcut carrying `BatteryGuard.Tray`, and an uninstall shortcut. Linux DEB/RPM/AppImage and macOS PKG still bundle the CLI only. The tray MSI is not in `v0.1.0`; it will ship in the next version tag.
 
 Every branch build signs the installers with a keyless Sigstore build-provenance
 attestation and keeps them as workflow artifacts. A GitHub Release is created
@@ -119,11 +120,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-Layout.ps
 ## Status
 
 - Build: `battery/application.exe`, 99,328 bytes at the last local build.
-- Release CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the only workflow. Hosted run [42623422341](https://github.com/Alaa91H/BatteryGuard/actions/runs/42623422341) passed all seven native packaging jobs and produced 11 installers: three MSI, six Linux packages and two macOS PKG files. Branch builds attest and upload artifacts; a matching `v*` tag is the only path that publishes a GitHub Release. The tag release [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) is published with these 11 assets.
-- Portable core: the read-only Rust library, CLI and test harness type-check on 12 Windows/Linux/macOS targets. The hosted CI links, tests and runs `batteryguard --version` on six native runners. No linked binary or test run was possible locally because the MSVC linker is absent and Application Control blocks Cargo and the available GNU/lld linkers. Linux/macOS widgets and native Authenticode/notarization remain later work.
+- Release CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the only workflow. Hosted run [42629998330](https://github.com/Alaa91H/BatteryGuard/actions/runs/42629998330) passed all seven native packaging jobs and produced 11 installers: three MSI, six Linux packages and two macOS PKG files. The x64 MSI install/uninstall smoke test passed, as did native DEB and PKG install-and-run checks for `batteryguard --version`. Branch builds attest and upload artifacts; a matching `v*` tag is the only path that publishes a GitHub Release. The tag release [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) remains the earlier CLI-only release.
+- Portable core: the read-only Rust library, CLI and test harness type-check on 12 Windows/Linux/macOS targets. Run 42629998330 linked, tested and ran `batteryguard --version` on six native runners, and installed/ran the DEB and PKG packages. No linked binary or test run was possible locally because the MSVC linker is absent and Application Control blocks Cargo and the available GNU/lld linkers. Linux/macOS widgets, BIOS charger wattage and native Authenticode/notarization remain later work.
 - Float policy: 13/13 decision cases pass; float starts only at the limit and holds until the resume point.
 - Electrical readings: the tooltip, tray menu, status balloon and Settings card show pack voltage and charge/discharge power; the real reading was `11.8 V · 0.0 W` while the charger held the battery idle.
-- Notification identity: the Start Menu shortcut and `System.AppUserModel.ID` were verified as `BatteryGuard.Tray`; the banner label itself was not captured because browser notifications occupied the screen during the check.
+- Notification identity: the Start Menu shortcut and `System.AppUserModel.ID` were verified as `BatteryGuard.Tray`; the banner label itself was not captured because browser notifications occupied the screen during the check. No reliable automated banner-label test is included yet.
 - Localization: 30 catalogs, 151 keys each, placeholder validation clean.
 - Regression checks: float logic, schedule conflicts, UI polish, settings, battery readings, notification identity, log rotation, icon rendering and adaptive layout passed.
 - Window sizing: Settings 780×1000 design size (minimum 620×480; content scrolls and the Save/Cancel/Test footer stays pinned), schedule window 500×400 (minimum 440×320; content scrolls and the buttons stay pinned), activity log 760×560 (minimum 520×360; the action bar wraps). All are DPI-aware and clamp to the working area.

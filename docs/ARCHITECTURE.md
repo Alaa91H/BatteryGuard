@@ -99,8 +99,8 @@ All platform modules are behind `#[cfg(target_os)]`; the library, test harness a
 
 1. `prepare` reads `portable/Cargo.toml`, validates a three-part version and, for a tag, requires `refs/tags/v<version>`. It derives a snapshot suffix for branch builds.
 2. Seven native jobs build the CLI for Windows x86/x64/ARM64, Linux x64/ARM64 and macOS Intel/Apple silicon. Linux uses static musl targets. Every runnable target runs the Rust tests and `batteryguard --version`; Windows ARM64 is cross-compiled but not executed on the x64 hosted runner.
-3. The packaging jobs create the MSI, DEB, RPM, AppImage and PKG files. The release job downloads the artifacts, filters by the installer extension allowlist, attests each subject and uploads the branch artifacts.
-4. A tag event runs the same jobs and then creates the GitHub Release from the filtered installer set. A branch event stops before the release job.
+3. The packaging jobs create the MSI, DEB, RPM, AppImage and PKG files. The Windows job also builds the C# tray, generates the 30 locale components and stages the tray, CLI, icon and catalogs; the x64 MSI is installed, checked for payload and Start Menu/uninstall shortcuts, then removed. Linux and macOS jobs install their DEB and PKG and run the installed CLI as a smoke test.
+4. The release job downloads the artifacts, filters by the installer extension allowlist, attests each subject and uploads the branch artifacts. A tag event then creates the GitHub Release from the filtered installer set; a branch event stops before it.
 
 Artifacts are signed with GitHub/Sigstore build provenance, bound to the repository, commit and workflow identity. This is a supply-chain attestation, not Windows Authenticode or Apple notarization. The workflow needs no long-lived signing key; native OS signing remains a separate hardening phase.
 
@@ -141,6 +141,8 @@ Artifacts are signed with GitHub/Sigstore build provenance, bound to the reposit
 | `scripts/restart.ps1` | Stop the launcher and start it again. |
 | `scripts/control.ps1` | Hardware/CLI operations. |
 | `tests/*.ps1` | Regression and hardware checks. |
+| `packaging/windows/Product.wxs` | Per-machine WiX MSI: tray, CLI, locales, Start Menu and uninstall shortcuts. |
+| `packaging/windows/generate-locales.ps1` | Generates the WiX locale component group from `battery/locales/`. |
 | `settings.json`, `interface.ini`, `theme.ini`, `capacity.ini` | Local data. |
 | `application.log`, `application.previous.log` | Activity log and archive. |
 

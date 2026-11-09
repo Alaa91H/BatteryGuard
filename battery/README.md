@@ -73,6 +73,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File battery/scripts/build.ps1
 
 The script uses the .NET Framework compiler that ships with Windows, fails on compiler errors and prints the output size. No NuGet or network access is required.
 
+## Windows installer
+
+Branch CI builds a per-machine WiX MSI that installs the tray and the portable CLI together under `Program Files\BatteryGuard`:
+
+- `application.exe` and `batteryguard.exe`;
+- `resources\application.ico` and all 30 `locales\*.json` catalogs;
+- an all-users Start Menu shortcut for the tray with `System.AppUserModel.ID=BatteryGuard.Tray`;
+- an **Uninstall BatteryGuard** Start Menu shortcut that runs `msiexec /x`.
+
+The workflow installs the x64 MSI, checks the payload and both shortcuts, then uninstalls it. The x86 and ARM64 MSIs are built in the matrix but are not cross-installed on the x64 runner. See [`../packaging/windows/Product.wxs`](../packaging/windows/Product.wxs) and [`../docs/RELEASE.md`](../docs/RELEASE.md). The published `v0.1.0` release predates this tray MSI and contains the CLI-only packages.
+
 ## Run
 
 ```powershell
@@ -186,7 +197,7 @@ Hardware/elevation-dependent checks:
 - The 30 catalogs are machine-generated from the curated English source with targeted glossary corrections. Native-speaker review is still advisable, especially for technical terms and long sentences.
 - The settings window cannot re-layout itself in a new language until it is reopened; the tray menu and tooltip update after the save/refresh cycle.
 - The adaptive-layout pass re-inspected Settings in Arabic light/dark and schedule/log in Arabic light. English and dark schedule/log captures were regenerated but not re-inspected. The native tray popup menu could not be captured from the test host; its RTL flags are set in code but its pixels were not reviewed. 125%/150% DPI and non-HP hardware were not exercised.
-- The notification identity was verified through the Start Menu shortcut and its `System.AppUserModel.ID`. A real notification banner was requested from the running tray, but the captured desktop was occupied by browser notifications, so the final Windows label was not visually confirmed.
+- The notification identity was verified through the Start Menu shortcut and its `System.AppUserModel.ID`. A real notification banner was requested from the running tray, but the captured desktop was occupied by browser notifications, so the final Windows label was not visually confirmed. The current automated suite does not open or inspect the banner.
 - The 30 catalogs received a terminology/consistency pass for charge, health and schedule terms; native-speaker review is still advisable.
 - HP's WMI interface is undocumented and model-specific. Unsupported models fail closed to monitoring rather than guessing a mode.
 - Charge control on Lenovo, Dell, ASUS, MSI and other vendors is not implemented; those devices are monitored only.

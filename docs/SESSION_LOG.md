@@ -1,5 +1,67 @@
 # Session log
 
+## 2026-11-09 — Windows tray MSI and native package checks
+
+### Goal
+
+Give the existing Windows tray a professional installer with a Start Menu
+shortcut and uninstall path, and exercise the native packages rather than only
+building them. Keep the pre-existing `v0.1.0` release unchanged.
+
+### Work performed
+
+1. Added `packaging/windows/generate-locales.ps1`, which emits one WiX
+   component per `battery/locales/*.json` file.
+2. Rewrote `packaging/windows/Product.wxs` to install the C# tray, Rust CLI,
+   application icon and locale catalogs. It creates an all-users Start Menu
+   shortcut with `System.AppUserModel.ID=BatteryGuard.Tray` and an uninstall
+   shortcut.
+3. Updated CI to build the C# tray, stage its payload and generate the locale
+   WiX source before invoking WiX 5.
+4. Added an x64 MSI smoke test: install, check `application.exe`,
+   `batteryguard.exe`, the icon, Arabic and Chinese catalogs, both Start Menu
+   shortcuts, then uninstall.
+5. Added native package checks: install the DEB and run `batteryguard
+   --version` plus the AppImage, check the RPM metadata, and install and run the
+   macOS PKG.
+
+### Verification
+
+- Hosted run [`42629998330`](https://github.com/Alaa91H/BatteryGuard/actions/runs/42629998330)
+  passed all seven packaging jobs and produced the same 11 installer assets.
+- The x64 MSI install, payload, Start Menu shortcut, uninstall shortcut and
+  uninstall checks passed. The x86 and ARM64 MSIs built, but Windows Installer
+  cannot install the ARM64 package on the x64 runner; the x86 package resolves
+  under Program Files (x86).
+- Linux x64/ARM64 installed the DEB and ran `BatteryGuard portable core 0.1.0`;
+  the AppImage also ran. The RPM metadata check passed. macOS Intel/Apple
+  silicon installed the PKG and ran the installed CLI.
+- Earlier runs exposed `CommonProgramsFolder` (invalid in WiX 5) and the
+  cross-architecture install limitation; both were corrected.
+
+### Limitations observed
+
+- No local link or Rust runtime test: this host still lacks the MSVC linker and
+  Application Control blocks Cargo and the available GNU/lld linkers.
+- No real Linux or macOS battery was available; hosted install checks are not
+  hardware readings.
+- No native Authenticode/notarization; only Sigstore build provenance.
+- BIOS AC adapter input wattage was not available as a documented, readable
+  field; the UI continues to show pack voltage and charge/discharge power.
+- A UI Automation probe of a real notification did not find a visible toast on
+  this desktop. `Test-AppIdentity` still verifies the shortcut and AUMID, not
+  the banner label.
+- No Linux/macOS widget or menu-bar UI was added.
+- The new MSI is not in the published `v0.1.0` release.
+
+### Next
+
+- Tag a new version when the tray MSI is accepted, then verify it on a clean
+  Windows VM and add native signing.
+- Verify Linux/macOS packages and widgets on real hardware.
+- Add a reliable interactive notification-banner check and a documented BIOS
+  adapter-power source if one becomes available.
+
 ## 2026-11-09 — cross-platform installers and tag-gated release CI
 
 ### Goal
