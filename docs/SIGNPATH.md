@@ -14,9 +14,9 @@ unsigned and Smart App Control will continue to block them.
 
 ## Before applying
 
-- Publish a public release containing the exact artifacts to sign. The current
-  `v0.1.0` release has MSI files but no EXE bootstrapper, so it cannot cover the
-  final EXE request. Create a release with the MSI and EXE before applying.
+- Use the public `v0.2.0` release, which contains the MSI and EXE bootstrapper.
+  The earlier `v0.1.0` release is CLI-only and cannot cover the final EXE
+  request.
 - Keep the [code signing policy](CODE_SIGNING_POLICY.md) linked from
   the project home page. It defines the signing scope, roles, approval and
   privacy statement.

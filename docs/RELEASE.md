@@ -20,12 +20,12 @@ branch run; a tag run is never cancelled by the concurrency rule.
 `portable/Cargo.toml` is the source of truth:
 
 ```toml
-version = "0.1.0"
+version = "0.2.0"
 ```
 
-- Normal branch runs use `0.1.0-snapshot.<short-sha>` in installer filenames.
-- A release tag must be exactly `v` plus the Cargo version. `v0.1.0` is valid
-  for `0.1.0`; `v0.2.0` or `v0.1` fails before any build starts.
+- Normal branch runs use `0.2.0-snapshot.<short-sha>` in installer filenames.
+- A release tag must be exactly `v` plus the Cargo version. `v0.2.0` is valid
+  for `0.2.0`; `v0.1.0` or `v0.1` fails before any build starts.
 - The tag version is used in the release title, package metadata and asset
   names. No date or commit-derived version is used for a tagged release.
 
@@ -34,8 +34,8 @@ the documentation, committing to `main`, then creating and pushing the matching
 tag:
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
 ## Installer matrix
@@ -180,11 +180,10 @@ CI jobs use the platform tools installed on their hosted runner.
 
 The current branch MSI and EXE payload is the C# Windows tray plus the Rust
 `batteryguard` CLI. The Linux DEB/RPM/AppImage and macOS PKG payloads remain
-the Rust CLI only. The published `v0.1.0` assets predate the tray installers
-and are CLI-only; the tray MSI and EXE will be included in the next version
-tag. The branch run installs the x64 MSI and EXE and upgrades the published
-`v0.1.0` MSI on a clean hosted runner, but it does not exercise the interactive
-wizard or a physical clean VM.
+the Rust CLI only. The `v0.2.0` release includes the tray MSI and EXE; the earlier `v0.1.0`
+assets remain CLI-only. The branch run installs the x64 MSI and EXE and upgrades
+the published `v0.1.0` MSI on a clean hosted runner, but it does not exercise
+the interactive wizard or a physical clean VM.
 
 ## Verification boundaries
 
