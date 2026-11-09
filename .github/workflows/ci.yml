@@ -31,7 +31,7 @@ jobs:
       release: ${{ steps.version.outputs.release }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Derive version and release flag
         id: version
@@ -129,7 +129,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust target
         uses: dtolnay/rust-toolchain@stable
@@ -145,6 +145,7 @@ jobs:
           target_env="$(echo "$TARGET" | tr '[:lower:]-' '[:upper:]_')"
           echo "CC_${target_env}=musl-gcc" >> "$GITHUB_ENV"
           echo "CARGO_TARGET_${target_env}_LINKER=musl-gcc" >> "$GITHUB_ENV"
+          echo "RUSTFLAGS=-D warnings -C link-arg=-Wl,--build-id=sha1" >> "$GITHUB_ENV"
 
       - name: Install WiX
         if: matrix.platform == 'windows'
@@ -161,6 +162,9 @@ jobs:
           cargo build --manifest-path portable/Cargo.toml --release --locked --target "$TARGET"
           if [[ "${{ matrix.test }}" == "true" ]]; then
             cargo test --manifest-path portable/Cargo.toml --release --locked --target "$TARGET"
+            binary="portable/target/$TARGET/release/batteryguard"
+            if [[ "$TARGET" == *windows* ]]; then binary="${binary}.exe"; fi
+            "$binary" --version
           fi
 
       - name: Package Windows MSI
@@ -200,12 +204,12 @@ jobs:
           find dist -maxdepth 1 -type f -exec basename {} \; | sort
 
       - name: Sign with GitHub artifact attestation
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/*
 
       - name: Upload installers
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: installers-${{ matrix.id }}
           path: dist/*
@@ -223,7 +227,7 @@ jobs:
       contents: write
     steps:
       - name: Download every installer
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: installers-*
           path: release
@@ -251,7 +255,7 @@ jobs:
           find release -maxdepth 1 -type f -exec basename {} \; | sort
 
       - name: Create release from tag
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: BatteryGuard ${{ needs.prepare.outputs.version }}
