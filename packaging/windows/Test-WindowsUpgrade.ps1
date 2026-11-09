@@ -108,16 +108,20 @@ try {
 
     $newProducts = @(Get-BatteryGuardProducts)
     foreach ($product in $newProducts) {
-        Write-Output ("Apps & Features entry: " + $product.PSChildName + " version " + $product.DisplayVersion)
+        Write-Output ("Registered product: " + $product.PSChildName + " version " + $product.DisplayVersion + " systemComponent=" + $product.SystemComponent)
     }
     $oldRemaining = @($newProducts | Where-Object { $oldCodes -contains $_.PSChildName })
     if ($oldRemaining.Count -gt 0) {
         throw ('The old MSI product remains after upgrade: ' + ($oldRemaining.PSChildName -join ', '))
     }
-    if ($newProducts.Count -ne 1) {
-        throw ("Expected one BatteryGuard Apps & Features entry after upgrade, found $($newProducts.Count).")
+    $visibleProducts = @($newProducts | Where-Object { $_.SystemComponent -ne 1 })
+    if ($visibleProducts.Count -ne 1) {
+        throw ("Expected one visible BatteryGuard Apps & Features entry after upgrade, found $($visibleProducts.Count).")
     }
-    Write-Output ("Upgraded product: " + $newProducts[0].PSChildName)
+    if ($newProducts.Count -lt 2) {
+        Write-Warning 'No hidden MSI registration was found behind the bundle.'
+    }
+    Write-Output ("Visible Apps & Features product: " + $visibleProducts[0].PSChildName)
 
     Write-Output 'Uninstalling new EXE bundle'
     $remove = Start-Process -FilePath $bundlePath -ArgumentList @(
