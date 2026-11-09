@@ -112,6 +112,21 @@ if ($engineType) {
     $chargeMinutes = $engineType.GetMethod('MinutesRemaining', $bind).Invoke($engine, $null)
     'charge estimate   = {0} min (expected 120) -> {1}' -f $chargeMinutes, $(if ($chargeMinutes -eq 120) { 'OK' } else { 'MISMATCH' })
 
+    $limitMinutes = $engineType.GetMethod('MinutesToPercent', $bind).Invoke($engine, @(60))
+    'limit estimate    = {0} min (expected 24) -> {1}' -f $limitMinutes, $(if ($limitMinutes -eq 24) { 'OK' } else { 'MISMATCH' })
+
+    $policyType = $engineType.Assembly.GetType('BatteryGuardTray.Policy', $false)
+    if ($policyType) {
+        $policy = [System.Runtime.Serialization.FormatterServices]::GetUninitializedObject($policyType)
+        $policyType.GetField('Auto').SetValue($policy, $false)
+        $policyType.GetField('Ceiling').SetValue($policy, 60)
+        $engineType.GetField('Current').SetValue($engine, $policy)
+        $configuredMinutes = $engineType.GetMethod('MinutesRemaining', $bind).Invoke($engine, $null)
+        'configured time   = {0} min (expected 24) -> {1}' -f $configuredMinutes, $(if ($configuredMinutes -eq 24) { 'OK' } else { 'MISMATCH' })
+    } else {
+        'configured time   = Policy type not found'
+    }
+
     $engineType.GetField('Charging').SetValue($engine, $false)
     $engineType.GetField('Discharging').SetValue($engine, $true)
     $engineType.GetField('DischargeRate').SetValue($engine, 8000)

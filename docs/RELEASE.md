@@ -58,8 +58,8 @@ Tests run on every native job: Windows x64/x86, Linux x64/ARM64 and both macOS
 architectures. Windows ARM64 is cross-compiled and packaged but cannot execute
 on the x64 hosted runner. `RUSTFLAGS=-D warnings` makes Rust warnings fatal.
 The Windows x64 job also runs the hardware-independent C# suite (float policy,
-schedule conflicts, settings persistence, notification identity, log rotation,
-icon rendering and adaptive layout). The Windows x64 job installs the MSI and
+controller profiles and safety gates, schedule conflicts, settings persistence,
+notification identity, log rotation, icon rendering and adaptive layout). The Windows x64 job installs the MSI and
 the EXE bootstrapper, verifies the tray, CLI, icon, locales and both Start Menu
 shortcuts, then uninstalls both. It also installs the published `v0.1.0` MSI,
 upgrades it with the new EXE, requires the old product to disappear and exactly

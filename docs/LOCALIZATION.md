@@ -39,11 +39,12 @@
 
 `language=` in `interface.ini` accepts `auto` or one of the codes above.
 
-- `auto` uses `CultureInfo.CurrentUICulture` (the Windows display language).
+- `auto` uses the Windows user default UI language (`GetUserDefaultUILanguage`), not the hosting process's `CurrentUICulture`. If that API is unavailable, it falls back to the installed UI culture, then the process culture.
 - Chinese is mapped by script/region: Hant/TW/HK/MO → `zh-TW`; other Chinese → `zh-CN`.
 - Legacy .NET codes `iw` and `in` normalize to `he` and `id`.
 - An unsupported language falls back to English.
 - `direction=auto` follows the language; `rtl`/`ltr` override it.
+- The tray **Language** submenu, immediately above **Appearance**, writes the same `language=` value, reloads the labels immediately and preserves an explicit direction override.
 
 ## Catalog format
 

@@ -13,7 +13,7 @@ A separate read-only Rust core under [`../portable`](../portable/README.md) is t
 - **Electrical readout.** The tray tooltip, tray menu, status balloon and Settings battery card show pack voltage and charge/discharge power from Windows battery WMI, for example `11.8 V · 0.0 W`. A zero wattage is shown while the charger holds the battery idle; unavailable readings are omitted.
 - **Notifications with a stable identity.** Full-charge, low-battery and battery-health thresholds, plus an explicit test notification. Windows labels them **BatteryGuard** through the `BatteryGuard.Tray` AppUserModelID and a matching Start Menu shortcut, including when the UI runs inside the PowerShell host.
 - **Activity log.** Last 300 lines, export and automatic rotation at 1 MiB.
-- **30 languages.** English source and fallback; Automatic follows Windows; RTL for Arabic, Urdu, Persian and Hebrew.
+- **30 languages.** English source and fallback; a **Language** submenu above **Appearance** switches manually and refreshes immediately; Automatic follows Windows; RTL for Arabic, Urdu, Persian and Hebrew.
 - **Theme and accessibility.** Light, dark and system theme; owner-drawn menus; high-contrast battery icon rendering.
 - **Adaptive dialogs.** Settings, schedule and log windows clamp to the working area, keep their action buttons visible, scroll long content and wrap toolbars on narrow screens.
 
@@ -21,7 +21,7 @@ A separate read-only Rust core under [`../portable`](../portable/README.md) is t
 
 - Windows 10 or 11.
 - .NET Framework 4.x (included with Windows).
-- Charge control: a supported HP notebook and an elevated session for the HP BIOS WMI provider (`hpqBIntM`). Other vendors are monitoring-only.
+- Charge control: a supported HP notebook and an elevated session for the HP BIOS WMI provider (`hpqBIntM`). Acer, Dell and Lenovo are candidate profiles only; they have no writer in this build. Other vendors are monitoring-only.
 - PowerShell 5.1 for scripts and tests.
 
 The app never uses forced discharge. It writes only HP charge modes `0x00` (auto) and `0x05` (inhibit). See [`../docs/DEVICE_SUPPORT.md`](../docs/DEVICE_SUPPORT.md) for the vendor matrix and safety model.
@@ -34,6 +34,7 @@ battery/
     Program.cs            entry point, paths, startup, CLI, log rotation, migration, mutex
     TrayApp.cs            window procedure, tick, tray icon, menu, notifications
     Engine.cs             state, charge policy application, presets and schedules
+    Controllers.cs        fingerprints, profiles, capabilities, WriteGuard and WMI gateway
     Wmi.cs                battery readings, HP WMI controller and generic fallback
     AppIdentity.cs        process AUMID and Start Menu shortcut for notifications
     Config.cs             settings.json, interface.ini, schedule model, autostart
@@ -52,6 +53,7 @@ battery/
     restart.ps1           stop the launcher and start it again
     control.ps1           command-line charge manager
     probe-*.ps1           read-only hardware probes
+    simulate-controller.ps1  replay controller scenarios without hardware
   tests/
     Test-*.ps1            regression checks
     verify.ps1            end-to-end verification helper
@@ -119,10 +121,11 @@ The tray has a separate icon state and color for floating, and the tooltip repor
 | Family | Monitoring | Charge control |
 | --- | --- | --- |
 | HP notebooks | Yes | Yes, when `hpqBIntM` is available |
-| Lenovo, Dell, ASUS, MSI, Acer, Razer, Samsung and others | Yes | No — monitoring only |
+| Acer, Lenovo, Dell | Yes | Candidate profiles only; no writer |
+| ASUS, MSI, Razer, Samsung and others | Yes | No — monitoring only |
 | Desktops / unknown hardware | Yes, if a battery exists | No |
 
-`DeviceInfo` reads the manufacturer and model; `BatteryControllerFactory` picks `HpBios` only for HP/Hewlett/HPE. Any provider failure falls back to `GenericBatteryController`, which reports `CanControlCharge = false`. The tray disables charge actions and labels the state **Monitoring only**. See [`../docs/DEVICE_SUPPORT.md`](../docs/DEVICE_SUPPORT.md).
+`DeviceInfo` builds a read-only `DeviceFingerprint` from manufacturer, product, board and BIOS fields. `DeviceProfileCatalog` matches embedded profiles; `BatteryControllerFactory` registers a writer only when the profile is `LabVerified` or `FieldVerified`. HP is the only such profile. Acer, Dell and Lenovo match candidate profiles and are logged, but no writer is created. Any provider failure falls back to `GenericBatteryController`, which reports `CanControlCharge = false`. The tray disables charge actions and labels the state **Monitoring only**; Settings hides the threshold slider rather than showing a generic 50–100% control. See [`../docs/DEVICE_SUPPORT.md`](../docs/DEVICE_SUPPORT.md) and [`../docs/CONTROLLER_VALIDATION.md`](../docs/CONTROLLER_VALIDATION.md).
 
 ## Settings and data
 
@@ -166,6 +169,7 @@ Hardware-independent:
 
 ```powershell
 powershell -File battery/tests/Test-FloatLogic.ps1
+powershell -File battery/tests/Test-ControllerFoundation.ps1
 powershell -File battery/tests/Test-ScheduleConflict.ps1
 powershell -File battery/tests/Test-UiPolish.ps1
 powershell -File battery/tests/Test-Settings.ps1
@@ -174,9 +178,26 @@ powershell -File battery/tests/Test-AppIdentity.ps1
 powershell -File battery/tests/Test-LogRotation.ps1
 powershell -File battery/tests/Test-Icons.ps1
 powershell -File battery/tests/Test-Layout.ps1
+powershell -File battery/tests/Test-TrayMenu.ps1
+powershell -File battery/tests/Test-LanguageAuto.ps1
 ```
 
-All tests compile every `src/*.cs` module. `Test-FloatLogic` checks the 13 charge/float decisions without touching hardware. `Test-UiPolish` temporarily writes `interface.ini` with `language=en` and restores it. `Test-Layout` resizes the dialogs from 780×601 down to 380×300 and checks pinned action bars, scrolling, combo text and the 360 px rule layout. `Test-AppIdentity` creates or replaces the current user's BatteryGuard Start Menu shortcut and verifies its AUMID, target, arguments and description.
+Injected-mode tray checks (real tray, no charge-write path; `Test-TrayHost`
+needs an elevated shell for the logon-task check):
+
+```powershell
+powershell -File battery/tests/Test-UI.ps1
+powershell -File battery/tests/Test-Theme.ps1
+powershell -File battery/tests/Test-TrayHost.ps1
+```
+
+These set `BATTERYGUARD_TEST_CONTROLLER=monitoring`; the factory returns a
+monitoring-only controller before any provider or WMI gateway, the log shows
+`test controller: monitoring-only` and `cap=monitoring`, and every charge
+request is refused. The real HP mode read `Auto` before and after each run, and
+no tray or logon task remained.
+
+All tests compile every `src/*.cs` module. `Test-FloatLogic` checks the 13 charge/float decisions without touching hardware. `Test-ControllerFoundation` drives `HpBios` through a simulated WMI gateway and checks profile matching, capability gates, unplugged inhibition, access denial, empty/mismatched read-back and rollback. `Test-UiPolish` temporarily writes `interface.ini` with `language=en` and restores it. `Test-Layout` resizes the dialogs from 780×601 down to 380×300 and checks pinned action bars, scrolling, combo text and the 360 px rule layout. `Test-TrayMenu` builds the native popup menu with a synthetic charging state and checks that the charge time appears next to the active limit, disappears at the limit, and stays separate under standard charging. It also verifies that the Language submenu sits immediately above Appearance, that a manual language choice is persisted, and that an injected Acer candidate controller shows **Monitoring only** with no threshold menu item; its Settings form also attaches no slider or limit checkbox. A synthetic fixed-80% writable profile verifies the capability-only Settings card and the absence of a generic slider; no non-HP provider is enabled. `Test-LanguageAuto` changes the process UI culture and confirms that `language=auto` still follows the Windows user UI language. `Test-AppIdentity` creates or replaces the current user's BatteryGuard Start Menu shortcut and verifies its AUMID, target, arguments and description.
 
 Visual review (no hardware, WMI writes or elevation):
 
@@ -191,7 +212,8 @@ It writes 13 PNGs for Settings, schedule and log in English/Arabic and light/dar
 Hardware/elevation-dependent checks:
 
 - `Test-FloatMode.ps1` samples the real charger and battery; it reports SKIP when AC is disconnected.
-- `Test-Tray.ps1`, `Test-TrayHost.ps1`, `Test-UI.ps1`, `Test-Theme.ps1` and `Test-ThemeLive.ps1` start the tray and may create/remove the logon task. Run them elevated.
+- `Test-Tray.ps1` and `verify.ps1` are write-capable hardware checks. They may change the charge mode and are intentionally not part of the safe suite.
+- `Test-ThemeLive.ps1` changes only the Windows theme registry; it passed safely.
 
 ## Known limitations
 
@@ -201,11 +223,12 @@ Hardware/elevation-dependent checks:
 - The notification identity was verified through the Start Menu shortcut and its `System.AppUserModel.ID`. A real notification banner was requested from the running tray, but the captured desktop was occupied by browser notifications, so the final Windows label was not visually confirmed. The current automated suite does not open or inspect the banner.
 - The 30 catalogs received a terminology/consistency pass for charge, health and schedule terms; native-speaker review is still advisable.
 - HP's WMI interface is undocumented and model-specific. Unsupported models fail closed to monitoring rather than guessing a mode.
-- Charge control on Lenovo, Dell, ASUS, MSI and other vendors is not implemented; those devices are monitored only.
+- Charge control on Acer, Lenovo, Dell, ASUS, MSI and other vendors is not implemented; those devices are monitored only. Acer, Dell and Lenovo have read-only candidate profiles for diagnostics, but no writer is enabled without independent hardware validation.
 
 ## Related documentation
 
 - [`../docs/DEVICE_SUPPORT.md`](../docs/DEVICE_SUPPORT.md)
+- [`../docs/CONTROLLER_VALIDATION.md`](../docs/CONTROLLER_VALIDATION.md)
 - [`../portable/README.md`](../portable/README.md)
 - [`../portable/PLATFORMS.md`](../portable/PLATFORMS.md)
 - [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)

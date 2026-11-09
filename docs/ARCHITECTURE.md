@@ -7,8 +7,8 @@ BatteryGuard is one .NET Framework 4.x process. There is no service and no netwo
 - A message-only Win32 window owns the tray icon and receives `WM_TIMER`, tray callbacks, `WM_REFRESH`, theme changes and shutdown.
 - `Shell_NotifyIcon` displays the icon; a native popup menu provides status and actions.
 - WinForms is used only for the Settings, Add/Edit schedule window and Activity log dialogs.
-- `System.Management` talks to the HP WMI provider through `IBatteryController`. Other vendors receive a read-only controller.
-- All charge writes are limited to auto (`0x00`) and inhibit (`0x05`).
+- `System.Management` talks to the HP WMI provider through `IWmiGateway` and `IChargeController`. Other vendors receive a read-only controller.
+- All production charge writes pass through `WriteGuard`, which allows only auto and inhibit, requires AC for inhibit, and verifies each write with a read-back.
 - A mutex prevents two tray instances.
 - `AppIdentity` sets the process AppUserModelID to `BatteryGuard.Tray` before the tray window is created and maintains a matching Start Menu shortcut. Windows uses that identity for notifications even when the UI is hosted by `powershell.exe`.
 
@@ -22,11 +22,18 @@ When Smart App Control blocks unsigned executables, `scripts/start.ps1` compiles
 | `TrayApp` | Window procedure, tick, tray icon, menu, notifications, settings/log windows. |
 | `Engine` | Reads battery/controller state, evaluates the charge decision, applies presets and schedules. |
 | `ChargePolicy` / `ChargeDecision` | Pure float/charge decision table, testable without WMI. |
-| `IBatteryController` | Contract for vendor adapters: capability, read mode, set auto, set inhibit. |
-| `HpBios` | HP `hpqBIntM` WMI read/write with signature and read-back. |
-| `GenericBatteryController` | Monitoring-only adapter for non-HP hardware. |
-| `BatteryControllerFactory` | Vendor detection and safe HP-to-generic fallback. |
-| `DeviceInfo` | Cached `Win32_ComputerSystem` manufacturer/model and HP detection. |
+| `IBatteryController` | Legacy contract for vendor adapters: read mode, set auto, set inhibit. |
+| `IChargeController` | Capability-aware contract: fingerprint, profile, `RequestInhibit`, `RequestAuto` and a structured result. |
+| `DeviceFingerprint` | Read-only SMBIOS/WMI identity: manufacturer, product, board, BIOS, family and SKU; no serial number. |
+| `DeviceProfile` / `DeviceProfileCatalog` | Embedded profile, interface, capabilities, evidence status and wildcard matching. |
+| `ControllerCapabilities` | `AutoInhibit`, `FixedThreshold`, `StartStopThreshold` or `MonitoringOnly`, with allowed limits. |
+| `WriteGuard` | Single safety gate: mode allow-list, AC check, read-back and one rollback on mismatch. |
+| `IControllerProvider` | Ordered provider registry; HP is the only write-capable provider in this build. |
+| `HpBios` | HP `hpqBIntM` WMI read/write through `IWmiGateway`, with the legacy setters retained for hardware tests. |
+| `HpBiosWmiGateway` / `SimulatedWmiGateway` | Real and hardware-free WMI transports for the HP protocol. |
+| `GenericBatteryController` | Monitoring-only adapter for non-HP and candidate hardware. |
+| `BatteryControllerFactory` | Profile detection, provider registration and fail-closed generic fallback. |
+| `DeviceInfo` | Cached device fingerprint and matched profile. |
 | `BatteryInfo` | Battery percentage, capacities, health, pack voltage, charge/discharge power, cycles and temperature. |
 | `AppIdentity` | Process AUMID and Start Menu shortcut used for the Windows notification label. |
 | `GuardConfig` | `settings.json` model and persistence. |
@@ -49,7 +56,7 @@ When Smart App Control blocks unsigned executables, `scripts/start.ps1` compiles
    - below the ceiling: no float; release a stale inhibit so charging reaches the limit;
    - at/above the ceiling: inhibit; latch float only when float mode is on;
    - below the ceiling while floating: keep inhibit until the resume point, then restore auto.
-5. `Engine` applies the action only when `apply` is true and confirms it with a mode read-back. `FloatActive` is updated from the decision on every tick, including read-only ticks.
+5. `Engine` applies the action only when `apply` is true. `WriteGuard` checks capabilities and AC state, writes once, confirms with a mode read-back and rolls back once on mismatch. `FloatActive` is updated from the decision on every tick, including read-only ticks.
 6. `TrayApp` updates the icon, tooltip and menu, including the voltage/power reading when available, then checks full/low/health alerts, schedule conflicts and float drain warnings.
 7. `WM_TIMER` repeats the cycle; `WM_REFRESH` reloads `settings.json` and `interface.ini` after a settings save.
 
@@ -70,12 +77,13 @@ BatteryInfo + IBatteryController -> Engine + ChargePolicy -> TrayApp -> icon/men
 
 ## Device layer
 
-`BatteryControllerFactory.Create()` checks `DeviceInfo.IsHp`:
+`BatteryControllerFactory.Create()` builds a `DeviceFingerprint` and matches it against `DeviceProfileCatalog`:
 
-- HP/Hewlett/HPE: try `HpBios`; log `controller: HP <model> (charge control)`. On any constructor or WMI failure, log the reason and fall through.
-- Everything else: `GenericBatteryController`, `CanControlCharge = false`, `ReadMode()` = `Unsupported`, write methods return `false`.
+- HP/Hewlett/HPE matches the field-verified HP profile. `HpBios` is constructed through `HpBiosWmiGateway`; a constructor or WMI failure logs the reason and falls through.
+- Acer, Lenovo and Dell match candidate profiles. They are logged with their interface and capability, but `CanWrite` is false, so no provider is created.
+- Everything else uses `GenericBatteryController`, `CanControlCharge = false`, `ReadMode()` = `Unsupported` and a `MonitoringOnly` capability.
 
-`Engine` exposes `CanControlCharge` and `IsHpDevice`; the tray uses them for icon color, badge, float warnings, menu enablement and the `Monitoring only` label. This keeps vendor detection out of the UI and prevents accidental writes on unsupported hardware.
+`Engine` exposes `CanControlCharge`, `Capabilities` and `ControllerProfile`; the tray uses them for icon color, badge, float warnings, menu enablement and the `Monitoring only` label. `ControllerCapabilities.DisplayName` is the single capability description used by the tray and Settings. `SettingsForm` derives its charge-control layout from the matched profile: `AutoInhibit` gets the full limit/resume controls, fixed and start-stop capabilities get a capability-only card with no 50–100% slider, and a non-writable profile gets **Monitoring only**. This keeps vendor detection out of the UI and prevents accidental writes on unsupported hardware. `WriteGuard` is the only production write path.
 
 ## Portable core (phase 1)
 
@@ -98,7 +106,7 @@ All platform modules are behind `#[cfg(target_os)]`; the library, test harness a
 `.github/workflows/ci.yml` is the single build path:
 
 1. `prepare` reads `portable/Cargo.toml`, validates a three-part version and, for a tag, requires `refs/tags/v<version>`. It derives a snapshot suffix for branch builds.
-2. Seven native jobs build the CLI for Windows x86/x64/ARM64, Linux x64/ARM64 and macOS Intel/Apple silicon. Linux uses static musl targets. Every runnable target runs the Rust tests and `batteryguard --version`; Windows ARM64 is cross-compiled but not executed on the x64 hosted runner. The Windows x64 job also runs the hardware-independent C# suite.
+2. Seven native jobs build the CLI for Windows x86/x64/ARM64, Linux x64/ARM64 and macOS Intel/Apple silicon. Linux uses static musl targets. Every runnable target runs the Rust tests and `batteryguard --version`; Windows ARM64 is cross-compiled but not executed on the x64 hosted runner. The Windows x64 job also runs the hardware-independent C# suite, including the controller foundation test.
 3. The packaging jobs create the EXE, MSI, DEB, RPM, AppImage and PKG files. The Windows job also builds the C# tray, generates the 30 locale components and stages the tray, CLI, icon and catalogs; the x64 MSI and EXE are installed, checked for payload and Start Menu/uninstall shortcuts, then removed. The same job installs the published `v0.1.0` MSI, upgrades it with the new EXE, verifies the old product disappeared and exactly one visible Apps & Features entry remains, then uninstalls. The EXE is a WiX Burn bootstrapper around the MSI, with the standard installer UI, version display, launch-after-install and Apps & Features registration. Linux and macOS jobs install their DEB and PKG and run the installed CLI as a smoke test.
 4. When all SignPath variables and the API token exist, the Windows job signs the tray/CLI binaries, the MSI before the EXE is built and the final EXE through three SignPath Foundation requests and verifies each returned file with `signtool`. Otherwise, when PFX secrets exist, it signs those components directly with Authenticode. Without either configuration the packages remain unsigned and the workflow emits a notice. The macOS job signs the CLI and PKG, notarizes it, staples it and verifies it when Apple secrets exist. The release job downloads the artifacts, filters by the installer extension allowlist, attests each subject and uploads the branch artifacts. A tag event then creates the GitHub Release from the filtered installer set; a branch event stops before it.
 
@@ -115,7 +123,7 @@ Artifacts always carry GitHub/Sigstore build provenance, bound to the repository
 
 - The `src/` modules contain no user-facing Arabic literals. UI text is `Loc.T("English source")` or `Loc.F("Template {0}", ...)`.
 - `src/Localization.cs` defines the 30 supported codes, native names and RTL flags.
-- `language=auto` resolves `CultureInfo.CurrentUICulture`: `zh-Hans/Hant` maps to `zh-CN`/`zh-TW`; `iw`/`in` normalize to `he`/`id`; unsupported languages fall back to English.
+- `language=auto` resolves the Windows user default UI language through `GetUserDefaultUILanguage` (the tray may be hosted by a process with a different `CurrentUICulture`): `zh-Hans/Hant` maps to `zh-CN`/`zh-TW`; `iw`/`in` normalize to `he`/`id`; unsupported languages fall back to English.
 - `locales/<code>.json` is a flat map keyed by the exact English source. Missing keys return the source string.
 - `UiSettings.Rtl` uses an explicit `direction` override, otherwise the current language's RTL flag.
 - English is not loaded from a catalog at runtime; `Loc.T` returns the source string directly.
@@ -128,7 +136,8 @@ Artifacts always carry GitHub/Sigstore build provenance, bound to the repository
 | `src/TrayApp.cs` | Window procedure, tick, tray icon, menu, notifications and dialog launch. |
 | `src/AppIdentity.cs` | Process AUMID and Start Menu shortcut for the notification identity. |
 | `src/Engine.cs` | Battery/controller state, charge decisions, presets, schedules and notifications state. |
-| `src/Wmi.cs` | Battery readings, HP `hpqBIntM` adapter and the generic monitoring controller. |
+| `src/Controllers.cs` | Fingerprint, profiles, capabilities, provider contract, `WriteGuard`, WMI gateway and simulator. |
+| `src/Wmi.cs` | Battery readings, HP `hpqBIntM` controller, generic monitoring controller and provider factory. |
 | `src/Config.cs` | `settings.json`, `interface.ini`, schedule rules, UI settings and autostart. |
 | `src/Theme.cs` | Theme persistence, shared colors, owner-drawn controls and the dual-range slider. |
 | `src/Dialogs.cs` | Settings, Add/Edit schedule window and activity log. |
@@ -157,7 +166,9 @@ Artifacts always carry GitHub/Sigstore build provenance, bound to the repository
 
 - HP WMI writes require elevation; the app does not store credentials.
 - No network access and no telemetry.
-- Charge mode is restricted to auto and inhibit; forced discharge is never requested.
+- Charge mode is restricted to auto and inhibit; forced discharge is never requested. `WriteGuard.IsSafeMode` rejects every other mode before a transport call.
+- Production writes are capability-gated, AC-gated for inhibit, read-back confirmed and rolled back once on mismatch.
+- Candidate profiles are read-only; a WMI class or probe result cannot enable a writer.
 - Non-HP and unsupported HP hardware fails closed to monitoring.
 - The launcher only runs local source/exe and local scripts.
 - The mutex and single-instance guard prevent concurrent tray policies.

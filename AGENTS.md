@@ -15,6 +15,7 @@ Run commands from the workspace root:
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File battery/scripts/build.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-FloatLogic.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-ControllerFoundation.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-ScheduleConflict.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-UiPolish.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-Settings.ps1
@@ -23,7 +24,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-AppIdenti
 powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-LogRotation.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-Icons.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-Layout.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-TrayMenu.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-LanguageAuto.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-UI.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-Theme.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-TrayHost.ps1
 ```
+
+The last three set `BATTERYGUARD_TEST_CONTROLLER=monitoring`, so the tray has
+no WMI/EC/WriteGuard path. `Test-TrayHost` needs an elevated shell for its
+logon-task install/remove check; `Test-UI` and `Test-Theme` do not.
 
 After editing C#, rebuild and rerun the affected checks. The build, launcher and every in-memory test enumerate `src/*.cs`, so a new module is picked up automatically and `add-type` compiles all modules together.
 
@@ -42,7 +52,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File portable/scripts/test.ps1
 - `.github/workflows/ci.yml` is the only workflow. Do not add a second workflow for packaging, attestation or releases; extend this file instead.
 - Every push builds the installer matrix, creates build-provenance attestations and uploads branch artifacts. Only a `v*` tag may create or update a GitHub Release.
 - The Windows MSI and Burn EXE bundle the C# tray, Rust CLI, icon, locale catalogs, Start Menu shortcut and uninstall shortcut. Linux and macOS packages remain CLI-only. CI installs/uninstalls the x64 MSI and EXE, upgrades the published `v0.1.0` MSI with the EXE on a clean runner, and installs/runs the DEB and PKG; x86/ARM64 installers and RPM are build-only on the current runners. The interactive installer wizard is not covered by CI.
-- The Windows x64 job runs the C# suite (`Test-FloatLogic`, `Test-ScheduleConflict`, `Test-UiPolish`, `Test-Settings`, `Test-AppIdentity`, `Test-LogRotation`, `Test-Icons`, `Test-Layout`). Do not replace it with a build-only check.
+- The Windows x64 job runs the C# suite (`Test-FloatLogic`, `Test-ControllerFoundation`, `Test-ScheduleConflict`, `Test-UiPolish`, `Test-Settings`, `Test-AppIdentity`, `Test-LogRotation`, `Test-Icons`, `Test-Layout`, `Test-TrayMenu`, `Test-UI`, `Test-Theme`, `Test-TrayHost`). The last three run in the injected monitoring-only test mode. Do not replace it with a build-only check.
 - Native signing is optional. The preferred free path is SignPath Foundation for this MIT-licensed public project: three signing requests (tray/CLI, MSI before the EXE is built, final EXE). The upstream WiX Burn engine is included unsigned and is not signed with the Foundation certificate. The requests use `SIGNPATH_*` repository variables and the `SIGNPATH_API_TOKEN` secret. The PFX fallback remains `WINDOWS_CERTIFICATE_BASE64`/`WINDOWS_CERTIFICATE_PASSWORD` for Authenticode (tray, CLI, MSI, Burn engine and EXE bundle), and the documented `MACOS_*` certificate/notary secrets remain for macOS. Missing configuration means an unsigned package and a notice, not a failed or falsely signed build. Never commit tokens or certificate material. See `docs/SIGNPATH.md`.
 - The tag must be exactly `v` plus the version in `portable/Cargo.toml` (currently `v0.2.0`). The prepare job rejects a mismatch before building.
 - Release assets are restricted to `.exe`, `.msi`, `.deb`, `.rpm`, `.AppImage` and `.pkg`. The `.exe` must be the Burn installer, never a raw application binary. Do not publish archives, `.wixpdb`, debug symbols, logs or test data.

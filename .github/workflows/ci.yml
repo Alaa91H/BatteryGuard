@@ -232,13 +232,18 @@ jobs:
 
           $tests = @(
             'Test-FloatLogic.ps1',
+            'Test-ControllerFoundation.ps1',
             'Test-ScheduleConflict.ps1',
             'Test-UiPolish.ps1',
             'Test-Settings.ps1',
             'Test-AppIdentity.ps1',
             'Test-LogRotation.ps1',
             'Test-Icons.ps1',
-            'Test-Layout.ps1'
+            'Test-Layout.ps1',
+            'Test-TrayMenu.ps1',
+            'Test-UI.ps1',
+            'Test-Theme.ps1',
+            'Test-TrayHost.ps1'
           )
           foreach ($test in $tests) {
             Write-Output "===== $test"

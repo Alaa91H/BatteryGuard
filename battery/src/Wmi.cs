@@ -42,124 +42,90 @@ namespace BatteryGuardTray
     internal static class DeviceInfo
     {
         private static bool _loaded;
-        private static string _manufacturer = "Unknown";
-        private static string _model = "";
+        private static DeviceFingerprint _fingerprint = new DeviceFingerprint();
 
-        public static string Manufacturer
+        public static DeviceFingerprint Fingerprint
         {
-            get { Load(); return _manufacturer; }
+            get { Load(); return _fingerprint; }
         }
 
-        public static string Model
-        {
-            get { Load(); return _model; }
-        }
-
-        public static bool IsHp
-        {
-            get
-            {
-                string value = Manufacturer ?? "";
-                return value.IndexOf("HP", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                       value.IndexOf("Hewlett", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                       value.IndexOf("HPE", StringComparison.OrdinalIgnoreCase) >= 0;
-            }
-        }
+        public static string Manufacturer { get { return Fingerprint.Manufacturer; } }
+        public static string Model { get { return Fingerprint.Product; } }
+        public static DeviceProfile Profile { get { return DeviceProfileCatalog.Match(Fingerprint); } }
+        public static bool IsHp { get { return DeviceProfileCatalog.IsHpManufacturer(Fingerprint.Manufacturer); } }
 
         private static void Load()
         {
             if (_loaded) return;
             _loaded = true;
-            try
-            {
-                using (var searcher = new ManagementObjectSearcher("SELECT Manufacturer, Model FROM Win32_ComputerSystem"))
-                {
-                    foreach (ManagementObject item in searcher.Get())
-                    {
-                        _manufacturer = Convert.ToString(item["Manufacturer"], CultureInfo.InvariantCulture);
-                        _model = Convert.ToString(item["Model"], CultureInfo.InvariantCulture);
-                        if (!string.IsNullOrEmpty(_manufacturer)) break;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Program.Log("device info error: " + ex.Message);
-            }
-            if (string.IsNullOrEmpty(_manufacturer)) _manufacturer = "Unknown";
-            if (_model == null) _model = "";
+            _fingerprint = DeviceFingerprint.Read();
         }
     }
 
-    internal sealed class GenericBatteryController : IBatteryController
+    internal sealed class GenericBatteryController : IChargeController
     {
-        public GenericBatteryController()
+        private readonly DeviceFingerprint _fingerprint;
+        private readonly DeviceProfile _profile;
+
+        public GenericBatteryController() : this(DeviceInfo.Fingerprint, DeviceInfo.Profile) { }
+
+        internal GenericBatteryController(DeviceFingerprint fingerprint, DeviceProfile profile)
         {
-            VendorName = DeviceInfo.Manufacturer;
-            ModelName = DeviceInfo.Model;
+            _fingerprint = fingerprint ?? new DeviceFingerprint();
+            _profile = profile;
+            VendorName = _fingerprint.Manufacturer;
+            ModelName = _fingerprint.Product;
         }
 
         public string VendorName { get; private set; }
         public string ModelName { get; private set; }
+        public DeviceFingerprint Fingerprint { get { return _fingerprint; } }
+        public ControllerCapabilities Capabilities { get { return ControllerCapabilities.Monitoring(); } }
+        public DeviceProfile Profile { get { return _profile; } }
         public bool CanControlCharge { get { return false; } }
 
         public ChargeMode ReadMode() { return ChargeMode.Unsupported; }
         public bool SetAuto() { return false; }
         public bool SetInhibit() { return false; }
+        public ControllerResult RequestAuto(bool onAc) { return ControllerResult.Failure(ControllerResultStatus.Unsupported, "monitoring only"); }
+        public ControllerResult RequestInhibit(bool onAc) { return ControllerResult.Failure(ControllerResultStatus.Unsupported, "monitoring only"); }
         public void Dispose() { }
     }
 
-    internal sealed class HpBios : IBatteryController
+    internal sealed class HpBios : IChargeController
     {
-        public string VendorName { get { return "HP"; } }
-        public string ModelName { get { return DeviceInfo.Model; } }
-        public bool CanControlCharge { get { return true; } }
+        private readonly DeviceFingerprint _fingerprint;
+        private readonly IWmiGateway _gateway;
 
-        private static readonly byte[] Signature = { 0x53, 0x45, 0x43, 0x55 };
         private const uint CommandRead = 0x01;
         private const uint CommandWrite = 0x02;
         private const uint TypeChargeControl = 0x1f;
         private const uint TypeChargeMode = 0x2b;
 
-        private readonly ManagementScope _scope;
-        private readonly ManagementObject _bios;
-        private readonly ManagementClass _inputClass;
-        private readonly object _gate = new object();
+        public HpBios() : this(DeviceInfo.Fingerprint, new HpBiosWmiGateway()) { }
 
-        public HpBios()
+        internal HpBios(DeviceFingerprint fingerprint) : this(fingerprint, new HpBiosWmiGateway()) { }
+
+        internal HpBios(DeviceFingerprint fingerprint, IWmiGateway gateway)
         {
-            _scope = new ManagementScope(@"\\.\root\wmi");
-            _scope.Connect();
-            _bios = GetBiosInstance(_scope);
-            _inputClass = new ManagementClass(_scope, new ManagementPath("hpqBDataIn"), null);
-            _inputClass.Get();
+            _fingerprint = fingerprint ?? new DeviceFingerprint { Manufacturer = "HP" };
+            _gateway = gateway;
         }
 
-        private static ManagementObject GetBiosInstance(ManagementScope scope)
-        {
-            var biosClass = new ManagementClass(scope, new ManagementPath("hpqBIntM"), null);
-            try
-            {
-                // The method must be called on the instance, not on the class:
-                // the class-level path rejects the embedded hpqBDataIn parameter.
-                foreach (ManagementObject instance in biosClass.GetInstances())
-                    return instance;
-            }
-            finally
-            {
-                biosClass.Dispose();
-            }
-            throw new InvalidOperationException("hpqBIntM instance not found (HP BIOS WMI provider unavailable)");
-        }
+        public string VendorName { get { return "HP"; } }
+        public string ModelName { get { return _fingerprint.Product; } }
+        public DeviceFingerprint Fingerprint { get { return _fingerprint; } }
+        public ControllerCapabilities Capabilities { get { return DeviceProfileCatalog.HpCapabilities; } }
+        public DeviceProfile Profile { get { return DeviceProfileCatalog.Hp; } }
+        public bool CanControlCharge { get { return true; } }
 
         public ChargeMode ReadMode()
         {
-            uint code;
-            byte[] data;
-            if (!Invoke(CommandRead, TypeChargeMode, new byte[4], out code, out data)) return ChargeMode.Unsupported;
-            if (code != 0 || data.Length == 0) return ChargeMode.Unsupported;
+            WmiCallResult result = _gateway.Invoke(CommandRead, TypeChargeMode, new byte[4]);
+            if (!result.TransportOk || result.ReturnCode != 0 || result.Data == null || result.Data.Length == 0)
+                return ChargeMode.Unsupported;
 
-            switch (data[0])
+            switch (result.Data[0])
             {
                 case 0: return ChargeMode.Auto;
                 case 2: return ChargeMode.ForceDischarge;
@@ -171,9 +137,10 @@ namespace BatteryGuardTray
 
         public bool WriteMode(uint commandType, byte value, out uint code)
         {
-            byte[] data;
-            if (!Invoke(CommandWrite, commandType, new byte[] { 0x00, value, 0x00, 0x00 }, out code, out data)) return false;
-            return code == 0;
+            WmiCallResult result = _gateway.Invoke(CommandWrite, commandType,
+                new byte[] { 0x00, value, 0x00, 0x00 });
+            code = result.ReturnCode;
+            return result.TransportOk && result.ReturnCode == 0;
         }
 
         public bool SetInhibit()
@@ -195,72 +162,81 @@ namespace BatteryGuardTray
             return WriteMode(TypeChargeControl, 0x00, out code);
         }
 
-        private bool Invoke(uint command, uint commandType, byte[] payload, out uint returnCode, out byte[] data)
+        public ControllerResult RequestInhibit(bool onAc)
         {
-            returnCode = 0xFFFF;
-            data = new byte[0];
+            return WriteGuard.Apply(Capabilities, onAc, ChargeMode.Inhibit, SetInhibit, ReadMode,
+                delegate { SetAuto(); });
+        }
 
-            lock (_gate)
-            {
-                try
-                {
-                    using (ManagementBaseObject input = _inputClass.CreateInstance())
-                    {
-                        input["Command"] = command;
-                        input["CommandType"] = commandType;
-                        input["Size"] = (uint)payload.Length;
-                        input["hpqBData"] = payload;
-                        input["Sign"] = Signature;
-
-                        using (ManagementBaseObject parameters = _bios.GetMethodParameters("hpqBIOSInt128"))
-                        {
-                            parameters["InData"] = input;
-                            using (ManagementBaseObject output = _bios.InvokeMethod("hpqBIOSInt128", parameters, null))
-                            {
-                                var outData = output["OutData"] as ManagementBaseObject;
-                                if (outData == null) return false;
-                                returnCode = Convert.ToUInt32(outData["rwReturnCode"], CultureInfo.InvariantCulture);
-                                data = (outData["Data"] as byte[]) ?? new byte[0];
-                                return true;
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Program.Log("wmi error: " + ex.Message);
-                    return false;
-                }
-            }
+        public ControllerResult RequestAuto(bool onAc)
+        {
+            return WriteGuard.Apply(Capabilities, onAc, ChargeMode.Auto, SetAuto, ReadMode, null);
         }
 
         public void Dispose()
         {
-            try { _bios.Dispose(); } catch { }
-            try { _inputClass.Dispose(); } catch { }
+            if (_gateway != null) _gateway.Dispose();
         }
     }
 
     internal static class BatteryControllerFactory
     {
-        public static IBatteryController Create()
+        private static readonly IControllerProvider[] Providers =
         {
-            if (DeviceInfo.IsHp)
+            new HpControllerProvider(),
+            new GenericControllerProvider()
+        };
+
+        public static IChargeController Create()
+        {
+            return Create(DeviceInfo.Fingerprint);
+        }
+
+        internal static IChargeController Create(DeviceFingerprint fingerprint)
+        {
+            fingerprint = fingerprint ?? new DeviceFingerprint();
+            DeviceProfile profile = DeviceProfileCatalog.Match(fingerprint);
+
+            if (profile != null)
             {
+                Program.Log("controller profile: " + profile.Vendor + " " + profile.Interface +
+                    " status=" + profile.Status + " capabilities=" + profile.Capabilities.Key);
+            }
+
+            // Explicit, fail-closed test path. Tests set this before launching the
+            // tray; no provider or WMI gateway is constructed in this mode.
+            string testController = Environment.GetEnvironmentVariable("BATTERYGUARD_TEST_CONTROLLER");
+            if (string.Equals(testController, "monitoring", StringComparison.OrdinalIgnoreCase))
+            {
+                var test = new GenericBatteryController(fingerprint, null);
+                Program.Log("test controller: monitoring-only; charge writes disabled (BATTERYGUARD_TEST_CONTROLLER=monitoring)");
+                Program.Log("controller: " + test.VendorName + " " + test.ModelName +
+                    " (test mode, monitoring only; no WMI/EC write path)");
+                return test;
+            }
+
+            for (int index = 0; index < Providers.Length; index++)
+            {
+                IControllerProvider provider = Providers[index];
+                if (provider.Profile == null || !provider.Profile.CanWrite) continue;
+                if (!provider.Matches(fingerprint)) continue;
+
                 try
                 {
-                    var hp = new HpBios();
-                    Program.Log("controller: HP " + hp.ModelName + " (charge control)");
-                    return hp;
+                    IChargeController controller = provider.Create(fingerprint);
+                    Program.Log("controller: " + controller.VendorName + " " + controller.ModelName +
+                        " (charge control, " + controller.Capabilities.Key + ")");
+                    return controller;
                 }
                 catch (Exception ex)
                 {
-                    Program.Log("HP controller unavailable: " + ex.Message);
+                    Program.Log(provider.Name + " controller unavailable: " + ex.Message);
                 }
             }
 
-            var generic = new GenericBatteryController();
-            Program.Log("controller: " + generic.VendorName + " " + generic.ModelName + " (monitoring only)");
+            var generic = new GenericBatteryController(fingerprint, profile);
+            Program.Log("controller: " + generic.VendorName + " " + generic.ModelName +
+                " (monitoring only" + (profile == null ? "; no matching profile" : "; " + profile.Status) + ")");
             return generic;
         }
     }
@@ -397,10 +373,16 @@ namespace BatteryGuardTray
             return string.Join(" · ", parts.ToArray());
         }
 
-        public int MinutesRemaining()
+        public int MinutesRemaining(int targetPercent = 100)
         {
-            if (Charging && ChargeRate > 0 && FullCharged > Remaining)
-                return (int)Math.Round((FullCharged - Remaining) * 60.0 / ChargeRate);
+            if (Charging && ChargeRate > 0 && FullCharged > 0)
+            {
+                int targetCapacity = (int)Math.Round(
+                    FullCharged * Math.Max(0, Math.Min(100, targetPercent)) / 100.0);
+                if (targetCapacity > Remaining)
+                    return (int)Math.Round((targetCapacity - Remaining) * 60.0 / ChargeRate);
+            }
+
             if (Discharging && DischargeRate > 0 && Remaining > 0)
                 return (int)Math.Round(Remaining * 60.0 / DischargeRate);
             return -1;

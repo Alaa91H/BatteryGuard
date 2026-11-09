@@ -217,6 +217,10 @@ namespace BatteryGuardTray
     {
         private readonly string _configPath;
         private readonly Action<string, string, uint> _testNotify;
+        private readonly DeviceProfile _profile;
+        private readonly ControllerCapabilities _capabilities;
+        private readonly bool _canControl;
+        private readonly bool _fullControl;
         private readonly List<Button> _chips = new List<Button>();
         private readonly CheckBox _limitEnabled = new CheckBox();
         private readonly DualRangeSlider _slider = new DualRangeSlider();
@@ -251,9 +255,18 @@ namespace BatteryGuardTray
         private bool _adjustingFooter;
 
         public SettingsForm(string configPath, Action<string, string, uint> testNotify)
+            : this(configPath, testNotify, DeviceInfo.Profile) { }
+
+        internal SettingsForm(string configPath, Action<string, string, uint> testNotify, DeviceProfile profile)
         {
             _configPath = configPath;
             _testNotify = testNotify;
+            _profile = profile;
+            _capabilities = profile == null ? null : profile.Capabilities;
+            _canControl = profile != null && profile.CanWrite &&
+                _capabilities != null && _capabilities.CanControlCharge;
+            _fullControl = _canControl &&
+                (_capabilities.Kind & ControllerCapability.AutoInhibit) != 0;
             UiSettings.Load();
             BuildUi();
             LoadValues(GuardConfig.Load(configPath));
@@ -366,6 +379,34 @@ namespace BatteryGuardTray
             var layout = new TableLayoutPanel();
             layout.Dock = DockStyle.Fill;
             layout.ColumnCount = 1;
+            if (!_canControl)
+            {
+                layout.RowCount = 1;
+                layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36f));
+                var monitoring = new Label();
+                monitoring.Name = "ChargeMonitoringOnly";
+                monitoring.Text = Loc.T("Monitoring only");
+                monitoring.AutoSize = true;
+                monitoring.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+                layout.Controls.Add(monitoring, 0, 0);
+                card.Controls.Add(layout);
+                return card;
+            }
+
+            if (!_fullControl)
+            {
+                layout.RowCount = 1;
+                layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36f));
+                var capability = new Label();
+                capability.Name = "ChargeCapabilityOnly";
+                capability.Text = _capabilities.DisplayName;
+                capability.AutoSize = true;
+                capability.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+                layout.Controls.Add(capability, 0, 0);
+                card.Controls.Add(layout);
+                return card;
+            }
+
             layout.RowCount = 5;
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 66f));
@@ -933,7 +974,7 @@ namespace BatteryGuardTray
             string electrical = info.ElectricalText();
             if (electrical.Length > 0) text.Append(" · " + electrical);
 
-            if (!DeviceInfo.IsHp)
+            if (!_canControl)
                 text.Append(" · " + Loc.T("Monitoring only"));
 
             if (info.CycleCount > 0)
@@ -941,7 +982,10 @@ namespace BatteryGuardTray
             if (info.TemperatureC > 0)
                 text.AppendFormat(CultureInfo.InvariantCulture, Loc.T(" · {0}°C"), info.TemperatureC);
 
-            int remaining = info.MinutesRemaining();
+            int targetPercent = _fullControl && _limitEnabled.Checked
+                ? (int)_ceilingValue.Value
+                : (_capabilities != null && _capabilities.IsThreshold ? _capabilities.DefaultLimit : 100);
+            int remaining = info.MinutesRemaining(targetPercent);
             if (remaining > 0)
                 text.AppendFormat(CultureInfo.InvariantCulture, " · {0} ≈ {1}",
                     info.Charging ? Loc.T("Charging") : Loc.T("Discharging"), Engine.FormatMinutes(remaining));
@@ -955,7 +999,7 @@ namespace BatteryGuardTray
             int ceiling = (int)Clamp(config.Ceiling ?? 80, 50, 100);
             int resume = (int)Clamp(config.Resume ?? (ceiling - Math.Max(5, config.ResumeDrop)), 1, ceiling - 5);
 
-            _limitEnabled.Checked = !off;
+            _limitEnabled.Checked = _fullControl && !off;
             _syncing = true;
             _ceilingValue.Value = ceiling;
             _resumeValue.Maximum = Math.Max(1, ceiling - 5);
@@ -963,7 +1007,7 @@ namespace BatteryGuardTray
             _syncing = false;
             _slider.SetValuesSilent(resume, ceiling);
 
-            _schedule.Checked = config.ScheduleEnabled && config.Schedule.Count > 0;
+            _schedule.Checked = _fullControl && config.ScheduleEnabled && config.Schedule.Count > 0;
             _scheduleList.Items.Clear();
             foreach (var rule in config.Schedule)
                 AddScheduleItem(rule);
@@ -993,7 +1037,7 @@ namespace BatteryGuardTray
 
         private void UpdateEnabled()
         {
-            bool on = _limitEnabled.Checked;
+            bool on = _fullControl && _limitEnabled.Checked;
 
             _slider.Enabled = on;
             _ceilingValue.Enabled = on;
@@ -1002,9 +1046,10 @@ namespace BatteryGuardTray
             foreach (var chip in _chips)
                 chip.Enabled = on;
 
-            bool scheduled = _schedule.Checked;
+            bool scheduled = _fullControl && _schedule.Checked;
+            _schedule.Enabled = _fullControl;
             _scheduleList.Enabled = scheduled;
-            _scheduleAdd.Enabled = true;
+            _scheduleAdd.Enabled = _fullControl;
             _scheduleEdit.Enabled = scheduled && _scheduleList.SelectedItems.Count > 0;
             _scheduleRemove.Enabled = _scheduleEdit.Enabled;
 
@@ -1022,7 +1067,7 @@ namespace BatteryGuardTray
             config.ScheduleEnabled = false;
             config.Schedule.Clear();
 
-            if (_limitEnabled.Checked)
+            if (_fullControl && _limitEnabled.Checked)
             {
                 int ceiling = (int)_ceilingValue.Value;
                 int resume = Math.Max(1, Math.Min((int)_resumeValue.Value, ceiling - 5));
@@ -1043,7 +1088,7 @@ namespace BatteryGuardTray
                 config.FloatMode = false;
             }
 
-            if (_schedule.Checked)
+            if (_fullControl && _schedule.Checked)
             {
                 if (_scheduleList.Items.Count == 0)
                 {

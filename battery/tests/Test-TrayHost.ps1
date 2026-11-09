@@ -3,14 +3,11 @@
   End-to-end test of the PowerShell-hosted tray app.
 
 .DESCRIPTION
-  1. CLI pass-through (--status),
-  2. policy enforcement via --once at a 80% ceiling,
-  3. background tray run with memory and CPU measurement,
-  4. full screenshot plus a 4x zoom of the notification area,
-  5. logon task create / inspect / remove,
-  6. cleanup back to normal charging.
-
-  Run elevated.
+  Safe test mode only: sets BATTERYGUARD_TEST_CONTROLLER=monitoring, so the
+  factory returns a monitoring-only controller and no HpBios/WMI/WriteGuard is
+  constructed. It checks CLI --status, the PowerShell-hosted tray, memory/CPU,
+  screenshots and the logon task. control.ps1 and --once are skipped. No charge
+  write is possible; the test fails if the new log contains any charge write.
 #>
 [CmdletBinding()]
 param()
@@ -23,6 +20,10 @@ $log = Join-Path $PSScriptRoot 'tray-host-test.log'
 $shot = Join-Path $PSScriptRoot 'tray-screen.png'
 $zoom = Join-Path $PSScriptRoot 'tray-zoom.png'
 $culture = [System.Globalization.CultureInfo]::InvariantCulture
+$env:BATTERYGUARD_TEST_CONTROLLER = 'monitoring'
+$testMode = $true
+$failed = $false
+$beforeLog = if (Test-Path (Join-Path $root 'application.log')) { Get-Content (Join-Path $root 'application.log') -Raw } else { '' }
 
 function Say {
     param([string]$Text)
@@ -32,18 +33,13 @@ function Say {
 
 Set-Content -Path $log -Value ('BatteryGuard host test {0:u}' -f (Get-Date)) -Encoding UTF8
 
-Say '--- 1. set ceiling 80 and normal charging ---'
-& $engine -Limit 80 -ResumeDrop 5 -Once 2>&1 | ForEach-Object { Say $_ }
-& $engine -Mode Auto 2>&1 | ForEach-Object { Say $_ }
+Say '--- 1. skipped hardware control (injected monitoring-only controller) ---'
 
 Say '--- 2. hosted CLI --status ---'
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $launcher -NoElevate -Cli '--status'
 Say ('status exit=' + $LASTEXITCODE)
 
-Say '--- 3. hosted CLI --once (100% > ceiling 80 -> inhibit) ---'
-& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $launcher -NoElevate -Cli '--once'
-Say ('once exit=' + $LASTEXITCODE)
-& $engine -Status 2>&1 | ForEach-Object { Say $_ }
+Say '--- 3. skipped --once (test mode has no charge write path) ---'
 
 Say '--- 4. run tray host in background ---'
 $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', ('"' + $launcher + '"'), '-NoElevate')
@@ -52,6 +48,7 @@ Start-Sleep -Seconds 12
 
 if ($proc.HasExited) {
     Say ('tray host EXITED early, code=' + $proc.ExitCode)
+    $failed = $true
 }
 else {
     $live = Get-Process -Id $proc.Id
@@ -106,31 +103,66 @@ catch {
 
 Say '--- 6. logon task ---'
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $launcher -NoElevate -Cli '--install-autostart'
-Start-Sleep -Seconds 1
-schtasks.exe /Query /TN BatteryGuardTray 2>&1 | ForEach-Object { Say $_ }
-Say ('query exit=' + $LASTEXITCODE)
-$xml = schtasks.exe /Query /TN BatteryGuardTray /XML 2>&1 | Out-String
-$match = [regex]::Match($xml, '<Command>(.*?)</Command>')
-$matchArgs = [regex]::Match($xml, '<Arguments>(.*?)</Arguments>')
-Say ('task command  = ' + $match.Groups[1].Value)
-Say ('task arguments= ' + $matchArgs.Groups[1].Value)
+Start-Sleep -Seconds 2
+$task = Get-ScheduledTask -TaskName 'BatteryGuardTray' -ErrorAction SilentlyContinue
+if (-not $task) {
+    Say 'FAIL: logon task was not created (install needs an elevated shell)'
+    $failed = $true
+}
+else {
+    Say ('task state      = ' + $task.State)
+    $action = @($task.Actions)[0]
+    Say ('task command    = ' + $action.Execute)
+    Say ('task arguments  = ' + $action.Arguments)
+    $target = $action.Execute.Trim('"')
+    if (-not (Test-Path -LiteralPath $target)) {
+        Say ('FAIL: task target does not exist: ' + $target)
+        $failed = $true
+    }
+}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $launcher -NoElevate -Cli '--remove-autostart'
-Start-Sleep -Seconds 1
-schtasks.exe /Query /TN BatteryGuardTray 2>&1 | Out-Null
-Say ('after remove query exit=' + $LASTEXITCODE)
+Start-Sleep -Seconds 2
+$taskAfter = Get-ScheduledTask -TaskName 'BatteryGuardTray' -ErrorAction SilentlyContinue
+if ($taskAfter) {
+    Say 'FAIL: logon task is still installed after remove'
+    $failed = $true
+}
+else {
+    Say 'task removed'
+}
 
 Say '--- 7. cleanup ---'
 if (-not $proc.HasExited) {
     Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 2
 }
-& $engine -Preset Off 2>&1 | ForEach-Object { Say $_ }
-& $engine -Status 2>&1 | ForEach-Object { Say $_ }
+Get-Process application -ErrorAction SilentlyContinue |
+    ForEach-Object { Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue }
+Say 'cleanup: stopped the PowerShell-hosted tray; no control.ps1 invoked'
 
-Say '--- 8. tray log tail ---'
+Say '--- 8. tray log tail and safety assertions ---'
 $trayLog = Join-Path $root 'application.log'
+$afterLog = if (Test-Path $trayLog) { Get-Content $trayLog -Raw } else { '' }
+$newLines = if ($afterLog.Length -gt $beforeLog.Length) { $afterLog.Substring($beforeLog.Length) } else { '' }
 if (Test-Path $trayLog) {
-    Get-Content $trayLog -Tail 20 | ForEach-Object { Say $_ }
+    Get-Content $trayLog -Tail 25 | ForEach-Object { Say $_ }
+}
+if ($newLines -notmatch 'test controller: monitoring-only') {
+    Say 'FAIL: injected test controller log line is missing'
+    $failed = $true
+}
+if ($newLines -notmatch 'cap=monitoring') {
+    Say 'FAIL: cap=monitoring is missing from the test tray log'
+    $failed = $true
+}
+if ($newLines -match 'charge mode set|action=(auto|inhibit)|inhibit write|auto write') {
+    Say 'FAIL: a charge-write line appeared during the safe test'
+    $failed = $true
+}
+if (-not $testMode) {
+    Say 'FAIL: hardware mode is not allowed in this test'
+    $failed = $true
 }
 
-Say 'done'
+if ($failed) { Say 'test FAILED'; exit 1 }
+Say 'test PASS; no charge write was issued'

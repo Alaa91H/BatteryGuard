@@ -53,8 +53,14 @@ try {
 }
 catch { $sacEnforced = $false }
 
+# Test mode must stay in this signed PowerShell host so the test can observe
+# the process and stop it deterministically. The in-app test controller still
+# has no WMI/EC write path.
+$testController = $env:BATTERYGUARD_TEST_CONTROLLER
+$forcePowerShellHost = -not [string]::IsNullOrEmpty($testController)
+
 $exe = Join-Path $root 'application.exe'
-if (-not $sacEnforced -and (Test-Path -LiteralPath $exe)) {
+if (-not $sacEnforced -and -not $forcePowerShellHost -and (Test-Path -LiteralPath $exe)) {
     try {
         if ($Cli) {
             & $exe @($Cli.Split(' '))

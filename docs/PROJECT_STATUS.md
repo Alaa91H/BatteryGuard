@@ -2,17 +2,18 @@
 
 **Date:** 2026-11-09  
 **Application:** BatteryGuard tray monitor  
-**Build:** `battery/application.exe` — 99,328 bytes  
+**Build:** `battery/application.exe` — 115,712 bytes
 **CI:** single tag-gated workflow; branch run `42652367294` and tag run `42653411073` green with all seven packaging jobs, the C# suite, the Windows tray MSI and EXE, and a clean-runner upgrade from the published `v0.1.0` MSI; SignPath was unconfigured, so the published `v0.2.0` release has 14 unsigned installers, including 3 EXE and 3 MSI
 
 ## Completed
 
 - Native Win32 tray application with owner-drawn menus and WinForms settings, schedule, log and rule dialogs.
 - **Charge policy split into `ChargePolicy`.** Float mode activates only after the measured charge reaches the ceiling; charging below the limit is never inhibited by float. The latch holds until the resume point, then charging restarts.
-- **Device controller layer:** `IBatteryController`, `HpBios`, `GenericBatteryController` and `BatteryControllerFactory`. HP gets charge control; other vendors get full monitoring with an explicit **Monitoring only** state.
+- **F.28 firmware map and read-only probe.** A static parse of the official HP F.28 `SetupUtility` module (SoftPaq `sp155605`) recovered 237 settings in nine HII form packages: 58 sit in forms no menu references and 204 carry a `SuppressIf`, `DisableIf` or `GrayOutIf` condition. `docs/DEVICE_SUPPORT.md` documents the SystemConfig, H19SetupUtilityConfig and H19SetupVariable stores, their offsets and visibility gates. `battery/scripts/probe-bios-settings.ps1` is a read-only runtime probe, and `ChargePolicy` now states that the effective ceiling is the lower of the app ceiling and the firmware Battery Care Function.
+- **Device controller foundation:** `DeviceFingerprint`, `DeviceProfileCatalog`, `ControllerCapabilities`, `IChargeController`, `WriteGuard`, `IControllerProvider` and `IWmiGateway`; `HpBiosWmiGateway` remains the only real write transport. HP is the only verified writer. Acer, Dell and Lenovo are candidate profiles and remain read-only. The tray omits generic presets for non-`AutoInhibit` capabilities, and Settings uses a capability-only card for fixed/start-stop profiles. `Test-ControllerFoundation` covers profile matching, unplugged inhibition, access denial, empty/mismatched read-back, rollback and forced-discharge rejection without hardware.
 - **Voltage and power readout.** The tray tooltip, menu, status balloon and Settings battery card show the current pack voltage and charge/discharge power, for example `11.8 V · 0.0 W`. Unavailable values are omitted; zero watts is shown when voltage confirms a battery reading. This is battery-pack power, not AC adapter input wattage.
 - **Windows tray MSI and EXE.** The branch MSI installs `application.exe`, `batteryguard.exe`, the icon and all 30 locale catalogs under `Program Files\BatteryGuard`; the EXE is a Burn bootstrapper around the same MSI with a standard wizard, icon, version, launch-after-install and Apps & Features entry. Both create an all-users Start Menu shortcut with `BatteryGuard.Tray` and an **Uninstall BatteryGuard** shortcut. The x64 install/uninstall paths for both are tested in CI; x86 and ARM64 are built but not cross-installed on the x64 runner.
-- **C# CI gate.** The Windows x64 job runs eight hardware-independent C# tests before packaging; the same suite passed locally.
+- **C# CI gate.** The Windows x64 job runs thirteen C# checks before packaging: `Test-FloatLogic`, `Test-ControllerFoundation`, `Test-ScheduleConflict`, `Test-UiPolish`, `Test-Settings`, `Test-AppIdentity`, `Test-LogRotation`, `Test-Icons`, `Test-Layout`, `Test-TrayMenu`, `Test-UI`, `Test-Theme` and `Test-TrayHost`. The last three start the real tray with `BATTERYGUARD_TEST_CONTROLLER=monitoring`, so no provider, WMI gateway or `WriteGuard` exists. The local clean-build pass also runs `Test-BatteryInfo`, `Test-LanguageAuto`, `Test-ThemeLive` and `VisualCapture`; none touched hardware. The UI gate covers monitoring-only and a synthetic fixed-80% writable profile. The current workflow has not run on hosted CI from this change set because no push was authorized.
 - **Optional SignPath and native signing.** The MIT-licensed project has a free SignPath Foundation path with three requests: tray/CLI binaries, the MSI before the EXE is built and the final EXE. The upstream WiX Burn engine is included unsigned and is not signed with the Foundation certificate. It becomes active only when all `SIGNPATH_*` variables and `SIGNPATH_API_TOKEN` exist. The PFX path remains the fallback; macOS Developer ID/notarization still requires the documented Apple secrets. No SignPath project or certificate is configured, so the unsigned path is what the current green run exercises.
 - Charge ceiling, resume point, float mode, scheduled time windows, overlap detection and conflict banners.
 - Battery health, capacity, cycle, temperature and remaining-time display.
@@ -21,7 +22,7 @@
 - Theme support (auto/light/dark) and high-contrast tray icon variants.
 - Adaptive, DPI-aware dialogs with working-area clamping and scrolling: Settings 780×1000 with a pinned action footer, schedule window 500×400 with pinned buttons, activity log 760×560 with a wrapping action bar.
 - **30 locale catalogs**, each with 151 keys; placeholder validation reports 0 mismatches.
-- **Focused source modules:** `Program`, `TrayApp`, `Engine`, `Wmi`, `AppIdentity`, `Config`, `Theme`, `Dialogs` and `Native`; build, launcher and tests compile every `src/*.cs` file.
+- **Focused source modules:** `Program`, `TrayApp`, `Engine`, `Controllers`, `Wmi`, `AppIdentity`, `Config`, `Theme`, `Dialogs` and `Native`; build, launcher and tests compile every `src/*.cs` file.
 - **Visual/RTL pass:** Settings, schedule and log inspected in English/Arabic and light/dark; RTL row order, schedule columns, card heights, list visibility and LTR log body corrected.
 - **Translation terminology pass:** charge, health and schedule labels corrected across the 30 catalogs, including money mistranslations and untranslated values.
 - English source/fallback; `language=auto` default; Windows display-language detection; Arabic, Urdu, Persian and Hebrew RTL.
@@ -38,8 +39,15 @@ Passed in this session (2026-11-09):
 | Check | Result |
 | --- | --- |
 | `Test-FloatLogic.ps1` | 13/13 OK |
+| `Test-ControllerFoundation.ps1` | Profile, capability, unplugged, access-denied, missing-provider, empty/mismatch read-back, rollback and force-discharge gates OK (simulated WMI) |
+| `Test-TrayMenu.ps1` | Charge-time placement and language menu OK; injected Acer candidate reports **Monitoring only** in the menu and Settings; synthetic fixed-80% profile gets a capability-only card with no generic slider |
+| `Test-UI.ps1` | `showCeiling` on/off in the injected monitoring-only controller; `cap=monitoring`; no charge-write line; `interface.ini` restored |
+| `Test-Theme.ps1` | dark/light/auto in the injected monitoring-only controller; `cap=monitoring`; no charge-write line; `theme.ini` restored |
+| `Test-TrayHost.ps1` | Elevated; hosted `--status`, 30 s host sample, screenshots and logon-task install/remove in the injected monitoring-only controller; no charge-write line |
 | `Test-ScheduleConflict.ps1` | 6/6 OK |
 | `Test-UiPolish.ps1` | 11/11 OK |
+| `Test-LanguageAuto.ps1` | `language=auto` follows the Windows UI language; process culture does not override it |
+| `Test-ThemeLive.ps1` | Windows theme registry flip/restore only; original values restored |
 | `Test-Settings.ps1` | Save, schedule conflict guard and restore OK |
 | `Test-BatteryInfo.ps1` | Real readings, electrical formatting (`11.8 V · 0.0 W`, `11.8 V · 6.5 W`) and arithmetic OK |
 | `Test-AppIdentity.ps1` | Start Menu shortcut, AUMID, target, arguments and description OK |
@@ -57,6 +65,46 @@ Passed in this session (2026-11-09):
 | GitHub Actions `42652367294` | Branch run for `0.2.0` succeeded; all 7 packaging jobs; 14 installers; x64 MSI/EXE and `v0.1.0` upgrade checks passed |
 | GitHub Actions `42653411073` | Tag run succeeded; `v0.2.0` published with 14 assets (3 EXE, 3 MSI, 6 Linux packages, 2 PKG); SignPath skipped |
 | Local SAC test (2026-11-09) | Windows 11 Home 10.0.26300 with SAC enforcement blocked the unsigned `v0.2.0` x64 EXE at launch; no install or upgrade occurred; existing `0.1.0` remained |
+
+### Injected-mode tray tests
+
+`BATTERYGUARD_TEST_CONTROLLER=monitoring` makes `BatteryControllerFactory`
+return `GenericBatteryController` before any provider, WMI gateway or
+`WriteGuard` is constructed. The tray logs `test controller: monitoring-only`
+and `cap=monitoring`; every charge request returns `Unsupported`. This is a
+test-only fail-closed path, not a vendor writer.
+
+On 2026-11-09 the three tests ran in that mode and passed: `Test-UI`,
+`Test-Theme` and `Test-TrayHost`. A certified read-only HP status before the
+set reported `mode=Auto`; the status after each test also reported `mode=Auto`
+(21:59:15, 21:59:45, 22:00:44 and 22:01:46). The log contained no
+`charge mode set`, `action=auto|inhibit`, `inhibit write` or `auto write` line.
+`TRAY_LEFT=0` and the BatteryGuardTray logon task was absent after
+`Test-TrayHost` removed it.
+
+`Test-UI` and `Test-Theme` run unelevated. `Test-TrayHost` needs an elevated
+shell for its logon-task install/remove check and runs its 30 s host sample and
+screenshots in the same injected mode. They are upstream of the write-capable
+hardware checks, not a substitute for them.
+
+An earlier UI/Theme attempt, before the test controller existed, left an older
+tray process alive after the harness lost track of it. When the original
+`Longevity 60` settings were restored, that process reloaded them and wrote
+`Inhibit` at 21:34:38. The tray (PID 2424) was stopped and the verified HP
+`Auto` path restored charging at 21:39:03 with firmware read-back `Auto`. That
+incident is why the injected test controller is now mandatory for these tests.
+
+The real charge-writing checks remain intentionally unrun: `Test-Tray`,
+`Test-FloatMode` and `verify.ps1`. They need hardware writes and are not part
+of the safe suite.
+
+### F.28 firmware analysis (2026-11-09)
+
+- Static IFR parse: 9 form packages, 237 settings, 58 in unreachable forms, 204 with a visibility condition, and 144 with an English prompt. The remaining 93 are internal variables with no UI string.
+- `build.ps1`: csc exit 0; `application.exe` 115,712 bytes after the controller foundation and test-mode injection.
+- `Test-FloatLogic.ps1`: 13/13 OK.
+- `probe-bios-settings.ps1` without elevation: exits 2 with the elevation message.
+- `probe-bios-settings.ps1` elevated and read-only: `SeSystemEnvironmentPrivilege` was enabled, but all four documented names (`SystemConfig`, `H19SetupUtilityConfig`, `H19SetupVariable` and `AdvanceConfig`) returned Win32 203 (`ERROR_ENVVAR_NOT_FOUND`). The IFR store names are internal and are not exposed as runtime EFI variables, so no setup value could be read. No firmware write was attempted.
 
 Locale inventory: 30 JSON files, 151 keys in each file including the `Monitoring only` key; no missing keys and no placeholder mismatches.
 
@@ -137,6 +185,7 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 11. **Undocumented firmware.** HP charge modes are model-specific. Unsupported models fail closed to monitoring.
 12. **Interactive installer UI.** CI exercises quiet install, upgrade and uninstall only. The wizard, launch-after-install checkbox and visual layout were not tested: this Windows 11 Home host has no Windows Sandbox/VM tools and Application Control blocks the EXE, while GitHub-hosted runners have no interactive desktop.
 13. **SignPath signing is not active.** MIT licensing, three optional signing requests and `docs/SIGNPATH.md` are in place, but no SignPath account, project, artifact configuration or API token exists. The installers remain unsigned and are still blocked by Smart App Control; do not describe them as signed or trusted.
+14. **Firmware setup values are not readable from Windows.** Even elevated, `GetFirmwareEnvironmentVariable` returned Win32 203 for the F.28 IFR names `SystemConfig`, `H19SetupUtilityConfig`, `H19SetupVariable` and `AdvanceConfig`, so the stored values and the firmware Battery Care ceiling cannot be read or reconciled by the app. A read-only UEFI shell dump is documented in `docs/DEVICE_SUPPORT.md`; the app never writes these variables.
 
 ## Out of scope
 

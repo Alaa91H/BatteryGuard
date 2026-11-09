@@ -1,5 +1,202 @@
 # Session log
 
+## 2026-11-09 — Injected test controller and safe tray-test verification
+
+### Goal
+
+Close the last verification gap in the laptop-support plan: make `Test-UI`,
+`Test-Theme` and `Test-TrayHost` real green evidence without any possible
+charge write, keep the real firmware mode at `Auto`, and leave no tray process
+behind. Do not commit, push, open a PR or merge.
+
+### Work performed
+
+1. Added `BATTERYGUARD_TEST_CONTROLLER=monitoring` in
+   `BatteryControllerFactory`. It returns `GenericBatteryController` before any
+   provider is considered, so `HpBios`, the WMI gateway and `WriteGuard` are
+   never constructed. The log records `test controller: monitoring-only;
+   charge writes disabled` and the tick records `cap=monitoring`.
+2. `start.ps1` keeps a test-mode tray in the signed PowerShell host even when
+   `application.exe` exists, so the test can find and stop the host
+   deterministically. The test controller still has no write path.
+3. Rewrote `Test-UI` and `Test-Theme` to set the test variable, verify the new
+   log lines, restore `interface.ini`/`theme.ini`, and stop the host in
+   `finally`. Their startup wait now polls for `tray started` for up to 30 s
+   instead of assuming a fixed 9 s compile time.
+4. Reworked `Test-TrayHost` to run only in the injected mode, skip `control.ps1`
+   and `--once`, and assert that the logon task is created, its target exists
+   and it is removed. This caught and fixed a false pass: an earlier stale task
+   pointed at a missing script and removal had silently failed. The elevated
+   rerun installed and removed the task correctly (`install exit=0`,
+   `remove exit=0`).
+5. Removed the temporary `read-charge-mode.ps1` (its `New-CimSession` hung on
+   this host) and the temporary stale-host cleanup script. The certified mode
+   read now uses the app's own read-only `--status` path, which returns before
+   any write.
+6. Added the three tests to the Windows x64 CI list and updated `AGENTS.md`,
+   `README.md`, `battery/README.md`, `docs/PROJECT_STATUS.md`,
+   `docs/DEVICE_SUPPORT.md` and `CHANGELOG.md`.
+
+### Verification
+
+- Build: `build.ps1` exit 0; `application.exe` is 115,712 bytes.
+- Certified read before the suite: `cli --status: 79% ac=yes mode=Auto` at
+  21:59:15. After each test: `mode=Auto` at 21:59:45, 22:00:44 and 22:01:46.
+- `Test-UI`: exit 0; `showCeiling` on/off; `cap=monitoring`; no write line.
+- `Test-Theme`: exit 0; dark/light/auto; `cap=monitoring`; no write line.
+- `Test-TrayHost`: exit 0 (elevated); hosted `--status`, 30 s sample,
+  screenshots, logon task install/remove; `cap=monitoring`; no write line;
+  `autostart install exit=0` and `autostart remove exit=0`.
+- Safety sweep: `TRAY_LEFT=0`, `TASK_LEFT=none`, `FINAL_MODE_AUTO=True`,
+  `SUITE_RESULT=PASS`. The log had no `charge mode set`, `action=auto|inhibit`,
+  `inhibit write` or `auto write` line.
+- Remaining hardware-safe tests were run after the test-mode changes; results
+  are recorded in `docs/PROJECT_STATUS.md`.
+
+### Limitations
+
+- `Test-Tray`, `Test-FloatMode` and `verify.ps1` remain intentionally unrun;
+  they are write-capable hardware checks.
+- The updated CI list has not run on hosted CI because no push was authorized.
+- No Acer, Lenovo or Dell hardware was available, so no candidate writer was
+  enabled or validated.
+
+## 2026-11-09 — Controller foundation and hardware validation gates
+
+### Goal
+
+Implement phases 0–2 of the approved laptop-support plan: a vendor-neutral
+controller model, a read-only probe, a hardware-free simulator, contract and
+safety tests, and an evidence-gated validation programme. Do not claim a new
+vendor writer without physical hardware.
+
+### Work performed
+
+1. Added `battery/src/Controllers.cs`: `DeviceFingerprint`,
+   `DeviceProfileCatalog`, `ControllerCapabilities`, `ControllerResult`,
+   `IChargeController`, `IControllerProvider`, `WriteGuard`, `IWmiGateway`,
+   `HpBiosWmiGateway` and `SimulatedWmiGateway`.
+2. Routed the existing HP path through `WriteGuard`; it still writes only
+   `0x00` (auto) and `0x05` (inhibit) and still performs a read-back. The
+   legacy `SetAuto`/`SetInhibit` methods remain for the hardware tests.
+3. Added read-only Acer, Lenovo and Dell candidate profiles. They are reported
+   in the controller log but have no registered writer. ASUS, MSI, Razer,
+   Samsung, Toshiba/Dynabook, Fujitsu, Surface and Framework remain
+   monitoring-only. The capability UI distinguishes `AutoInhibit`,
+   `FixedThreshold`, `StartStopThreshold` and `MonitoringOnly`; fixed and
+   start-stop profiles never receive the generic 50–100% slider.
+4. Added `battery/scripts/probe-controllers.ps1` and
+   `battery/scripts/simulate-controller.ps1`. The probe collects no serial
+   numbers and invokes no WMI method.
+5. Added `battery/tests/Test-ControllerFoundation.ps1` and the ten-test CI
+   entry. The test covers profile matching, the fixed-80% gate, unplugged
+   inhibition, access denial, empty and mismatched read-back, rollback and
+   forced-discharge rejection.
+6. Added `docs/CONTROLLER_VALIDATION.md` with the probe command, simulator
+   scenarios, tester protocol, acceptance criteria, report template and
+   privacy limitations. Updated the device, architecture, roadmap, decisions,
+   README and changelog documentation.
+
+### Verification
+
+- Clean build: deleted `battery/application.exe`, ran `build.ps1`, csc exit 0;
+  the rebuilt `application.exe` is 115,200 bytes.
+- `Test-ControllerFoundation.ps1`: all checks OK, including missing-provider,
+  unplugged, access-denied, empty/mismatched read-back, rollback and
+  forced-discharge rejection; simulated WMI only, no hardware writes.
+- `Test-FloatLogic.ps1`: 13/13 OK.
+- `Test-TrayMenu.ps1`: all checks OK; the injected Acer candidate reports
+  `Monitoring only` in the tray menu and Settings, and Settings has no threshold
+  slider or limit checkbox attached. A synthetic `LabVerified` fixed-80%
+  profile gets a capability-only card and no generic slider; this is a UI
+  contract test, not an enabled provider.
+- The complete hardware-safe local set passed: `Test-AppIdentity`,
+  `Test-BatteryInfo`, `Test-ControllerFoundation`, `Test-FloatLogic`,
+  `Test-Icons`, `Test-LanguageAuto`, `Test-Layout`, `Test-LogRotation`,
+  `Test-ScheduleConflict`, `Test-Settings`, `Test-TrayMenu`, `Test-UiPolish`,
+  `Test-ThemeLive` and `VisualCapture` (13 images).
+- `Test-UI`, `Test-Theme`, `Test-TrayHost`, `Test-Tray`, `Test-FloatMode` and
+  `verify.ps1` were left unrun: the first four start the real tray, which on
+  this HP host can write the charge mode, and the last two are explicitly
+  hardware-writing checks. `Test-TrayMenu` is now the tenth Windows CI test.
+- Safety incident during the attempted UI/Theme run: a stale tray survived the
+  harness and reloaded `Longevity 60` after the settings restore, writing
+  `Inhibit` at 21:34:38. The tray (PID 2424) was stopped and `Auto` was restored
+  through the verified HP `0x00` path at 21:39:03 (firmware read-back `Auto`).
+  No subsequent charge write occurred; the safe suite was rerun after recovery.
+- `simulate-controller.ps1` success, unplugged, denied, missing, mismatch and
+  empty-read scenarios produced the expected fail-closed results.
+- `probe-controllers.ps1` ran read-only on the HP development notebook, wrote
+  a JSON report with no serial fields, and reported 77 WMI class entries and 31
+  normalized ACPI prefixes.
+- `git diff --check`: clean.
+
+### Limitations
+
+- Acer, Lenovo and Dell hardware was not available; no candidate writer was
+  enabled and no hardware validation is claimed.
+- The probe and simulator do not prove firmware behavior. No signed tester
+  package exists because signing is not configured.
+- A new hosted CI run has not been executed from this local change set.
+
+## 2026-11-09 — F.28 firmware map and read-only probe
+
+### Goal
+
+Use the official HP F.28 BIOS image to map the hidden setup settings behind
+the BatteryGuard charge ceiling, document them, and check whether they can be
+read from Windows without touching the firmware.
+
+### Work performed
+
+1. Parsed the F.28 `SetupUtility` module (SoftPaq `sp155605`) statically: 9 HII
+   form packages, 237 settings, 58 in forms no `Ref` reaches, 204 with a
+   `SuppressIf`, `DisableIf` or `GrayOutIf` condition, and 144 with an English
+   prompt. The IFR parse and its scripts live under `.bios-analysis/` and are
+   not part of the shipped application.
+2. Added the **Hidden firmware settings (HP ENVY x360 13-ay, Insyde F.28)**
+   section to `docs/DEVICE_SUPPORT.md`, with the SystemConfig,
+   H19SetupUtilityConfig and H19SetupVariable GUIDs, the charge, virtualization
+   and privacy offsets, their gate bytes, and an explicit warning against
+   writing setup variables from the OS.
+3. Added `battery/scripts/probe-bios-settings.ps1` for the four documented
+   stores. It enables `SeSystemEnvironmentPrivilege`, calls only
+   `GetFirmwareEnvironmentVariable`, prints the raw bytes and documented
+   offsets, evaluates the gate bytes, and reports Win32 errors. It never writes
+   firmware.
+4. Clarified `ChargePolicy` with a comment: the effective ceiling is
+   `min(app ceiling, firmware Battery Care Function)`. A pack that plateaus
+   below the app ceiling while the WMI mode stays `Auto` is a firmware limit,
+   not a controller failure, and the app has no read path for it.
+5. Documented a read-only UEFI shell procedure (`dmpstore` to a FAT32 stick)
+   for the case where the values are ever required, with the Secure Boot,
+   BitLocker and write-command warnings.
+
+### Verification
+
+- `build.ps1`: csc exit 0; `application.exe` 99,840 bytes.
+- `Test-FloatLogic.ps1`: 13/13 OK.
+- PowerShell parser: `probe-bios-settings.ps1` parses without errors.
+- Non-elevated probe: exits 2 with the elevation message.
+- Elevated probe (approved, run twice): `SeSystemEnvironmentPrivilege`
+  enabled, then all four documented names (`SystemConfig`,
+  `H19SetupUtilityConfig`, `H19SetupVariable` and `AdvanceConfig`) returned
+  `Win32 203 (ERROR_ENVVAR_NOT_FOUND)`. No setup value was read and no firmware
+  write was performed.
+
+### Limitations observed
+
+The IFR store names are internal to the firmware; they are not exposed as
+runtime EFI variables on this machine. The current values, including the
+Battery Care Function ceiling, therefore cannot be read from Windows. The probe
+is a capability check, not a value reader, and a UEFI shell dump would be the
+only read-only alternative. No NVRAM write was attempted and none is supported.
+
+### Next
+
+- If the stored values are ever required, take a read-only UEFI shell dump of
+the setup variables and compare it with the documented offsets. Do not write.
+
 ## 2026-11-09 — v0.2.0 release
 
 ### Work performed

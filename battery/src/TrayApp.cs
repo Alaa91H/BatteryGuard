@@ -24,11 +24,12 @@ namespace BatteryGuardTray
     {
         private const uint WM_TRAYICON = Native.WM_TRAYICON;
         private const uint TimerId = 1;
+        private const uint LanguageCommandBase = 200;
         private const uint WM_LBUTTONUP = 0x0202;
         private const uint WM_LBUTTONDBLCLK = 0x0203;
         private const uint WM_RBUTTONUP = 0x0205;
 
-        private readonly Engine _engine = new Engine();
+        private readonly Engine _engine;
         private Native.WndProcDelegate _windowProc;
         private IntPtr _window;
         private IntPtr _icon;
@@ -48,6 +49,13 @@ namespace BatteryGuardTray
         private DateTime _lastFloatLog = DateTime.MinValue;
         private int _settingsOpen;
         private int _logOpen;
+
+        public TrayApp() : this(new Engine()) { }
+
+        internal TrayApp(Engine engine)
+        {
+            _engine = engine ?? new Engine();
+        }
 
         public void Run()
         {
@@ -144,9 +152,10 @@ namespace BatteryGuardTray
                 action = "error";
             }
 
-            var status = string.Format(CultureInfo.InvariantCulture, "{0:HH:mm:ss} {1}% ac={2} mode={3} policy={4} action={5} float={6} control={7} health={8} full={9}/{10} mWh v={11}mV p={12}mW",
+            var status = string.Format(CultureInfo.InvariantCulture, "{0:HH:mm:ss} {1}% ac={2} mode={3} policy={4} action={5} float={6} control={7} cap={8} health={9} full={10}/{11} mWh v={12}mV p={13}mW",
                 DateTime.Now, _engine.Percent, _engine.OnAc ? "yes" : "no", _engine.Mode, _engine.Current.Label, action,
                 _engine.FloatActive ? "yes" : "no", _engine.CanControlCharge ? "full" : "monitor",
+                _engine.Capabilities == null ? "unknown" : _engine.Capabilities.Key,
                 _engine.Health, _engine.FullCharged, _engine.Designed, _engine.Voltage, _engine.PowerMilliwatts);
 
             UpdateIcon();
@@ -471,10 +480,14 @@ namespace BatteryGuardTray
             }
         }
 
-        private void ShowMenu()
+        // Build the popup separately from TrackPopupMenu so the menu content
+        // can be verified without opening a modal menu loop.
+        private IntPtr BuildPopupMenu()
         {
             var config = _engine.Config;
             bool control = _engine.CanControlCharge;
+            bool fullControl = control && _engine.Capabilities != null &&
+                (_engine.Capabilities.Kind & ControllerCapability.AutoInhibit) != 0;
             IntPtr menu = Native.CreatePopupMenu();
 
             AddInfo(menu, string.Format(CultureInfo.InvariantCulture, "BatteryGuard — {0}% · {1}", _engine.Percent, _engine.ModeText()));
@@ -490,12 +503,17 @@ namespace BatteryGuardTray
             string electrical = _engine.ElectricalText();
             if (electrical.Length > 0) AddInfo(menu, electrical);
 
-            AddInfo(menu, _engine.Current.Auto
+            string limit = _engine.Current.Auto
                 ? Loc.T("Standard charging — no limit")
-                : string.Format(CultureInfo.InvariantCulture, Loc.T("Limit {0}% · Resume {1}%"), _engine.Current.Ceiling, _engine.Current.Resume));
+                : string.Format(CultureInfo.InvariantCulture, Loc.T("Limit {0}% · Resume {1}%"), _engine.Current.Ceiling, _engine.Current.Resume);
 
             int estimate = _engine.MinutesRemaining();
-            if (estimate > 0)
+            bool limitedCharge = _engine.Charging && !_engine.Current.Auto && _engine.Current.Ceiling > 0 && estimate > 0;
+            if (limitedCharge)
+                limit += " · ≈ " + Engine.FormatMinutes(estimate);
+            AddInfo(menu, limit);
+
+            if (estimate > 0 && !limitedCharge)
                 AddInfo(menu, (_engine.Charging ? Loc.T("Until full ≈ ") : Loc.T("Remaining ≈ ")) + Engine.FormatMinutes(estimate));
 
             string schedule = config.ScheduleEnabled && config.Schedule.Count > 0
@@ -505,6 +523,8 @@ namespace BatteryGuardTray
             AddInfo(menu, schedule);
 
             if (!control) AddInfo(menu, Loc.T("Monitoring only"));
+            else if (_engine.Capabilities != null && (_engine.Capabilities.Kind & ControllerCapability.AutoInhibit) == 0)
+                AddInfo(menu, _engine.CapabilityText());
             else if (_engine.FloatActive && _engine.OnAc) AddInfo(menu, Loc.T("Charger power · battery idle"));
 
             if (!string.IsNullOrEmpty(_scheduleWarning))
@@ -515,19 +535,33 @@ namespace BatteryGuardTray
 
             AddSeparator(menu);
             AddItem(menu, 182, Loc.T("Charge control…"), control);
-            AddCheck(menu, 102, Loc.T("Standard charging (no limit)"), config.Preset == "Off" || !config.Ceiling.HasValue, control);
-            AddCheck(menu, 100, Loc.T("Recommended — 80% / 75%"), config.Preset == "Recommended", control);
-            AddCheck(menu, 101, Loc.T("Longevity — 60% / 55%"), config.Preset == "Longevity", control);
-            AddCheck(menu, 103, Loc.T("Custom limit…"), config.Preset == "Custom", control);
-            AddCheck(menu, 183, Loc.T("Float mode (charger power)"), config.FloatMode, control);
+            if (fullControl)
+            {
+                AddCheck(menu, 102, Loc.T("Standard charging (no limit)"), config.Preset == "Off" || !config.Ceiling.HasValue, true);
+                AddCheck(menu, 100, Loc.T("Recommended — 80% / 75%"), config.Preset == "Recommended", true);
+                AddCheck(menu, 101, Loc.T("Longevity — 60% / 55%"), config.Preset == "Longevity", true);
+                AddCheck(menu, 103, Loc.T("Custom limit…"), config.Preset == "Custom", true);
+                AddCheck(menu, 183, Loc.T("Float mode (charger power)"), config.FloatMode, true);
+            }
 
             AddSeparator(menu);
-            AddCheck(menu, 172, Loc.T("Schedule"), config.ScheduleEnabled && config.Schedule.Count > 0);
-            AddItem(menu, 173, Loc.T("Edit schedule…"));
+            AddCheck(menu, 172, Loc.T("Schedule"), config.ScheduleEnabled && config.Schedule.Count > 0, fullControl);
+            AddItem(menu, 173, Loc.T("Edit schedule…"), fullControl);
 
             AddSeparator(menu);
             AddItem(menu, 180, Loc.T("Settings…"));
             AddItem(menu, 181, Loc.T("Activity log…"));
+
+            IntPtr languages = Native.CreatePopupMenu();
+            AddCheck(languages, LanguageCommandBase, Loc.T("Automatic (system)"),
+                string.Equals(UiSettings.Language, "auto", StringComparison.OrdinalIgnoreCase));
+            for (int index = 0; index < Loc.All.Length; index++)
+            {
+                var language = Loc.All[index];
+                AddCheck(languages, (uint)(LanguageCommandBase + 1 + index), language.Name,
+                    string.Equals(UiSettings.Language, language.Code, StringComparison.OrdinalIgnoreCase));
+            }
+            AddSubMenu(menu, languages, Loc.T("Language"));
 
             IntPtr themes = Native.CreatePopupMenu();
             AddCheck(themes, 160, Loc.T("Auto (system theme)"), ThemeSettings.Mode == ThemeMode.Auto);
@@ -538,6 +572,13 @@ namespace BatteryGuardTray
             AddCheck(menu, 140, Loc.T("Launch at startup"), Autostart.IsInstalled());
             AddSeparator(menu);
             AddItem(menu, 150, Loc.T("Exit"));
+
+            return menu;
+        }
+
+        private void ShowMenu()
+        {
+            IntPtr menu = BuildPopupMenu();
 
             Native.POINT point;
             Native.GetCursorPos(out point);
@@ -590,9 +631,27 @@ namespace BatteryGuardTray
                 case 180: OpenSettings(); break;
                 case 181: OpenLog(); break;
                 case 150: Native.DestroyWindow(_window); break;
+
+                default:
+                    int languageIndex = (int)command - (int)LanguageCommandBase;
+                    if (languageIndex >= 0 && languageIndex <= Loc.All.Length)
+                    {
+                        SetLanguage(languageIndex == 0 ? "auto" : Loc.All[languageIndex - 1].Code);
+                    }
+                    break;
             }
 
             if (command >= 100 && command != 150) Tick();
+        }
+
+        private void SetLanguage(string code)
+        {
+            // Keep an explicit direction choice; automatic direction follows the
+            // newly loaded language.
+            UiSettings.Language = string.IsNullOrEmpty(code) ? "auto" : code;
+            UiSettings.Save();
+            Loc.Load(UiSettings.Language);
+            Program.Log("language -> " + UiSettings.Language);
         }
 
         private void ApplyPreset(string preset, int? ceiling, int resume)

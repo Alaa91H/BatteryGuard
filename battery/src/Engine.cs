@@ -45,6 +45,15 @@ namespace BatteryGuardTray
     {
         // Pure decision logic, kept separate from WMI so it can be tested
         // without a battery. Float is only latched after the ceiling is reached.
+        //
+        // Firmware ceiling: the HP firmware can enforce its own charge limit
+        // (Battery Care Function, SystemConfig 0x23E in the F.28 setup store).
+        // That limit is independent of and invisible to this policy, so the
+        // effective ceiling is min(app ceiling, firmware ceiling). When the
+        // firmware stops charging first, the WMI mode stays Auto, the percentage
+        // plateaus below the configured ceiling and float never latches. That is
+        // not a controller failure: the app has no read path for the firmware
+        // value and must not retry or override it.
         public static ChargeDecision Evaluate(bool standardCharging, bool onAc, int percent,
             int? ceiling, int? resume, bool floatMode, bool floatActive, ChargeMode mode)
         {
@@ -105,7 +114,7 @@ namespace BatteryGuardTray
 
     internal sealed class Engine : IDisposable
     {
-        private readonly IBatteryController _controller;
+        private readonly IChargeController _controller;
 
         public GuardConfig Config = new GuardConfig();
         public bool FloatActive;
@@ -140,14 +149,19 @@ namespace BatteryGuardTray
             return BatteryInfo.FormatElectrical(Voltage, PowerMilliwatts);
         }
 
-        public Engine()
+        public Engine() : this(BatteryControllerFactory.Create()) { }
+
+        internal Engine(IChargeController controller)
         {
-            _controller = BatteryControllerFactory.Create();
+            if (controller == null) throw new ArgumentNullException("controller");
+            _controller = controller;
         }
 
         public string VendorName { get { return _controller.VendorName; } }
         public string ModelName { get { return _controller.ModelName; } }
         public bool CanControlCharge { get { return _controller.CanControlCharge; } }
+        public ControllerCapabilities Capabilities { get { return _controller.Capabilities; } }
+        public DeviceProfile ControllerProfile { get { return _controller.Profile; } }
         public bool IsHpDevice { get { return DeviceInfo.IsHp; } }
 
         public string Tick(bool apply)
@@ -196,39 +210,47 @@ namespace BatteryGuardTray
 
         public void ForceAuto()
         {
-            if (!CanControlCharge || !_controller.SetAuto()) return;
-            Thread.Sleep(400);
-            Mode = _controller.ReadMode();
+            if (!CanControlCharge) return;
+            ControllerResult result = _controller.RequestAuto(OnAc);
+            Mode = result.Observed;
+            if (!result.Ok)
+            {
+                Program.Log("manual auto failed: " + result);
+                return;
+            }
             FloatActive = false;
             Program.Log("manual auto, readback " + Mode);
         }
 
         public void ForceInhibit()
         {
-            if (!CanControlCharge || !_controller.SetInhibit()) return;
-            Thread.Sleep(400);
-            Mode = _controller.ReadMode();
+            if (!CanControlCharge) return;
+            ControllerResult result = _controller.RequestInhibit(OnAc);
+            Mode = result.Observed;
+            if (!result.Ok)
+            {
+                Program.Log("manual inhibit failed: " + result);
+                return;
+            }
             FloatActive = Config.FloatMode && OnAc && Percent >= Current.Ceiling;
             Program.Log("manual inhibit, readback " + Mode);
         }
 
         private bool SetInhibitConfirmed()
         {
-            if (!_controller.SetInhibit()) return false;
-            Thread.Sleep(400);
-            Mode = _controller.ReadMode();
-            bool ok = Mode == ChargeMode.Inhibit;
-            Program.Log(ok ? "charge inhibited" : "inhibit not confirmed");
+            ControllerResult result = _controller.RequestInhibit(OnAc);
+            Mode = result.Observed;
+            bool ok = result.Ok && Mode == ChargeMode.Inhibit;
+            Program.Log(ok ? "charge inhibited" : "inhibit not confirmed: " + result);
             return ok;
         }
 
         private bool SetAutoConfirmed()
         {
-            if (!_controller.SetAuto()) return false;
-            Thread.Sleep(400);
-            Mode = _controller.ReadMode();
-            bool ok = Mode == ChargeMode.Auto;
-            Program.Log(ok ? "charging restored" : "auto not confirmed");
+            ControllerResult result = _controller.RequestAuto(OnAc);
+            Mode = result.Observed;
+            bool ok = result.Ok && Mode == ChargeMode.Auto;
+            Program.Log(ok ? "charging restored" : "auto not confirmed: " + result);
             return ok;
         }
 
@@ -250,13 +272,32 @@ namespace BatteryGuardTray
             OnAc = info.PowerOnline;
         }
 
-        public int MinutesRemaining()
+        public int TargetPercent()
         {
-            if (Charging && ChargeRate > 0 && FullCharged > Remaining)
-                return (int)Math.Round((FullCharged - Remaining) * 60.0 / ChargeRate);
+            return Current != null && !Current.Auto && Current.Ceiling > 0
+                ? Current.Ceiling
+                : 100;
+        }
+
+        public int MinutesToPercent(int targetPercent)
+        {
+            if (Charging && ChargeRate > 0 && FullCharged > 0)
+            {
+                int targetCapacity = (int)Math.Round(
+                    FullCharged * Math.Max(0, Math.Min(100, targetPercent)) / 100.0);
+                if (targetCapacity > Remaining)
+                    return (int)Math.Round((targetCapacity - Remaining) * 60.0 / ChargeRate);
+            }
+
             if (Discharging && DischargeRate > 0 && Remaining > 0)
                 return (int)Math.Round(Remaining * 60.0 / DischargeRate);
             return -1;
+        }
+
+        public int MinutesRemaining()
+        {
+            // Charging estimates follow the active ceiling, not always 100%.
+            return MinutesToPercent(TargetPercent());
         }
 
         public string EstimateText()
@@ -286,6 +327,13 @@ namespace BatteryGuardTray
                 case ChargeMode.ForceDischarge: return Loc.T("Forced discharge");
                 default: return CanControlCharge ? Loc.T("Unsupported") : Loc.T("Monitoring only");
             }
+        }
+
+        public string CapabilityText()
+        {
+            if (!CanControlCharge) return Loc.T("Monitoring only");
+            if (Capabilities == null) return Loc.T("Charge control");
+            return Capabilities.DisplayName;
         }
 
         public string Tooltip()

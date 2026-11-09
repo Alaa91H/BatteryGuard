@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Web.Script.Serialization;
 
 namespace BatteryGuardTray
@@ -65,6 +66,9 @@ namespace BatteryGuardTray
         private static string _code = "en";
         private static bool _loaded;
 
+        [DllImport("kernel32.dll")]
+        private static extern ushort GetUserDefaultUILanguage();
+
         public static string Code
         {
             get { return _code; }
@@ -84,7 +88,29 @@ namespace BatteryGuardTray
             return item != null && item.Rtl;
         }
 
-        // "auto" follows the Windows display language. Chinese is mapped by
+        // PowerShell and other hosts can load a different CurrentUICulture.
+        // Ask Windows for the user's display language instead so "auto" follows
+        // the device rather than the process that launched the tray.
+        private static CultureInfo WindowsUiCulture()
+        {
+            try
+            {
+                ushort languageId = GetUserDefaultUILanguage();
+                if (languageId != 0)
+                {
+                    CultureInfo culture = CultureInfo.GetCultureInfo((int)languageId);
+                    if (culture != null && !string.IsNullOrEmpty(culture.Name)) return culture;
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.Log("UI language read error: " + ex.Message);
+            }
+
+            return CultureInfo.InstalledUICulture ?? CultureInfo.CurrentUICulture;
+        }
+
+        // "auto" follows the Windows user UI language. Chinese is mapped by
         // script/region; Portuguese, Hebrew and Indonesian use their modern
         // two-letter codes. Anything unsupported falls back to English.
         public static string Resolve(string setting)
@@ -92,7 +118,7 @@ namespace BatteryGuardTray
             string value = (setting ?? "").Trim();
             if (value.Length == 0 || string.Equals(value, "auto", StringComparison.OrdinalIgnoreCase))
             {
-                CultureInfo culture = CultureInfo.CurrentUICulture;
+                CultureInfo culture = WindowsUiCulture();
                 string name = culture.Name ?? "";
                 if (name.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
                 {

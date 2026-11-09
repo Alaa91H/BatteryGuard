@@ -88,7 +88,7 @@ complete source, tests, build scripts and code-signing policy are public. The
 v0.2.0 release (2026-11-09) contains 14 platform-native assets: 3 Windows EXE
 bootstrappers, 3 Windows MSIs, 6 Linux packages and 2 macOS PKGs. Every tag runs
 a seven-job, GitHub-hosted build, test and attestation matrix; the Windows x64
-job runs eight hardware-independent C# tests and quiet MSI/EXE install-uninstall
+job ran eight hardware-independent C# tests in the v0.2.0 run; the current branch adds ninth and tenth checks, with quiet MSI/EXE install-uninstall
 and v0.1.0 upgrade checks. The installers carry GitHub/Sigstore build-provenance
 attestations, and the repository is continuously built and tested on GitHub
 Actions.

@@ -22,6 +22,7 @@ battery/ui.test-backup.txt
 battery/config.test-backup.json
 battery/tests/*.log
 battery/tests/*.png
+battery/scripts/controller-probe.json
 battery/tests/*.out.log
 battery/tests/*.err.log
 portable/target/

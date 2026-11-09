@@ -2,6 +2,65 @@
 
 All notable changes to this project are documented here. The format follows the spirit of Keep a Changelog. Releases use the version from `portable/Cargo.toml` and a matching `v*` tag.
 
+## Unreleased — controller foundation
+
+### Added
+
+- Vendor-neutral controller profiles and capabilities: `DeviceFingerprint`,
+  `DeviceProfileCatalog`, `ControllerCapabilities`, `IChargeController` and an
+  ordered `IControllerProvider` registry.
+- `WriteGuard` as the single production write gate: auto/inhibit allow-list,
+  AC check, read-back confirmation and one rollback on mismatch.
+- `IWmiGateway`, a real `HpBiosWmiGateway` and a `SimulatedWmiGateway` for
+  hardware-free contract tests.
+- Explicit fail-closed test mode:
+  `BATTERYGUARD_TEST_CONTROLLER=monitoring` makes the factory return
+  `GenericBatteryController` before any provider, WMI gateway or `WriteGuard`
+  is created. `start.ps1` keeps that tray in the PowerShell host so tests can
+  observe and stop it.
+- Read-only `battery/scripts/probe-controllers.ps1` and
+  `battery/scripts/simulate-controller.ps1`.
+- `Test-ControllerFoundation.ps1` and the evidence-gated hardware protocol in
+  `docs/CONTROLLER_VALIDATION.md`.
+- Acer, Dell and Lenovo candidate profiles. They are logged but have no writer;
+  HP remains the only field-verified charge controller. Settings hides the
+  charge-limit slider entirely when the profile is not writable, and a future
+  fixed/start-stop writer gets a capability-only card instead of a generic
+  50–100% slider.
+
+### Verification
+
+- Local build: `application.exe` 115,712 bytes.
+- Capability-aware UI: the tray suppresses generic presets for fixed/start-stop
+  controllers, and Settings renders a capability-only card instead of a
+  50–100% slider. The synthetic fixed test is not an enabled provider.
+- `Test-ControllerFoundation.ps1`: profile matching, fixed-80% candidate gate,
+  unplugged inhibit, access denial, missing provider, empty/mismatched read-back,
+  rollback and forced-discharge rejection passed using simulated WMI.
+- `Test-TrayMenu.ps1`: an injected Acer candidate controller reported
+  `Monitoring only` in the tray menu and Settings, and Settings attached no
+  threshold slider or limit checkbox.
+- `Test-FloatLogic.ps1`: 13/13 passed; the other hardware-safe tests,
+  `Test-ThemeLive.ps1` and `VisualCapture.ps1` also passed from a clean build.
+- Test-TrayMenu and the three injected-mode tray tests are now part of the
+  Windows CI list; the write-capable hardware tests remain outside it.
+- `Test-UI`, `Test-Theme` and `Test-TrayHost` passed in the injected
+  monitoring-only mode. The real HP mode read `Auto` before the set and after
+  each run; no charge-write log line appeared; no tray or logon task remained.
+- An earlier UI/Theme attempt, before the test controller existed, left a stale
+  tray that wrote HP `Inhibit` at 60%; the process was stopped and Auto was
+  restored with read-back. That incident is why the injected controller is now
+  mandatory for these tests.
+- Read-only probe ran on the HP development notebook and produced a report
+  with no serial numbers; this is not proof of a new vendor writer.
+
+### Known limitations
+
+- Acer, Lenovo and Dell hardware was not available. No candidate writer is
+  enabled and no hardware validation is claimed.
+- The probe and simulator do not prove firmware behavior. The tester package is
+  not signed because signing is not configured.
+
 ## 2026-11-09 — v0.2.0
 
 First release with Windows tray installers.
