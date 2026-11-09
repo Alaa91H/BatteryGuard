@@ -97,11 +97,14 @@ GitHub Actions builds native installers for all supported systems:
 
 The published release is [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0), with all 11 installers attached. Those assets install the cross-platform `batteryguard` CLI from `portable/`. Branch builds now produce a Windows MSI that contains both the C# tray and the Rust CLI: `application.exe`, `batteryguard.exe`, the 30 locale catalogs, an all-users Start Menu shortcut carrying `BatteryGuard.Tray`, and an uninstall shortcut. Linux DEB/RPM/AppImage and macOS PKG still bundle the CLI only. The tray MSI is not in `v0.1.0`; it will ship in the next version tag.
 
-Every branch build signs the installers with a keyless Sigstore build-provenance
-attestation and keeps them as workflow artifacts. A GitHub Release is created
-only from a matching `v*` tag; branch builds never publish. See
-[`docs/RELEASE.md`](docs/RELEASE.md) for the version rule, signing boundary and
-asset policy.
+The Windows x64 job runs the hardware-independent C# suite before packaging.
+Every branch build also creates a keyless Sigstore build-provenance attestation
+and keeps the installers as workflow artifacts. Windows Authenticode and macOS
+Developer ID/notarization are optional: the workflow uses them when the
+documented certificate secrets exist and leaves the packages unsigned when
+they do not. A GitHub Release is created only from a matching `v*` tag; branch
+builds never publish. See [`docs/RELEASE.md`](docs/RELEASE.md) for the version
+rule, signatures and asset policy.
 
 Run the hardware-independent regression checks:
 
@@ -120,8 +123,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-Layout.ps
 ## Status
 
 - Build: `battery/application.exe`, 99,328 bytes at the last local build.
-- Release CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the only workflow. Hosted run [42629998330](https://github.com/Alaa91H/BatteryGuard/actions/runs/42629998330) passed all seven native packaging jobs and produced 11 installers: three MSI, six Linux packages and two macOS PKG files. The x64 MSI install/uninstall smoke test passed, as did native DEB and PKG install-and-run checks for `batteryguard --version`. Branch builds attest and upload artifacts; a matching `v*` tag is the only path that publishes a GitHub Release. The tag release [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) remains the earlier CLI-only release.
-- Portable core: the read-only Rust library, CLI and test harness type-check on 12 Windows/Linux/macOS targets. Run 42629998330 linked, tested and ran `batteryguard --version` on six native runners, and installed/ran the DEB and PKG packages. No linked binary or test run was possible locally because the MSVC linker is absent and Application Control blocks Cargo and the available GNU/lld linkers. Linux/macOS widgets, BIOS charger wattage and native Authenticode/notarization remain later work.
+- Release CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the only workflow. Hosted run [42632698346](https://github.com/Alaa91H/BatteryGuard/actions/runs/42632698346) passed all seven native packaging jobs and produced 11 installers: three MSI, six Linux packages and two macOS PKG files. The Windows x64 job ran the eight-test C# suite; the x64 MSI install/uninstall and native DEB/PKG install-and-run checks also passed. Branch builds attest and upload artifacts; a matching `v*` tag is the only path that publishes a GitHub Release. The tag release [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) remains the earlier CLI-only release.
+- Portable core: the read-only Rust library, CLI and test harness type-check on 12 Windows/Linux/macOS targets. Run 42632698346 linked, tested and ran `batteryguard --version` on six native runners, and installed/ran the DEB and PKG packages. No linked binary or test run was possible locally because the MSVC linker is absent and Application Control blocks Cargo and the available GNU/lld linkers. Linux/macOS widgets and BIOS charger wattage remain later work; optional native signing hooks exist but are unconfigured.
 - Float policy: 13/13 decision cases pass; float starts only at the limit and holds until the resume point.
 - Electrical readings: the tooltip, tray menu, status balloon and Settings card show pack voltage and charge/discharge power; the real reading was `11.8 V · 0.0 W` while the charger held the battery idle.
 - Notification identity: the Start Menu shortcut and `System.AppUserModel.ID` were verified as `BatteryGuard.Tray`; the banner label itself was not captured because browser notifications occupied the screen during the check. No reliable automated banner-label test is included yet.

@@ -1,5 +1,69 @@
 # Session log
 
+## 2026-11-09 — C# CI gate, optional signing and v0.1.0 installer checks
+
+### Goal
+
+Run the existing C# regression suite in CI, add native-signing paths that only
+activate when credentials exist, and record honest runtime results for the
+published `v0.1.0` packages instead of treating a build as a device test.
+
+### Work performed
+
+1. Added a Windows x64 CI step that seeds ignored `settings.json`,
+   `interface.ini` and `application.log` files and runs eight
+   hardware-independent C# tests: float logic, schedule conflicts, UI polish,
+   settings, notification identity, log rotation, icon rendering and layout.
+2. Added optional Authenticode signing for `application.exe`,
+   `batteryguard.exe` and the MSI when `WINDOWS_CERTIFICATE_BASE64` and
+   `WINDOWS_CERTIFICATE_PASSWORD` exist. The job signs the executables before
+   WiX packages them and verifies every signature with `signtool`.
+3. Added optional macOS Developer ID signing for the CLI, `productsign` for the
+   PKG, `notarytool --wait`, stapler validation and `pkgutil` verification.
+   All documented `MACOS_*` secrets are required together; a partial setup
+   fails instead of silently shipping an unsigned package.
+4. Updated `docs/RELEASE.md` with the secret names and the distinction between
+   the always-on Sigstore attestation and the optional native signatures.
+5. Tested the published `v0.1.0` assets where the environment allowed:
+   - Windows: found an existing CLI-only `0.1.0` installation at
+     `C:\Program Files\BatteryGuard\batteryguard.exe` (303,104 bytes). The
+     x64 MSI hash is `B9F46ECD9A80452EECE2E2FD81F0D1C5F4DE28D7123CA4F0444BA206EEA325E5`
+     and its Authenticode status is `NotSigned`. Executing the installed CLI
+     is blocked by Application Control, so no runtime result was obtained. I
+     did not remove the user's existing installation.
+   - Linux: installed the x64 DEB in WSL2 Ubuntu 24.04 as root, ran
+     `batteryguard --version` (`BatteryGuard portable core 0.1.0`), removed it,
+     and confirmed the package and `/usr/bin/batteryguard` were gone. This is
+     a real Linux kernel/userspace, not a physical Linux device or battery.
+   - macOS: no macOS host was available; the PKG was not installed or run.
+
+### Verification
+
+- All eight C# tests passed locally; hosted run `42632698346` ran the same
+  suite successfully on Windows x64.
+- The new workflow YAML parses; the unsigned path remains the default.
+- Hosted run `42632698346` passed all seven packaging jobs; the signing steps
+  were skipped because no certificate secrets are configured.
+- Linux DEB hash:
+  `34FD580A9A6A90007152C47C5F2B09DFA6DAC9F5AA4326A132749571F490A371`.
+
+### Limitations observed
+
+- No Windows code-signing certificate or Apple Developer ID credentials are
+  available, so the new signing paths are implemented but unverified.
+- The Windows execution test is blocked by Application Control, and the
+  existing installation prevented a clean install/uninstall test. I did not
+  remove it without authorization.
+- Linux coverage is WSL2 only; no physical Linux machine or battery was used.
+- macOS runtime coverage is still missing.
+
+### Next
+
+- Configure the documented signing secrets and verify all three Windows files
+  and the macOS PKG on a clean machine.
+- Run v0.1.0 and the upcoming tray MSI on clean physical Windows, Linux and
+  macOS devices.
+
 ## 2026-11-09 — Windows tray MSI and native package checks
 
 ### Goal

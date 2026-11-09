@@ -57,12 +57,15 @@ does not add a libc dependency.
 Tests run on every native job: Windows x64/x86, Linux x64/ARM64 and both macOS
 architectures. Windows ARM64 is cross-compiled and packaged but cannot execute
 on the x64 hosted runner. `RUSTFLAGS=-D warnings` makes Rust warnings fatal.
-The Windows x64 job installs the MSI, verifies the tray, CLI, icon, locales and
-both Start Menu shortcuts, then uninstalls it. Linux and macOS jobs install
-their native package and run the installed `batteryguard --version`; the RPM
-metadata is checked, while the DEB and PKG are actually installed.
+The Windows x64 job also runs the hardware-independent C# suite (float policy,
+schedule conflicts, settings persistence, notification identity, log rotation,
+icon rendering and adaptive layout). The Windows x64 job installs the MSI,
+verifies the tray, CLI, icon, locales and both Start Menu shortcuts, then
+uninstalls it. Linux and macOS jobs install their native package and run the
+installed `batteryguard --version`; the RPM metadata is checked, while the DEB
+and PKG are actually installed.
 
-## Signing
+## Native signing (optional)
 
 Every installer is covered by a **keyless GitHub build-provenance
 attestation** created by `actions/attest-build-provenance`. The attestation is
@@ -70,14 +73,39 @@ signed by Sigstore/Fulcio using the workflow's OIDC identity and binds the
 artifact digest to this repository, commit and workflow run. No long-lived
 signing key is stored in the repository.
 
-This is a cryptographic supply-chain signature; it is **not** Windows
-Authenticode and it is **not** Apple notarization. The current workflow does
-not have a Windows code-signing certificate or Apple Developer ID, so native
-OS trust prompts and notarization are not claimed. Adding those requires
-repository secrets and a deliberate release-hardening change.
+The workflow also supports native signing when these repository secrets are
+configured. With no secrets it builds unsigned packages and emits a notice; it
+does not claim an OS signature.
 
-Attestations are available from the workflow run and via GitHub's attestation
-API; they are not uploaded as extra release assets.
+Windows Authenticode:
+
+- `WINDOWS_CERTIFICATE_BASE64` — base64 of the PFX; `WINDOWS_CERTIFICATE_PASSWORD` — PFX password.
+- The tray and CLI are signed before the MSI is built, so their signatures are
+  embedded in the package; the MSI is signed afterwards.
+- `signtool verify /pa /all` must pass for the two executables and the MSI.
+
+macOS Developer ID and notarization:
+
+- `MACOS_CERTIFICATE_P12_BASE64`, `MACOS_CERTIFICATE_PASSWORD` and
+  `MACOS_KEYCHAIN_PASSWORD` import the certificate into a temporary keychain.
+- `MACOS_APPLICATION_IDENTITY` and `MACOS_INSTALLER_IDENTITY` are the
+  Developer ID Application and Developer ID Installer identities.
+- `MACOS_NOTARY_APPLE_ID`, `MACOS_NOTARY_TEAM_ID` and
+  `MACOS_NOTARY_PASSWORD` are the Apple ID, team ID and app-specific password
+  used by `xcrun notarytool`.
+- The binary is signed with the hardened runtime, the PKG with `productsign`,
+  then submitted, stapled and checked with `xcrun stapler` and
+  `pkgutil --check-signature`.
+
+No certificate secrets are configured in this repository, so the native
+signing paths are implemented but have not been exercised by the current green
+hosted run. Do not claim a signed artifact until the secrets are configured
+and those verification commands pass.
+
+This is a cryptographic supply-chain signature; it is **not** Windows
+Authenticode and it is **not** Apple notarization. Attestations are available
+from the workflow run and via GitHub's attestation API; they are not uploaded
+as extra release assets.
 
 ## Published assets
 
@@ -136,6 +164,9 @@ run installs the x64 MSI but does not claim a clean-VM test.
 - Hosted run `42629998330` passed all seven packaging jobs: x64 MSI
   install/uninstall and native DEB/PKG install-and-run checks succeeded. The
   branch artifacts contain the new Windows payload.
+- Hosted run `42632698346` added the Windows x64 C# suite and kept all seven
+  packaging jobs green. The optional signing steps were skipped (no secrets),
+  so this run verifies the unsigned path only.
 - Tag run `42624635716` passed every job and published
   [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with
   exactly 11 installer assets. The tag points to commit `449245b`; it remains

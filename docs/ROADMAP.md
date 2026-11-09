@@ -3,7 +3,7 @@
 ## Now
 
 - **Hardware smoke tests.** Hosted CI now links, tests and runs the CLI on six native runners; run it against real batteries on Windows, Linux and macOS and record the readings. Do not treat a hosted build as a hardware test.
-- **Native signing.** Add Windows Authenticode and Apple Developer ID/notarization when certificates and a secret-management policy exist. Keep the current Sigstore provenance attestation as an additional layer, not a substitute.
+- **Native signing credentials.** Authenticode and macOS Developer ID/notarization hooks are in the workflow, but no certificates are configured. Add the documented secrets and verify the signed artifacts; keep Sigstore provenance as an additional layer, not a substitute.
 - **Native translation review.** Have the 30 catalogs reviewed by speakers, starting with the visible menu, settings labels and notification text. Keep the English source keys stable during review.
 - **Live language switch.** Rebuild or reload the open Settings window when the language changes so RTL/LTR and labels update immediately.
 - **Release checklist.** Build, run the hardware-independent suite, launch elevated, inspect the tray and settings windows in LTR and RTL, and verify log rotation.
@@ -16,6 +16,8 @@
 
 - **Windows tray MSI and package install checks.** The per-machine MSI now bundles the C# tray, Rust CLI, all 30 locale catalogs, a Start Menu shortcut with `BatteryGuard.Tray` and an uninstall shortcut. CI installs/uninstalls the x64 MSI and installs/runs the DEB and PKG. Windows x86/ARM64 and RPM are build-only on the current runners.
 
+- **C# CI test gate and optional native signing.** The Windows x64 job runs eight hardware-independent C# tests before packaging. The workflow optionally signs the tray, CLI and MSI with Authenticode and signs/notarizes the macOS PKG when the documented secrets exist; Sigstore provenance remains mandatory.
+
 - **Portable Rust core (phase 1).** Added the shared battery model, formatting, 13-case policy, read-only Windows/Linux/macOS backends, text/JSON/watch CLI, build/test scripts and a 12-target metadata check. The 12 Windows/Linux/macOS targets type-check; no binary or runtime test was possible on this host.
 - **Voltage and power readout.** The tooltip, tray menu, status balloon and Settings battery card show pack voltage and charge/discharge power from `BatteryStatus`; the real idle reading was `11.8 V · 0.0 W`.
 - **Notification identity.** The process AUMID and a matching Start Menu shortcut make Windows label notifications **BatteryGuard**, including the PowerShell-hosted fallback.
@@ -27,7 +29,7 @@
 ## Next
 
 - **Linux/macOS widgets.** Add a tray or menu-bar interface after the read-only backends are verified on real hardware. The Windows tray remains the active UI.
-- **Distribution hardening.** Add native OS code signatures, run the new MSI through a clean-VM install/upgrade/uninstall test, and extend package installation checks to x86/ARM64 and RPM where native runners exist. The current workflow publishes installers with Sigstore build provenance only.
+- **Distribution hardening.** Configure and verify native OS code-signing certificates, run the new MSI through a clean-VM install/upgrade/uninstall test, and extend package installation checks to x86/ARM64 and RPM where native runners exist. Without those secrets the workflow publishes unsigned installers with Sigstore build provenance only.
 - **Notification banner check.** Trigger a status balloon on a clean notification area and confirm the Windows app label visually; a UI Automation probe on this desktop did not expose a visible toast.
 - **BIOS charger wattage.** Add an optional adapter-input power reading only after a documented, model-specific BIOS/WMI field is confirmed and can be read without guessing. The existing electrical card remains pack voltage and charge/discharge power.
 - **Localization QA tooling.** Detect untranslated values, wrong placeholders, text expansion and RTL truncation. Add a catalog coverage report per language.

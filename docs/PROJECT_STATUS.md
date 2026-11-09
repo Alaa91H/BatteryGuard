@@ -3,7 +3,7 @@
 **Date:** 2026-11-09  
 **Application:** BatteryGuard tray monitor  
 **Build:** `battery/application.exe` — 99,328 bytes  
-**CI:** single tag-gated workflow; hosted run `42629998330` green with 11 installers and the new Windows tray MSI; published release remains `v0.1.0` (CLI-only)
+**CI:** single tag-gated workflow; hosted run `42632698346` green with 11 installers, the C# suite and the new Windows tray MSI; published release remains `v0.1.0` (CLI-only)
 
 ## Completed
 
@@ -12,6 +12,8 @@
 - **Device controller layer:** `IBatteryController`, `HpBios`, `GenericBatteryController` and `BatteryControllerFactory`. HP gets charge control; other vendors get full monitoring with an explicit **Monitoring only** state.
 - **Voltage and power readout.** The tray tooltip, menu, status balloon and Settings battery card show the current pack voltage and charge/discharge power, for example `11.8 V · 0.0 W`. Unavailable values are omitted; zero watts is shown when voltage confirms a battery reading. This is battery-pack power, not AC adapter input wattage.
 - **Windows tray MSI.** The branch MSI installs `application.exe`, `batteryguard.exe`, the icon and all 30 locale catalogs under `Program Files\BatteryGuard`. It creates an all-users Start Menu shortcut with `BatteryGuard.Tray` and an **Uninstall BatteryGuard** shortcut. The x64 MSI install/uninstall path is tested in CI; x86 and ARM64 are built but not cross-installed on the x64 runner.
+- **C# CI gate.** The Windows x64 job runs eight hardware-independent C# tests before packaging; the same suite passed locally.
+- **Optional native signing.** The workflow can Authenticode-sign the tray, CLI and MSI, and Developer ID-sign/notarize the macOS PKG, only when the documented secrets exist. No certificates are configured in this repository, so the unsigned path is what the current green run exercises.
 - Charge ceiling, resume point, float mode, scheduled time windows, overlap detection and conflict banners.
 - Battery health, capacity, cycle, temperature and remaining-time display.
 - System notifications, test notification, log viewer, export and 1 MiB rotation.
@@ -49,10 +51,29 @@ Passed in this session (2026-11-09):
 | GitHub Actions `42623422341` | All 7 packaging jobs succeeded; 11 installers; Rust/CLI smoke tests passed; no Node/RPM warnings |
 | GitHub Actions `42624635716` | Tag run succeeded; GitHub Release `v0.1.0` published with exactly 11 installer assets |
 | GitHub Actions `42629998330` | All 7 packaging jobs succeeded; 11 installers; Windows x64 MSI install/uninstall, DEB install/run and PKG install/run checks passed |
+| GitHub Actions `42632698346` | All 7 packaging jobs succeeded; Windows x64 C# suite, x64 MSI install/uninstall, DEB install/run and PKG install/run checks passed |
 
 Locale inventory: 30 JSON files, 151 keys in each file including the `Monitoring only` key; no missing keys and no placeholder mismatches.
 
 The Settings reflection test reported `780×601` client size on this 1280×720 desktop, with a 54 px pinned footer and a 930 px scrollable root. `Test-Layout` confirmed that the footer stays inside the window at every measured size, the content scrolls, and the language/direction combos keep a 190 px width and selected text.
+
+## Published v0.1.0 installer checks
+
+- **Windows (real machine):** an existing CLI-only `0.1.0` installation was
+  found at `C:\Program Files\BatteryGuard\batteryguard.exe` (303,104 bytes).
+  The x64 MSI SHA-256 is
+  `B9F46ECD9A80452EECE2E2FD81F0D1C5F4DE28D7123CA4F0444BA206EEA325E5`;
+  `Get-AuthenticodeSignature` reports `NotSigned`. Running the installed CLI is
+  blocked by Application Control, so no successful runtime result was obtained.
+  The existing installation was left in place; no clean install/uninstall was
+  performed.
+- **Linux:** the x64 DEB (SHA-256
+  `34FD580A9A6A90007152C47C5F2B09DFA6DAC9F5AA4326A132749571F490A371`) was
+  installed in WSL2 Ubuntu 24.04 as root, printed
+  `BatteryGuard portable core 0.1.0`, and was removed; the package and
+  `/usr/bin/batteryguard` were absent afterwards. This is a real Linux
+  kernel/userspace, not a physical Linux device or battery.
+- **macOS:** no macOS host was available; the PKG was not installed or run.
 
 ## Portable core (phase 1)
 
@@ -61,15 +82,16 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 - `portable/src/main.rs` provides a text/JSON/watch CLI; `Cargo.toml` and `rustc` build/test scripts are included.
 - `portable/scripts/check-targets.ps1` type-checks the library, test harness and CLI for 12 targets: x86/x64/ARM64 Windows, x86/x64/ARMv7/ARM64 Linux and Intel/Apple-silicon macOS.
 - The check passed 12/12. It uses `--emit=metadata`, so it validates conditional compilation and types but does not link or execute.
-- **Hosted verification:** GitHub Actions run `42629998330` linked and tested the Rust core on Windows x64/x86, Linux x64/ARM64 and macOS Intel/Apple silicon, built 3 MSI, 6 Linux packages and 2 PKG files, installed the DEB and PKG and ran `batteryguard --version`, and installed/uninstalled the x64 MSI with the C# tray payload. The CLI printed `BatteryGuard portable core 0.1.0` on every runnable target.
+- **Hosted verification:** GitHub Actions run `42632698346` linked and tested the Rust core on Windows x64/x86, Linux x64/ARM64 and macOS Intel/Apple silicon, ran the C# suite on Windows x64, built 3 MSI, 6 Linux packages and 2 PKG files, installed the DEB and PKG and ran `batteryguard --version`, and installed/uninstalled the x64 MSI with the C# tray payload. The CLI printed `BatteryGuard portable core 0.1.0` on every runnable target.
 - **Not verified locally:** no linked `batteryguard` executable, no executed Rust tests and no local Linux/macOS runtime. This host has no MSVC linker; Application Control blocks Cargo, GNU rustc and the available lld/GNU linkers.
-- **Not included:** Linux/macOS widgets, cross-platform charge control and native Authenticode/Apple notarization. The installers carry Sigstore build-provenance attestations, not OS code signatures.
+- **Not included:** Linux/macOS widgets and cross-platform charge control. Native Authenticode/Apple notarization is implemented as an optional signing path, but no certificates are configured and it has not been exercised; the current installers carry Sigstore build-provenance attestations only.
 
 ## Release CI
 
 - `.github/workflows/ci.yml` is the only workflow. It validates the Cargo version, builds the full matrix, attests the installers and uploads branch artifacts.
 - The release job is skipped unless the ref is `refs/tags/v<Cargo version>`; it filters assets to `.msi`, `.deb`, `.rpm`, `.AppImage` and `.pkg`.
-- Branch run `42629998330` covered all 7 native packaging jobs and produced 11 installers. Its x64 MSI passed install, payload, Start Menu/uninstall-shortcut and uninstall checks; Linux DEB and macOS PKG install-and-run checks passed. Earlier runs exposed missing Cargo paths (`42622500646`), Unix packaging paths, the invalid `CommonProgramsFolder` WiX id and cross-architecture MSI installation; all were fixed.
+- Branch run `42629998330` covered all 7 native packaging jobs and produced 11 installers. Its x64 MSI passed install, payload, Start Menu/uninstall-shortcut and uninstall checks; Linux DEB and macOS PKG install-and-run checks passed.
+- Branch run `42632698346` added the eight-test C# suite and kept all seven packaging jobs green, including the x64 MSI and native package checks. The optional signing steps were skipped because no certificate secrets are configured. Earlier runs exposed missing Cargo paths (`42622500646`), Unix packaging paths, the invalid `CommonProgramsFolder` WiX id and cross-architecture MSI installation; all were fixed.
 - Tag run `42624635716` passed all jobs and published [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with exactly the 11 installer files; the tag points to commit `449245b` and remains CLI-only.
 
 ## Known limitations
@@ -91,4 +113,4 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 - Cloud accounts, telemetry or network services.
 - Forced discharge or battery calibration.
 - Charge-control writes on non-HP firmware without a documented, hardware-verified interface.
-- Native Authenticode/Apple Developer ID signing, notarization and an auto-update channel. The CI attestation is a separate supply-chain signature.
+- Configured and verified native Authenticode/Apple Developer ID signatures (the opt-in workflow paths exist but have no credentials), notarization on a physical macOS device, and an auto-update channel. The CI attestation is a separate supply-chain signature.

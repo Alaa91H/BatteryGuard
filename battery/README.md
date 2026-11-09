@@ -82,7 +82,7 @@ Branch CI builds a per-machine WiX MSI that installs the tray and the portable C
 - an all-users Start Menu shortcut for the tray with `System.AppUserModel.ID=BatteryGuard.Tray`;
 - an **Uninstall BatteryGuard** Start Menu shortcut that runs `msiexec /x`.
 
-The workflow installs the x64 MSI, checks the payload and both shortcuts, then uninstalls it. The x86 and ARM64 MSIs are built in the matrix but are not cross-installed on the x64 runner. See [`../packaging/windows/Product.wxs`](../packaging/windows/Product.wxs) and [`../docs/RELEASE.md`](../docs/RELEASE.md). The published `v0.1.0` release predates this tray MSI and contains the CLI-only packages.
+The workflow installs the x64 MSI, checks the payload and both shortcuts, then uninstalls it. The x86 and ARM64 MSIs are built in the matrix but are not cross-installed on the x64 runner. The Windows x64 job also runs the hardware-independent C# suite. Authenticode signing of the tray, CLI and MSI is optional and runs only when the documented certificate secrets exist. See [`../packaging/windows/Product.wxs`](../packaging/windows/Product.wxs) and [`../docs/RELEASE.md`](../docs/RELEASE.md). The published `v0.1.0` release predates this tray MSI and contains the CLI-only packages.
 
 ## Run
 

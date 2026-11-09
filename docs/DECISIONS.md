@@ -117,4 +117,11 @@
 **Status:** accepted 2026-11-09
 **Decision:** Build a per-machine WiX MSI containing the C# tray, the Rust CLI, the application icon, all 30 locale catalogs, an all-users Start Menu shortcut with `System.AppUserModel.ID=BatteryGuard.Tray`, and an uninstall shortcut. Keep the Linux and macOS packages CLI-only. Install/uninstall the x64 MSI in CI; build x86 and ARM64 without cross-installing them.
 **Why:** The Windows application is the primary product, so a Windows installer that shipped only the CLI would be misleading. A single MSI keeps the tray and CLI versions aligned. Cross-architecture MSI installation is rejected by Windows Installer on the x64 runner, and the x86 package correctly targets Program Files (x86), so those packages need native test hosts rather than a fake pass.
-**Consequence:** The new MSI is branch-built and attested but not part of the published `v0.1.0` release. It has no native Authenticode signature. Linux/macOS widgets, BIOS adapter wattage and a banner-level notification test remain unverified.
+**Consequence:** The new MSI is branch-built and attested but not part of the published `v0.1.0` release. It has no native Authenticode signature unless the optional signing secrets are configured. Linux/macOS widgets, BIOS adapter wattage and a banner-level notification test remain unverified.
+
+## ADR-018 — Native signing is opt-in through repository secrets
+
+**Status:** accepted 2026-11-09
+**Decision:** Keep the workflow buildable without secrets. Sign the Windows tray, CLI and MSI with Authenticode only when `WINDOWS_CERTIFICATE_BASE64` and `WINDOWS_CERTIFICATE_PASSWORD` exist. Sign the macOS CLI and PKG with Developer ID, notarize and staple it only when the documented `MACOS_*` secrets exist. Verify every signature in the same job; when secrets are absent, emit a notice and leave the package unsigned. Sigstore build provenance remains mandatory.
+**Why:** Certificate material is sensitive and must not be required for ordinary branch builds or contributors. Failing a build because a fork cannot access repository secrets would make the matrix unusable; silently skipping a partially configured macOS signing setup would be worse.
+**Consequence:** The repository contains signing paths but no certificates or credentials. A green run does not prove Authenticode or notarization until the secrets are configured and the verification commands pass. The published `v0.1.0` remains unsigned.

@@ -2,6 +2,46 @@
 
 All notable changes to this project are documented here. The format follows the spirit of Keep a Changelog. Releases use the version from `portable/Cargo.toml` and a matching `v*` tag.
 
+## Unreleased — C# CI gate, optional native signing and v0.1.0 checks
+
+### Added
+
+- The Windows x64 CI job now runs the hardware-independent C# suite:
+  float policy, schedule conflicts, UI polish, settings persistence,
+  notification identity, log rotation, icon rendering and adaptive layout.
+- Optional Windows Authenticode signing for the tray, CLI and MSI, with
+  `signtool verify /pa /all` in the same job.
+- Optional macOS Developer ID signing of the binary and PKG, followed by
+  `notarytool`, stapler validation and `pkgutil --check-signature`.
+- `docs/RELEASE.md` documents the certificate and notarization secret names.
+
+### Changed
+
+- Native signing is opt-in. When the certificate secrets are absent, the
+  workflow builds unsigned packages, emits a notice and does not claim a
+  native signature; Sigstore build provenance remains mandatory.
+- A partial macOS signing configuration fails the job instead of silently
+  producing an unsigned PKG.
+
+### Verification
+
+- The eight C# tests passed locally before the CI change and passed in the
+  Windows x64 CI job.
+- The v0.1.0 Linux x64 DEB was installed in WSL2 Ubuntu 24.04, printed
+  `BatteryGuard portable core 0.1.0`, and was removed.
+- The v0.1.0 Windows MSI is `NotSigned`; the existing v0.1.0 CLI installation
+  could not execute because Application Control blocks the binary. No clean
+  Windows install/uninstall or macOS runtime test was performed.
+- See `docs/SESSION_LOG.md` for the exact commands, hashes and limitations.
+
+### Known limitations
+
+- No Windows Authenticode or Apple notarization certificate is configured, so
+  those new signing paths are not exercised by a green run.
+- WSL2 is a real Linux kernel but not a separate physical Linux device; no
+  Linux or macOS battery hardware was used.
+- No macOS host was available for the v0.1.0 PKG.
+
 ## Unreleased — Windows tray MSI and native package checks
 
 ### Added
