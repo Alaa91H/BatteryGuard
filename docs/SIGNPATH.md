@@ -7,10 +7,13 @@ from its HSM; no contributor-owned code-signing certificate or USB token is
 needed. The publisher shown on the signed installers is
 **SignPath Foundation**, not a personal certificate subject.
 
-The CI integration is **implemented but not exercised**. No SignPath account,
-project, signing policy, artifact configuration or API token exists in this
-repository yet. Until a real signing request completes, the installers remain
-unsigned and Smart App Control will continue to block them.
+The CI integration is **implemented but not exercised**. The Foundation
+application was submitted on 2026-11-09; the form displayed
+`Thank you, we'll be in touch soon.` and no application or receipt ID. This is
+not approval. No SignPath account, project, signing policy, artifact
+configuration or API token exists in this repository yet. Until a real signing
+request completes, the installers remain unsigned and Smart App Control will
+continue to block them.
 
 ## Before applying
 

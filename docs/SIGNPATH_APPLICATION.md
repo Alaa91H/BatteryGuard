@@ -1,7 +1,19 @@
 # SignPath Foundation application answers
 
-**Status:** prepared, not submitted. This file is not a claim that SignPath
-reviewed or approved the project.
+**Status:** submitted through the public form on 2026-11-09; awaiting SignPath
+review. The form did not display an application or receipt ID. This file is not
+a claim that SignPath reviewed or approved the project.
+
+## Submission record
+
+- Submitted on 2026-11-09 from the maintainer's Chrome session.
+- Confirmation shown by the form: `Thank you, we'll be in touch soon.`
+- No application or receipt ID was displayed.
+- Review outcome is unknown; no approval, project, policy or signing
+  configuration exists yet.
+- The form received `Category = Other`, `Maintainer Type = Individual
+  maintainer(s)`, `Build System = GitHub Actions`, and `Primary Discovery
+  Channel = AI / LLM tools`.
 
 The field list below follows the public HubSpot form definition used at
 `https://signpath.org/apply` (portal `145110231`, form
