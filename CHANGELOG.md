@@ -47,6 +47,8 @@ All notable changes to this project are documented here. The format follows the 
 - `Test-UI`, `Test-Theme` and `Test-TrayHost` passed in the injected
   monitoring-only mode. The real HP mode read `Auto` before the set and after
   each run; no charge-write log line appeared; no tray or logon task remained.
+- Hosted run `42700624192` passed all jobs, including the Windows x64
+  thirteen-check suite; no write-capable test was enabled.
 - An earlier UI/Theme attempt, before the test controller existed, left a stale
   tray that wrote HP `Inhibit` at 60%; the process was stopped and Auto was
   restored with read-back. That incident is why the injected controller is now

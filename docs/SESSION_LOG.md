@@ -52,12 +52,16 @@ behind. Do not commit, push, open a PR or merge.
   `inhibit write` or `auto write` line.
 - Remaining hardware-safe tests were run after the test-mode changes; results
   are recorded in `docs/PROJECT_STATUS.md`.
+- GitHub Actions run `42700624192` on commit `02e44bf` completed successfully;
+  the Windows x64 job passed the thirteen-check suite, including `Test-UI`,
+  `Test-Theme` and `Test-TrayHost` in the injected mode.
 
 ### Limitations
 
 - `Test-Tray`, `Test-FloatMode` and `verify.ps1` remain intentionally unrun;
   they are write-capable hardware checks.
-- The updated CI list has not run on hosted CI because no push was authorized.
+- The updated CI list ran green on hosted run `42700624192`. The docs-only
+  record of that run has its own queued CI run; it does not change code.
 - No Acer, Lenovo or Dell hardware was available, so no candidate writer was
   enabled or validated.
 
