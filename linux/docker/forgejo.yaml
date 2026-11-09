@@ -1,0 +1,51 @@
+# Local-only Forgejo (Git forge). Managed by wsl-provision.
+#
+#   cd /opt/wsl-forgejo
+#   docker compose up -d
+#
+# Web UI:  http://localhost:3000
+# Git SSH: ssh://git@localhost:2223 (after adding your key in the UI)
+#
+# Every port is bound to 127.0.0.1 on purpose: nothing is reachable from the
+# network. Credentials live next to this file in .env (mode 600).
+
+name: wsl-forgejo
+
+services:
+  forgejo:
+    image: ${FORGEJO_IMAGE:-codeberg.org/forgejo/forgejo:16.0.6}
+    container_name: forgejo
+    restart: unless-stopped
+    environment:
+      # s6-overlay needs to start as root, then Forgejo drops to this UID/GID.
+      USER_UID: "${FORGEJO_UID:-1000}"
+      USER_GID: "${FORGEJO_GID:-1000}"
+      FORGEJO__server__DOMAIN: localhost
+      FORGEJO__server__ROOT_URL: http://localhost:3000/
+      FORGEJO__server__HTTP_PORT: "3000"
+      FORGEJO__server__SSH_DOMAIN: localhost
+      FORGEJO__server__SSH_PORT: "2223"
+      FORGEJO__server__SSH_LISTEN_PORT: "2222"
+      FORGEJO__server__START_SSH_SERVER: "true"
+      FORGEJO__server__DISABLE_SSH: "false"
+      FORGEJO__server__LFS_START_SERVER: "true"
+      FORGEJO__database__DB_TYPE: sqlite3
+      FORGEJO__repository__DEFAULT_BRANCH: main
+      FORGEJO__service__DISABLE_REGISTRATION: "true"
+      FORGEJO__service__REQUIRE_SIGNIN_VIEW: "true"
+      FORGEJO__security__INSTALL_LOCK: "true"
+      FORGEJO__security__SECRET_KEY: ${FORGEJO_SECRET_KEY:?set FORGEJO_SECRET_KEY in .env}
+      FORGEJO__openid__ENABLE_OPENID_SIGNIN: "false"
+      FORGEJO__picture__DISABLE_GRAVATAR: "true"
+      FORGEJO__picture__ENABLE_FEDERATED_AVATAR: "false"
+      FORGEJO__actions__ENABLED: "true"
+      FORGEJO__log__LEVEL: info
+    ports:
+      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:2223:2222"
+    volumes:
+      - ./data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 512m

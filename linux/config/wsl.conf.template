@@ -1,0 +1,25 @@
+# /etc/wsl.conf - managed by wsl-provision
+# Apply changes with:  wsl --shutdown   (from Windows)
+
+[boot]
+# Real systemd as PID 1: needed for docker, timers, journald and sshd.
+systemd=true
+
+[user]
+# User launched by `wsl` and by Windows Terminal.
+default=@USER@
+
+[interop]
+# Run Windows binaries (code.exe, explorer.exe, clip.exe) from Linux.
+enabled=true
+appendWindowsPath=true
+
+[network]
+hostname=@HOSTNAME@
+generateHosts=true
+generateResolvConf=true
+
+[automount]
+enabled=true
+root=/mnt/
+options="metadata,umask=22,fmask=11"

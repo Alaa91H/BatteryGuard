@@ -1,0 +1,32 @@
+# %UserProfile%\.wslconfig
+# Windows-side settings for every WSL2 distribution on this machine.
+# Apply with:  wsl --shutdown
+# Docs: https://learn.microsoft.com/windows/wsl/wsl-config
+#
+# The installer copies this file to %UserProfile%\.wslconfig only if none
+# exists, and keeps a timestamped backup when overwriting with -Force.
+
+[wsl2]
+# Leave ~2 GB for Windows on this 16 GB machine.
+memory=8GB
+# Keep two cores free for Windows / IDE / browser.
+processors=6
+swap=4GB
+# Memory reclaim lives under [experimental] on WSL 3 (see below).
+# Resolve DNS through the Windows resolver instead of a synthetic nameserver.
+# Fixes most VPN / corporate-DNS breakage.
+dnsTunneling=true
+# Keep the Hyper-V firewall on so Windows firewall rules apply to WSL.
+firewall=true
+# WSL must not expose nested virtualisation unless you run KVM/Docker-in-Docker.
+nestedVirtualization=false
+# NAT is the safest default. Switch to mirrored only if you need LAN-inbound
+# or perfect localhost parity, and you are not on a VPN:
+# networkingMode=mirrored
+# hostAddressLoopback=true
+
+[experimental]
+# Shrink the ext4.vhdx automatically when space is freed inside the distro.
+sparseVhd=true
+
+# Interop settings are per-distribution on WSL 3; they live in /etc/wsl.conf.

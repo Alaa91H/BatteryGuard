@@ -1,0 +1,151 @@
+Normal charging
+On the battery
+Connected to electricity
+· Health {0}%
+D
+with
+. Adjust the times before saving.
+Cancel
+To
+Schedule
+Window
+Discharging
+Save
+Ceiling {0}% · Resume {1}%
+charging
+normal
+No log yet.
+From
+(ceiling
+(normal)
+· {0}°C
+· Float mode on
+Ceiling {0}%
+Cycles {0}
+S
+window
+Windows
+— adjust one before saving.
+! Schedule windows overlap
+: Normal charging
+BatteryGuard — Settings
+BatteryGuard — Log
+{0:N0} / {1:N0} mWh {2}% accuracy
+{0}% · Charge soon
+{0}% · Capacity {1:N0} of {2:N0} mWh
+{0}% · You can disconnect the charger
+°M
+Add at least one scheduling window or stop scheduling.
+Add a new window (from/to/ceiling).
+The highest percentage that charging reaches before stopping (50–100%).
+If the start and end times are the same, the window is applied to the entire day.
+Demo notification — Notifications are working.
+Notification when the specified charging completion percentage is reached.
+Notification when battery health deteriorates below limit.
+Notification when the battery drops below the specified limit.
+Add a scheduling window
+Add…
+Show the ceiling number on the icon
+Recharge
+Close
+Interface direction
+Interface direction: Automatic by system, or explicit RTL/LTR.
+Delete the selected window.
+Test notification
+Drag the green handle to cap the charge and the orange to recharge (up to 1%).
+Notify when charge reaches
+Battery fully charged
+Settings…
+Battery
+Battery {0}% · {1}
+The battery is draining even though the charger is connected.
+Battery is low
+Charge control
+Charge control…
+Start with Windows
+Notifications
+Scheduling is enabled
+Schedule off
+Scheduling is suspended.
+Enable “Enable scheduling” and then add a window.
+Log…
+Current capacity {0:N0} mWh
+Ceiling
+Charging stopped
+Remaining ≈
+Appearance
+The percentage at which charging resumes after a drop, from 1% to 5 points below the ceiling.
+Interface and behavior
+Low battery under
+Low battery health under
+After reaching the ceiling, the device remains on charger power and does not return to the battery.
+Refresh
+Float mode warning
+Warning: The battery dies despite the charger
+Schedule conflict
+Turn all system notifications on or off (test notifications are always on).
+Export log
+Export…
+Apply charge ceiling and resume level
+Edit schedule…
+Edit schedule window
+Edit…
+Export failed:
+Could not read the log.
+Could not read the log:
+Unable to read battery status
+Forced discharge
+Enable system notifications
+Enable scheduling
+Auto (system theme)
+Automatic (system)
+Charging has been stopped
+Charging has resumed
+Log exported to:
+Changes apply immediately when saved.
+Schedule {0}–{1}: ceiling {2}%
+Until full ≈
+Full threshold (50–100%).
+Low threshold (5–50%).
+Health threshold (40–95%).
+Delete
+Resolve schedule conflict…
+Idle
+Exit
+Dark
+Ceiling {0}% (resume {1}%)
+Charge ceiling
+Charge ceiling %
+Custom ceiling…
+Normal charging (no ceiling)
+Normal charging ·
+Normal charging in this window
+Normal charging — no ceiling
+Health {0}%
+Low battery health
+Charger power · battery idle
+Edit the selected window.
+Showing {0} of {1} lines · {2}
+Plugged in
+Longevity — 60% / 55%
+When activated, charging stops at the specified ceiling instead of 100%.
+Unsupported
+Light
+Charging
+There are no scheduling windows yet.
+Click “Add…” to create the first window.
+No active schedule window
+The HP battery provider did not respond. Retrying automatically.
+Text file (*.txt)|*.txt|All files (*.*)|*.*
+Left to right (LTR)
+Right to left (RTL)
+Recommended — 80% / 75%
+One window
+Two windows
+Schedule windows are checked in order; the first matching window applies.
+Multiple time windows; each has its own ceiling or normal charging.
+Float mode (charger power)
+Float mode — keep the device on charger power after ceiling
+Sends an immediate notification to verify delivery, even when notifications are off.
+Show the ceiling number inside the battery icon.
+Runs on battery

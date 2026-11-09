@@ -1,0 +1,269 @@
+name: Build, attest and release
+
+"on":
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: batteryguard-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  prepare:
+    name: Validate version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      suffix: ${{ steps.version.outputs.suffix }}
+      release: ${{ steps.version.outputs.release }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Derive version and release flag
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^version = "\([^"]*\)"$/\1/p' Cargo.toml | head -n 1)"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Cargo.toml version must be a three-part numeric version; got '$version'"
+            exit 1
+          fi
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            tag="${GITHUB_REF_NAME#v}"
+            if [[ "$tag" != "$version" ]]; then
+              echo "::error::Tag '${GITHUB_REF_NAME}' does not match Cargo.toml version '$version'"
+              exit 1
+            fi
+            release=true
+            suffix=
+          else
+            release=false
+            suffix="-snapshot.${GITHUB_SHA::7}"
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "suffix=$suffix" >> "$GITHUB_OUTPUT"
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: ${{ matrix.name }}
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: windows-x64
+            name: Windows x64 MSI
+            runner: windows-2025
+            platform: windows
+            arch: x64
+            target: x86_64-pc-windows-msvc
+            msi_arch: x64
+            test: true
+          - id: windows-x86
+            name: Windows x86 MSI
+            runner: windows-2025
+            platform: windows
+            arch: x86
+            target: i686-pc-windows-msvc
+            msi_arch: x86
+            test: true
+          - id: windows-arm64
+            name: Windows ARM64 MSI
+            runner: windows-2025
+            platform: windows
+            arch: arm64
+            target: aarch64-pc-windows-msvc
+            msi_arch: arm64
+            test: false
+          - id: linux-x64
+            name: Linux x64 packages
+            runner: ubuntu-24.04
+            platform: linux
+            arch: x64
+            target: x86_64-unknown-linux-musl
+            test: true
+          - id: linux-arm64
+            name: Linux ARM64 packages
+            runner: ubuntu-24.04-arm
+            platform: linux
+            arch: arm64
+            target: aarch64-unknown-linux-musl
+            test: true
+          - id: macos-x64
+            name: macOS Intel PKG
+            runner: macos-15-intel
+            platform: macos
+            arch: x64
+            target: x86_64-apple-darwin
+            test: true
+          - id: macos-arm64
+            name: macOS Apple silicon PKG
+            runner: macos-15
+            platform: macos
+            arch: arm64
+            target: aarch64-apple-darwin
+            test: true
+
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      VERSION_SUFFIX: ${{ needs.prepare.outputs.suffix }}
+      TARGET: ${{ matrix.target }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux packaging tools
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends musl-tools rpm dpkg-dev
+          target_env="$(echo "$TARGET" | tr '[:lower:]-' '[:upper:]_')"
+          echo "CC_${target_env}=musl-gcc" >> "$GITHUB_ENV"
+          echo "CARGO_TARGET_${target_env}_LINKER=musl-gcc" >> "$GITHUB_ENV"
+
+      - name: Install WiX
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          wix --version
+
+      - name: Build and test
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --target "$TARGET"
+          if [[ "${{ matrix.test }}" == "true" ]]; then
+            cargo test --release --locked --target "$TARGET"
+          fi
+
+      - name: Package Windows MSI
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $stage = Join-Path (Get-Location) 'packaging/windows/staging'
+          $dist = Join-Path (Get-Location) 'dist'
+          New-Item -ItemType Directory -Force -Path $stage, $dist | Out-Null
+          Copy-Item "target/$env:TARGET/release/batteryguard.exe" (Join-Path $stage 'batteryguard.exe') -Force
+          Copy-Item 'battery/resources/application.ico' (Join-Path $stage 'batteryguard.ico') -Force
+          $msi = Join-Path $dist "BatteryGuard-$env:VERSION$env:VERSION_SUFFIX-windows-${{ matrix.arch }}.msi"
+          wix build -arch ${{ matrix.msi_arch }} -d "Version=$env:VERSION" -d "SourceDir=$stage" -o $msi packaging/windows/Product.wxs
+          if ($LASTEXITCODE -ne 0) { throw "wix build failed with exit code $LASTEXITCODE" }
+
+      - name: Package Linux DEB, RPM and AppImage
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          bash packaging/linux/build-linux.sh \
+            "target/$TARGET/release/batteryguard" \
+            "$VERSION" "$VERSION_SUFFIX" "${{ matrix.arch }}" "dist"
+
+      - name: Package macOS PKG
+        if: matrix.platform == 'macos'
+        shell: bash
+        run: |
+          bash packaging/macos/build-pkg.sh \
+            "target/$TARGET/release/batteryguard" \
+            "$VERSION" "$VERSION_SUFFIX" "${{ matrix.arch }}" "dist"
+
+      - name: List installer payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          find dist -maxdepth 1 -type f -exec basename {} \; | sort
+
+      - name: Sign with GitHub artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.id }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish GitHub Release
+    if: needs.prepare.outputs.release == 'true'
+    needs:
+      - prepare
+      - build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download every installer
+        uses: actions/download-artifact@v4
+        with:
+          pattern: installers-*
+          path: release
+          merge-multiple: true
+
+      - name: Verify clean release payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(release/*)
+          if (( ${#files[@]} == 0 )); then
+            echo "::error::No installer files were produced"
+            exit 1
+          fi
+          for file in "${files[@]}"; do
+            case "$file" in
+              *.msi|*.deb|*.rpm|*.AppImage|*.pkg) ;;
+              *)
+                echo "::error::Unexpected non-installer release asset: $file"
+                exit 1
+                ;;
+            esac
+          done
+          find release -maxdepth 1 -type f -exec basename {} \; | sort
+
+      - name: Create release from tag
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: BatteryGuard ${{ needs.prepare.outputs.version }}
+          generate_release_notes: true
+          files: release/*
+          fail_on_unmatched_files: true
+          make_latest: true
+          body: |
+            BatteryGuard ${{ needs.prepare.outputs.version }}
+
+            Installers are attached only as platform-native packages:
+            `.msi` for Windows, `.deb`/`.rpm`/`.AppImage` for Linux, and `.pkg` for macOS.
+
+            Every installer is covered by a GitHub/Sigstore build-provenance
+            attestation from this workflow run.

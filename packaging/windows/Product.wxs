@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+      Name="BatteryGuard"
+      Manufacturer="BatteryGuard"
+      Version="$(var.Version)"
+      Language="1033"
+      UpgradeCode="80CE0D95-B964-493D-8C19-B18889CA61A0"
+      Scope="perMachine"
+      Compressed="yes">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of BatteryGuard is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="BatteryGuard.ico" SourceFile="$(var.SourceDir)\batteryguard.ico" />
+    <Property Id="ARPPRODUCTICON" Value="BatteryGuard.ico" />
+
+    <Feature Id="MainFeature" Title="BatteryGuard" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="BatteryGuard" />
+    </StandardDirectory>
+
+    <ComponentGroup Id="ProductComponents">
+      <Component Id="MainExecutable" Directory="INSTALLFOLDER">
+        <File Id="BatteryGuardExe" Source="$(var.SourceDir)\batteryguard.exe" KeyPath="yes" />
+        <Environment Id="PathEntry" Name="PATH" Value="[INSTALLFOLDER]" Part="last" Action="set" System="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

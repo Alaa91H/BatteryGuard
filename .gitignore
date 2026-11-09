@@ -1,0 +1,41 @@
+# Distro exports and backups (can be many GB)
+exports/
+*.tar
+*.tar.gz
+*.vhdx
+*.vhd
+
+# Local secrets / generated stack config
+.env
+linux/docker/.env
+
+# BatteryGuard per-machine data and generated build output
+battery/settings.json
+battery/interface.ini
+battery/theme.ini
+battery/capacity.ini
+battery/application.log
+battery/application.previous.log
+battery/application.exe
+battery/*.test-backup.*
+battery/ui.test-backup.txt
+battery/config.test-backup.json
+battery/tests/*.log
+battery/tests/*.png
+battery/tests/*.out.log
+battery/tests/*.err.log
+portable/target/
+dist/
+packaging/windows/staging/
+.freebuff/
+
+# Localization generation cache (catalogs themselves are tracked)
+tools/locale_cache/
+battery.backup/
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log

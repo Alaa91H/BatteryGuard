@@ -1,0 +1,202 @@
+# BatteryGuard
+
+BatteryGuard is a native Win32 tray monitor for Windows notebooks. On supported HP notebooks it also controls charging through the BIOS WMI interface. It is a single .NET Framework 4.x process with no external packages and no background service.
+
+A separate read-only Rust core under [`../portable`](../portable/README.md) is the first phase of the Windows/Linux/macOS shared work. It is not linked into this tray and does not control charging. Its 12-target type-check matrix and packaging boundary are documented in [`../portable/PLATFORMS.md`](../portable/PLATFORMS.md).
+
+## Features
+
+- **Charge limit and resume point.** Stops charging at a configurable ceiling and resumes at a lower point. The default Longevity policy is 60% / 55%; Recommended is 80% / 75%.
+- **Float mode after the target.** Float never starts early: the battery charges normally to the configured limit, and only then does the app inhibit charging and keep the device on charger power. The latch holds through small drops and releases at the resume point.
+- **Scheduled time windows.** Each window can use a ceiling or standard charging. Overlaps are detected when settings load, while editing and before saving.
+- **Cross-brand monitoring.** Every vendor gets percentage, health, capacity, cycles, temperature and estimates. HP adds charge control; other vendors show **Monitoring only** and never receive guessed firmware writes.
+- **Electrical readout.** The tray tooltip, tray menu, status balloon and Settings battery card show pack voltage and charge/discharge power from Windows battery WMI, for example `11.8 V · 0.0 W`. A zero wattage is shown while the charger holds the battery idle; unavailable readings are omitted.
+- **Notifications with a stable identity.** Full-charge, low-battery and battery-health thresholds, plus an explicit test notification. Windows labels them **BatteryGuard** through the `BatteryGuard.Tray` AppUserModelID and a matching Start Menu shortcut, including when the UI runs inside the PowerShell host.
+- **Activity log.** Last 300 lines, export and automatic rotation at 1 MiB.
+- **30 languages.** English source and fallback; Automatic follows Windows; RTL for Arabic, Urdu, Persian and Hebrew.
+- **Theme and accessibility.** Light, dark and system theme; owner-drawn menus; high-contrast battery icon rendering.
+- **Adaptive dialogs.** Settings, schedule and log windows clamp to the working area, keep their action buttons visible, scroll long content and wrap toolbars on narrow screens.
+
+## Requirements
+
+- Windows 10 or 11.
+- .NET Framework 4.x (included with Windows).
+- Charge control: a supported HP notebook and an elevated session for the HP BIOS WMI provider (`hpqBIntM`). Other vendors are monitoring-only.
+- PowerShell 5.1 for scripts and tests.
+
+The app never uses forced discharge. It writes only HP charge modes `0x00` (auto) and `0x05` (inhibit). See [`../docs/DEVICE_SUPPORT.md`](../docs/DEVICE_SUPPORT.md) for the vendor matrix and safety model.
+
+## Project layout
+
+```text
+battery/
+  src/
+    Program.cs            entry point, paths, startup, CLI, log rotation, migration, mutex
+    TrayApp.cs            window procedure, tick, tray icon, menu, notifications
+    Engine.cs             state, charge policy application, presets and schedules
+    Wmi.cs                battery readings, HP WMI controller and generic fallback
+    AppIdentity.cs        process AUMID and Start Menu shortcut for notifications
+    Config.cs             settings.json, interface.ini, schedule model, autostart
+    Theme.cs              theme settings, colors and owner-drawn controls
+    Dialogs.cs            Settings, schedule window and activity log
+    Native.cs             Win32 P/Invoke, icons and popup-menu helpers
+    Localization.cs       language list, auto detection, catalog loader, T(), F()
+  resources/
+    application.manifest
+    application.ico
+  locales/
+    en.json ar.json es.json ... zh-TW.json
+  scripts/
+    build.ps1             compile application.exe with csc.exe
+    start.ps1             run compiled exe or host the source in PowerShell
+    restart.ps1           stop the launcher and start it again
+    control.ps1           command-line charge manager
+    probe-*.ps1           read-only hardware probes
+  tests/
+    Test-*.ps1            regression checks
+    verify.ps1            end-to-end verification helper
+  application.exe         build output
+  settings.json           charge policy
+  interface.ini           language/direction/notification/icon options
+  theme.ini               auto / light / dark
+  capacity.ini            cached design capacity
+  application.log         current activity log
+```
+
+The C# namespace remains `BatteryGuardTray` for compatibility with existing scripts and tests; source and data file names are intentionally neutral.
+
+## Build
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File battery/scripts/build.ps1
+```
+
+The script uses the .NET Framework compiler that ships with Windows, fails on compiler errors and prints the output size. No NuGet or network access is required.
+
+## Run
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File battery/scripts/start.ps1
+```
+
+`start.ps1` relaunches itself elevated unless `-NoElevate` is supplied. It prefers `application.exe`; when Smart App Control blocks unsigned executables it compiles the same `src/*.cs` files in memory inside the signed PowerShell host.
+
+The command-line interface is available separately:
+
+```powershell
+powershell -File battery/scripts/control.ps1 -Status
+powershell -File battery/scripts/control.ps1 -Preset Recommended
+powershell -File battery/scripts/control.ps1 -Limit 60 -ResumeDrop 5
+```
+
+## Charge policy and float
+
+The decision logic lives in `ChargePolicy.Evaluate`, separate from WMI so it can be tested without hardware:
+
+1. Standard-charging policies (no limit, "Off", scheduled standard windows) never float.
+2. On battery power the app returns to auto and clears the float latch.
+3. Below the ceiling the app does not request inhibit for float. A stale inhibit is released so charging reaches the limit.
+4. At or above the ceiling it inhibits charging. `FloatActive` is set only when float mode is enabled.
+5. While floating, the inhibit is kept until the measured charge reaches the resume point.
+6. At or below the resume point it restores auto charging; the latch clears and the next cycle starts after the ceiling.
+
+The tray has a separate icon state and color for floating, and the tooltip reports `Charger power · battery idle`. The menu shows the current mode, policy, device vendor/model and monitoring state.
+
+## Device support
+
+| Family | Monitoring | Charge control |
+| --- | --- | --- |
+| HP notebooks | Yes | Yes, when `hpqBIntM` is available |
+| Lenovo, Dell, ASUS, MSI, Acer, Razer, Samsung and others | Yes | No — monitoring only |
+| Desktops / unknown hardware | Yes, if a battery exists | No |
+
+`DeviceInfo` reads the manufacturer and model; `BatteryControllerFactory` picks `HpBios` only for HP/Hewlett/HPE. Any provider failure falls back to `GenericBatteryController`, which reports `CanControlCharge = false`. The tray disables charge actions and labels the state **Monitoring only**. See [`../docs/DEVICE_SUPPORT.md`](../docs/DEVICE_SUPPORT.md).
+
+## Settings and data
+
+| File | Meaning |
+| --- | --- |
+| `settings.json` | Charge preset, ceiling, resume point, float mode and schedule windows. |
+| `interface.ini` | `language`, `direction`, `showCeiling`, notification flags and thresholds. |
+| `theme.ini` | `auto`, `light` or `dark`. |
+| `capacity.ini` | Cached `powercfg` design capacity. |
+| `application.log` | Activity lines; rotated to `application.previous.log` at 1 MiB. |
+
+Older builds used `BatteryGuard.config.json`, `ui.txt`, `theme.txt`, `capacity.txt` and `batteryguard.log`. On startup, `Program.MigrateLegacyDataFiles()` moves those files to the neutral names if the new file does not exist.
+
+Settings are read at startup and after a save; a `WM_REFRESH` message makes the tray reload them without a restart. The logon task runs the same `settings.json` used by manual runs.
+
+## Window sizes
+
+| Window | Design size | Minimum | Notes |
+| --- | --- | --- | --- |
+| Settings | 780×1000 | 620×480 | Resizable; scrolling content, pinned Save/Cancel/Test footer, 660 px minimum content width with horizontal fallback. |
+| Schedule window | 500×400 | 440×320 | Fixed dialog; scrolling content, pinned buttons, narrows to a 360 px layout. |
+| Activity log | 760×560 | 520×360 | Resizable; the action bar wraps to a second row on narrow windows. |
+
+All three use `AutoScaleMode.Dpi`. `UiLayout.Fit` caps each window to the screen working area minus 32 px and lowers `MinimumSize` when the display cannot fit it, so a small screen scrolls instead of clipping the title bar or action buttons.
+
+## Languages
+
+- Source language: English.
+- Default setting: `language=auto`.
+- Automatic resolution: Windows display language; Chinese is mapped to `zh-CN` or `zh-TW` by script/region; unsupported languages fall back to English.
+- RTL: `ar`, `ur`, `fa`, `he`.
+- `direction=auto|rtl|ltr` can override the language-derived direction.
+- Catalogs are flat JSON objects keyed by the exact English source string. A missing key falls back to English.
+- Placeholders such as `{0}` and `{0:N0}` must be preserved. The maintenance script validates them.
+
+See [`../docs/LOCALIZATION.md`](../docs/LOCALIZATION.md) for the full list and maintenance workflow.
+
+## Tests
+
+Hardware-independent:
+
+```powershell
+powershell -File battery/tests/Test-FloatLogic.ps1
+powershell -File battery/tests/Test-ScheduleConflict.ps1
+powershell -File battery/tests/Test-UiPolish.ps1
+powershell -File battery/tests/Test-Settings.ps1
+powershell -File battery/tests/Test-BatteryInfo.ps1
+powershell -File battery/tests/Test-AppIdentity.ps1
+powershell -File battery/tests/Test-LogRotation.ps1
+powershell -File battery/tests/Test-Icons.ps1
+powershell -File battery/tests/Test-Layout.ps1
+```
+
+All tests compile every `src/*.cs` module. `Test-FloatLogic` checks the 13 charge/float decisions without touching hardware. `Test-UiPolish` temporarily writes `interface.ini` with `language=en` and restores it. `Test-Layout` resizes the dialogs from 780×601 down to 380×300 and checks pinned action bars, scrolling, combo text and the 360 px rule layout. `Test-AppIdentity` creates or replaces the current user's BatteryGuard Start Menu shortcut and verifies its AUMID, target, arguments and description.
+
+Visual review (no hardware, WMI writes or elevation):
+
+```powershell
+powershell -File battery/tests/VisualCapture.ps1
+```
+
+It writes 13 PNGs for Settings, schedule and log in English/Arabic and light/dark, plus a full-height Settings view. `interface.ini` and `theme.ini` are restored afterwards.
+
+`DrawToBitmap` does not paint the native selected text of a WinForms ComboBox; `Test-Layout` checks the language and direction combo width, selection and text instead.
+
+Hardware/elevation-dependent checks:
+
+- `Test-FloatMode.ps1` samples the real charger and battery; it reports SKIP when AC is disconnected.
+- `Test-Tray.ps1`, `Test-TrayHost.ps1`, `Test-UI.ps1`, `Test-Theme.ps1` and `Test-ThemeLive.ps1` start the tray and may create/remove the logon task. Run them elevated.
+
+## Known limitations
+
+- The 30 catalogs are machine-generated from the curated English source with targeted glossary corrections. Native-speaker review is still advisable, especially for technical terms and long sentences.
+- The settings window cannot re-layout itself in a new language until it is reopened; the tray menu and tooltip update after the save/refresh cycle.
+- The adaptive-layout pass re-inspected Settings in Arabic light/dark and schedule/log in Arabic light. English and dark schedule/log captures were regenerated but not re-inspected. The native tray popup menu could not be captured from the test host; its RTL flags are set in code but its pixels were not reviewed. 125%/150% DPI and non-HP hardware were not exercised.
+- The notification identity was verified through the Start Menu shortcut and its `System.AppUserModel.ID`. A real notification banner was requested from the running tray, but the captured desktop was occupied by browser notifications, so the final Windows label was not visually confirmed.
+- The 30 catalogs received a terminology/consistency pass for charge, health and schedule terms; native-speaker review is still advisable.
+- HP's WMI interface is undocumented and model-specific. Unsupported models fail closed to monitoring rather than guessing a mode.
+- Charge control on Lenovo, Dell, ASUS, MSI and other vendors is not implemented; those devices are monitored only.
+
+## Related documentation
+
+- [`../docs/DEVICE_SUPPORT.md`](../docs/DEVICE_SUPPORT.md)
+- [`../portable/README.md`](../portable/README.md)
+- [`../portable/PLATFORMS.md`](../portable/PLATFORMS.md)
+- [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)
+- [`../docs/PROJECT_STATUS.md`](../docs/PROJECT_STATUS.md)
+- [`../docs/DECISIONS.md`](../docs/DECISIONS.md)
+- [`../CHANGELOG.md`](../CHANGELOG.md)

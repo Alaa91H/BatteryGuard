@@ -1,0 +1,1240 @@
+[
+  {
+    "arabic": "شحن طبيعي",
+    "english": "Standard charging",
+    "count": 4,
+    "lines": [
+      588,
+      733,
+      746,
+      802
+    ]
+  },
+  {
+    "arabic": "على البطارية",
+    "english": "On battery",
+    "count": 3,
+    "lines": [
+      753,
+      1699,
+      3243
+    ]
+  },
+  {
+    "arabic": "متصل بالكهرباء",
+    "english": "Plugged in",
+    "count": 3,
+    "lines": [
+      753,
+      1776,
+      3243
+    ]
+  },
+  {
+    "arabic": " · صحة {0}%",
+    "english": " · Battery health {0}%",
+    "count": 2,
+    "lines": [
+      1703,
+      3249
+    ]
+  },
+  {
+    "arabic": " د",
+    "english": " min",
+    "count": 2,
+    "lines": [
+      720,
+      726
+    ]
+  },
+  {
+    "arabic": " مع ",
+    "english": " with ",
+    "count": 2,
+    "lines": [
+      3009,
+      3376
+    ]
+  },
+  {
+    "arabic": ". عدّل الأوقات قبل الحفظ.",
+    "english": ". Adjust the times before saving.",
+    "count": 2,
+    "lines": [
+      3009,
+      3376
+    ]
+  },
+  {
+    "arabic": "إلغاء",
+    "english": "Cancel",
+    "count": 2,
+    "lines": [
+      2534,
+      3137
+    ]
+  },
+  {
+    "arabic": "إلى",
+    "english": "To",
+    "count": 2,
+    "lines": [
+      2510,
+      2834
+    ]
+  },
+  {
+    "arabic": "الجدولة الزمنية",
+    "english": "Schedule",
+    "count": 2,
+    "lines": [
+      1812,
+      2797
+    ]
+  },
+  {
+    "arabic": "تتعارض النافذة ",
+    "english": "Window ",
+    "count": 2,
+    "lines": [
+      3009,
+      3376
+    ]
+  },
+  {
+    "arabic": "تفريغ",
+    "english": "Discharging",
+    "count": 2,
+    "lines": [
+      715,
+      3264
+    ]
+  },
+  {
+    "arabic": "حفظ",
+    "english": "Save",
+    "count": 2,
+    "lines": [
+      2529,
+      3131
+    ]
+  },
+  {
+    "arabic": "سقف {0}% · استئناف {1}%",
+    "english": "Limit {0}% · Resume {1}%",
+    "count": 2,
+    "lines": [
+      748,
+      1785
+    ]
+  },
+  {
+    "arabic": "شحن",
+    "english": "Charging",
+    "count": 2,
+    "lines": [
+      715,
+      3264
+    ]
+  },
+  {
+    "arabic": "طبيعي",
+    "english": "Standard",
+    "count": 2,
+    "lines": [
+      2980,
+      2986
+    ]
+  },
+  {
+    "arabic": "لا يوجد سجل بعد.",
+    "english": "No activity log entries yet.",
+    "count": 2,
+    "lines": [
+      3534,
+      3535
+    ]
+  },
+  {
+    "arabic": "من",
+    "english": "From",
+    "count": 2,
+    "lines": [
+      2509,
+      2833
+    ]
+  },
+  {
+    "arabic": " (سقف ",
+    "english": " (limit ",
+    "count": 1,
+    "lines": [
+      80
+    ]
+  },
+  {
+    "arabic": " (طبيعي)",
+    "english": " (standard)",
+    "count": 1,
+    "lines": [
+      81
+    ]
+  },
+  {
+    "arabic": " · {0}°م",
+    "english": " · {0}°C",
+    "count": 1,
+    "lines": [
+      3259
+    ]
+  },
+  {
+    "arabic": " · التعويم مفعّل",
+    "english": " · Float mode on",
+    "count": 1,
+    "lines": [
+      1794
+    ]
+  },
+  {
+    "arabic": " · السقف {0}%",
+    "english": " · Limit {0}%",
+    "count": 1,
+    "lines": [
+      1479
+    ]
+  },
+  {
+    "arabic": " · دورات {0}",
+    "english": " · Cycles {0}",
+    "count": 1,
+    "lines": [
+      3257
+    ]
+  },
+  {
+    "arabic": " س",
+    "english": " h",
+    "count": 1,
+    "lines": [
+      725
+    ]
+  },
+  {
+    "arabic": " س ",
+    "english": " h ",
+    "count": 1,
+    "lines": [
+      726
+    ]
+  },
+  {
+    "arabic": " نافذة",
+    "english": " time window",
+    "count": 1,
+    "lines": [
+      1921
+    ]
+  },
+  {
+    "arabic": " نوافذ",
+    "english": " time windows",
+    "count": 1,
+    "lines": [
+      1920
+    ]
+  },
+  {
+    "arabic": " — عدّل إحداهما قبل الحفظ.",
+    "english": " — adjust one before saving.",
+    "count": 1,
+    "lines": [
+      2918
+    ]
+  },
+  {
+    "arabic": "! تداخل في نوافذ الجدولة",
+    "english": "! Schedule time windows overlap",
+    "count": 1,
+    "lines": [
+      1799
+    ]
+  },
+  {
+    "arabic": ": شحن طبيعي",
+    "english": ": Standard charging",
+    "count": 1,
+    "lines": [
+      783
+    ]
+  },
+  {
+    "arabic": "BatteryGuard — الإعدادات",
+    "english": "BatteryGuard — Settings",
+    "count": 1,
+    "lines": [
+      2653
+    ]
+  },
+  {
+    "arabic": "BatteryGuard — السجل",
+    "english": "BatteryGuard — Activity log",
+    "count": 1,
+    "lines": [
+      3441
+    ]
+  },
+  {
+    "arabic": "{0:N0} / {1:N0} mWh · صحة {2}%",
+    "english": "{0:N0} / {1:N0} mWh · Health {2}%",
+    "count": 1,
+    "lines": [
+      1778
+    ]
+  },
+  {
+    "arabic": "{0}% · اشحن الجهاز قريبًا",
+    "english": "{0}% · Charge soon",
+    "count": 1,
+    "lines": [
+      1587
+    ]
+  },
+  {
+    "arabic": "{0}% · السعة {1:N0} من {2:N0} mWh",
+    "english": "{0}% · Capacity {1:N0} of {2:N0} mWh",
+    "count": 1,
+    "lines": [
+      1603
+    ]
+  },
+  {
+    "arabic": "{0}% · يمكنك فصل الشاحن",
+    "english": "{0}% · You can disconnect the charger",
+    "count": 1,
+    "lines": [
+      1571
+    ]
+  },
+  {
+    "arabic": "°م",
+    "english": "°C",
+    "count": 1,
+    "lines": [
+      756
+    ]
+  },
+  {
+    "arabic": "أضف نافذة جدولة واحدة على الأقل أو أوقف الجدولة.",
+    "english": "Add at least one scheduling time window or stop scheduling.",
+    "count": 1,
+    "lines": [
+      3362
+    ]
+  },
+  {
+    "arabic": "أضف نافذة جديدة (من/إلى/السقف).",
+    "english": "Add a new time window (from/to/limit).",
+    "count": 1,
+    "lines": [
+      2706
+    ]
+  },
+  {
+    "arabic": "أعلى نسبة يصل إليها الشحن قبل إيقافه (50–100%).",
+    "english": "The highest percentage that charging reaches before stopping (50–100%).",
+    "count": 1,
+    "lines": [
+      2701
+    ]
+  },
+  {
+    "arabic": "إذا تساوى وقتا البداية والنهاية، تُطبَّق النافذة على اليوم كاملًا.",
+    "english": "If the start and end times are the same, the time window is applied to the entire day.",
+    "count": 1,
+    "lines": [
+      2515
+    ]
+  },
+  {
+    "arabic": "إشعار تجريبي — التنبيهات تعمل.",
+    "english": "Demo notification — Notifications are working.",
+    "count": 1,
+    "lines": [
+      3149
+    ]
+  },
+  {
+    "arabic": "إشعار عند بلوغ نسبة اكتمال الشحن المحددة.",
+    "english": "Notification when the specified charging completion percentage is reached.",
+    "count": 1,
+    "lines": [
+      2709
+    ]
+  },
+  {
+    "arabic": "إشعار عند تدهور صحة البطارية تحت الحد.",
+    "english": "Notification when battery health deteriorates below limit.",
+    "count": 1,
+    "lines": [
+      2713
+    ]
+  },
+  {
+    "arabic": "إشعار عند هبوط البطارية تحت الحد المحدد.",
+    "english": "Notification when the battery drops below the specified limit.",
+    "count": 1,
+    "lines": [
+      2711
+    ]
+  },
+  {
+    "arabic": "إضافة نافذة جدولة",
+    "english": "Add a scheduling time window",
+    "count": 1,
+    "lines": [
+      2469
+    ]
+  },
+  {
+    "arabic": "إضافة…",
+    "english": "Add…",
+    "count": 1,
+    "lines": [
+      2850
+    ]
+  },
+  {
+    "arabic": "إظهار رقم سقف الشحن على الأيقونة",
+    "english": "Show the limit number on the icon",
+    "count": 1,
+    "lines": [
+      3110
+    ]
+  },
+  {
+    "arabic": "إعادة الشحن",
+    "english": "Recharge",
+    "count": 1,
+    "lines": [
+      2773
+    ]
+  },
+  {
+    "arabic": "إغلاق",
+    "english": "Close",
+    "count": 1,
+    "lines": [
+      3475
+    ]
+  },
+  {
+    "arabic": "اتجاه الواجهة",
+    "english": "Interface direction",
+    "count": 1,
+    "lines": [
+      3106
+    ]
+  },
+  {
+    "arabic": "اتجاه الواجهة: تلقائي حسب النظام، أو RTL/LTR صريح.",
+    "english": "Interface direction: Automatic by system, or explicit RTL/LTR.",
+    "count": 1,
+    "lines": [
+      2715
+    ]
+  },
+  {
+    "arabic": "احذف النافذة المحددة.",
+    "english": "Delete the selected time window.",
+    "count": 1,
+    "lines": [
+      2708
+    ]
+  },
+  {
+    "arabic": "اختبار التنبيه",
+    "english": "Test notification",
+    "count": 1,
+    "lines": [
+      3143
+    ]
+  },
+  {
+    "arabic": "اسحب المقبض الأخضر لسقف الشحن والبرتقالي لإعادة الشحن (حتى 1%).",
+    "english": "Drag the green handle to cap the charge and the orange to recharge (up to 1%).",
+    "count": 1,
+    "lines": [
+      2700
+    ]
+  },
+  {
+    "arabic": "اكتمال الشحن عند",
+    "english": "Notify when charge reaches",
+    "count": 1,
+    "lines": [
+      3033
+    ]
+  },
+  {
+    "arabic": "اكتمل شحن البطارية",
+    "english": "Battery fully charged",
+    "count": 1,
+    "lines": [
+      1570
+    ]
+  },
+  {
+    "arabic": "الإعدادات…",
+    "english": "Settings…",
+    "count": 1,
+    "lines": [
+      1816
+    ]
+  },
+  {
+    "arabic": "البطارية",
+    "english": "Battery",
+    "count": 1,
+    "lines": [
+      2683
+    ]
+  },
+  {
+    "arabic": "البطارية {0}% · {1}",
+    "english": "Battery {0}% · {1}",
+    "count": 1,
+    "lines": [
+      3246
+    ]
+  },
+  {
+    "arabic": "البطارية تفرغ رغم توصيل الشاحن.",
+    "english": "The battery is draining even though the charger is connected.",
+    "count": 1,
+    "lines": [
+      1535
+    ]
+  },
+  {
+    "arabic": "البطارية منخفضة",
+    "english": "Battery is low",
+    "count": 1,
+    "lines": [
+      1586
+    ]
+  },
+  {
+    "arabic": "التحكم بالشحن",
+    "english": "Charge control",
+    "count": 1,
+    "lines": [
+      2725
+    ]
+  },
+  {
+    "arabic": "التحكم بالشحن…",
+    "english": "Charge control…",
+    "count": 1,
+    "lines": [
+      1804
+    ]
+  },
+  {
+    "arabic": "التشغيل مع ويندوز",
+    "english": "Launch at startup",
+    "count": 1,
+    "lines": [
+      1825
+    ]
+  },
+  {
+    "arabic": "التنبيهات",
+    "english": "Notifications",
+    "count": 1,
+    "lines": [
+      3025
+    ]
+  },
+  {
+    "arabic": "الجدولة مفعّلة · ",
+    "english": "Schedule on · ",
+    "count": 1,
+    "lines": [
+      1792
+    ]
+  },
+  {
+    "arabic": "الجدولة موقوفة",
+    "english": "Schedule off",
+    "count": 1,
+    "lines": [
+      1793
+    ]
+  },
+  {
+    "arabic": "الجدولة موقوفة.\\nفعّل «تفعيل الجدولة الزمنية» ثم أضف نافذة.",
+    "english": "Schedule is off.\nEnable scheduling, then add a time window.",
+    "count": 1,
+    "lines": [
+      2929
+    ]
+  },
+  {
+    "arabic": "السجل…",
+    "english": "Activity log…",
+    "count": 1,
+    "lines": [
+      1817
+    ]
+  },
+  {
+    "arabic": "السعة الحالية {0:N0} mWh",
+    "english": "Current capacity {0:N0} mWh",
+    "count": 1,
+    "lines": [
+      1781
+    ]
+  },
+  {
+    "arabic": "السقف",
+    "english": "Limit",
+    "count": 1,
+    "lines": [
+      2835
+    ]
+  },
+  {
+    "arabic": "الشحن موقوف",
+    "english": "Charging stopped",
+    "count": 1,
+    "lines": [
+      734
+    ]
+  },
+  {
+    "arabic": "المتبقي ≈ ",
+    "english": "Remaining ≈ ",
+    "count": 1,
+    "lines": [
+      1789
+    ]
+  },
+  {
+    "arabic": "المظهر",
+    "english": "Appearance",
+    "count": 1,
+    "lines": [
+      1823
+    ]
+  },
+  {
+    "arabic": "النسبة التي يُستأنف عندها الشحن بعد الهبوط، من 1% وحتى 5 نقاط تحت السقف.",
+    "english": "The percentage at which charging resumes after a drop, from 1% to 5 points below the limit.",
+    "count": 1,
+    "lines": [
+      2702
+    ]
+  },
+  {
+    "arabic": "الواجهة والسلوك",
+    "english": "Interface and behavior",
+    "count": 1,
+    "lines": [
+      3084
+    ]
+  },
+  {
+    "arabic": "انخفاض البطارية تحت",
+    "english": "Low battery under",
+    "count": 1,
+    "lines": [
+      3042
+    ]
+  },
+  {
+    "arabic": "انخفاض صحة البطارية تحت",
+    "english": "Low battery health under",
+    "count": 1,
+    "lines": [
+      3051
+    ]
+  },
+  {
+    "arabic": "بعد بلوغ السقف يبقى الجهاز على طاقة الشاحن ولا يعود للبطارية.",
+    "english": "After reaching the limit, the device remains on charger power and does not return to the battery.",
+    "count": 1,
+    "lines": [
+      2703
+    ]
+  },
+  {
+    "arabic": "تحديث",
+    "english": "Refresh",
+    "count": 1,
+    "lines": [
+      3468
+    ]
+  },
+  {
+    "arabic": "تحذير وضع التعويم",
+    "english": "Float mode warning",
+    "count": 1,
+    "lines": [
+      1535
+    ]
+  },
+  {
+    "arabic": "تحذير: البطارية تفرغ رغم الشاحن",
+    "english": "Warning: battery is draining despite the charger",
+    "count": 1,
+    "lines": [
+      751
+    ]
+  },
+  {
+    "arabic": "تداخل جدولة",
+    "english": "Schedule conflict",
+    "count": 1,
+    "lines": [
+      763
+    ]
+  },
+  {
+    "arabic": "تداخل في الجدولة",
+    "english": "Schedule conflict",
+    "count": 1,
+    "lines": [
+      1508
+    ]
+  },
+  {
+    "arabic": "تشغيل أو إيقاف كل إشعارات النظام (الإشعارات الاختبارية تعمل دائمًا).",
+    "english": "Turn all system notifications on or off (test notifications are always on).",
+    "count": 1,
+    "lines": [
+      2717
+    ]
+  },
+  {
+    "arabic": "تصدير السجل",
+    "english": "Export activity log",
+    "count": 1,
+    "lines": [
+      3563
+    ]
+  },
+  {
+    "arabic": "تصدير…",
+    "english": "Export…",
+    "count": 1,
+    "lines": [
+      3482
+    ]
+  },
+  {
+    "arabic": "تطبيق سقف الشحن وإعادة الشحن",
+    "english": "Apply charge limit and resume level",
+    "count": 1,
+    "lines": [
+      2739
+    ]
+  },
+  {
+    "arabic": "تعديل الجدولة…",
+    "english": "Edit schedule…",
+    "count": 1,
+    "lines": [
+      1813
+    ]
+  },
+  {
+    "arabic": "تعديل نافذة جدولة",
+    "english": "Edit schedule time window",
+    "count": 1,
+    "lines": [
+      2469
+    ]
+  },
+  {
+    "arabic": "تعديل…",
+    "english": "Edit…",
+    "count": 1,
+    "lines": [
+      2855
+    ]
+  },
+  {
+    "arabic": "تعذر التصدير: ",
+    "english": "Export failed:",
+    "count": 1,
+    "lines": [
+      3580
+    ]
+  },
+  {
+    "arabic": "تعذر قراءة السجل.",
+    "english": "Could not read the activity log.",
+    "count": 1,
+    "lines": [
+      3555
+    ]
+  },
+  {
+    "arabic": "تعذر قراءة السجل: ",
+    "english": "Could not read the activity log:",
+    "count": 1,
+    "lines": [
+      3554
+    ]
+  },
+  {
+    "arabic": "تعذر قراءة حالة البطارية",
+    "english": "Unable to read battery status",
+    "count": 1,
+    "lines": [
+      1461
+    ]
+  },
+  {
+    "arabic": "تفريغ قسري",
+    "english": "Forced discharge",
+    "count": 1,
+    "lines": [
+      735
+    ]
+  },
+  {
+    "arabic": "تفعيل إشعارات النظام",
+    "english": "Enable system notifications",
+    "count": 1,
+    "lines": [
+      3114
+    ]
+  },
+  {
+    "arabic": "تفعيل الجدولة الزمنية",
+    "english": "Enable scheduling",
+    "count": 1,
+    "lines": [
+      2811
+    ]
+  },
+  {
+    "arabic": "تلقائي (ثيم النظام)",
+    "english": "Auto (system theme)",
+    "count": 1,
+    "lines": [
+      1820
+    ]
+  },
+  {
+    "arabic": "تلقائي (حسب النظام)",
+    "english": "Automatic (system)",
+    "count": 1,
+    "lines": [
+      3097
+    ]
+  },
+  {
+    "arabic": "تم إيقاف الشحن",
+    "english": "Charging has been stopped",
+    "count": 1,
+    "lines": [
+      1481
+    ]
+  },
+  {
+    "arabic": "تم استئناف الشحن",
+    "english": "Charging has resumed",
+    "count": 1,
+    "lines": [
+      1481
+    ]
+  },
+  {
+    "arabic": "تم تصدير السجل إلى:\\n",
+    "english": "Activity log exported to:\n",
+    "count": 1,
+    "lines": [
+      3575
+    ]
+  },
+  {
+    "arabic": "تُطبَّق التغييرات فور الحفظ.",
+    "english": "Changes apply immediately when saved.",
+    "count": 1,
+    "lines": [
+      3152
+    ]
+  },
+  {
+    "arabic": "جدولة ",
+    "english": "Schedule ",
+    "count": 1,
+    "lines": [
+      783
+    ]
+  },
+  {
+    "arabic": "جدولة {0}-{1}: سقف {2}%",
+    "english": "Schedule {0}–{1}: limit {2}%",
+    "count": 1,
+    "lines": [
+      790
+    ]
+  },
+  {
+    "arabic": "حتى الامتلاء ≈ ",
+    "english": "Until full ≈ ",
+    "count": 1,
+    "lines": [
+      1789
+    ]
+  },
+  {
+    "arabic": "حد الاكتمال (50–100%).",
+    "english": "Full threshold (50–100%).",
+    "count": 1,
+    "lines": [
+      2710
+    ]
+  },
+  {
+    "arabic": "حد الانخفاض (5–50%).",
+    "english": "Low threshold (5–50%).",
+    "count": 1,
+    "lines": [
+      2712
+    ]
+  },
+  {
+    "arabic": "حد الصحة (40–95%).",
+    "english": "Health threshold (40–95%).",
+    "count": 1,
+    "lines": [
+      2714
+    ]
+  },
+  {
+    "arabic": "حذف",
+    "english": "Delete",
+    "count": 1,
+    "lines": [
+      2860
+    ]
+  },
+  {
+    "arabic": "حل تداخل الجدولة…",
+    "english": "Resolve schedule conflict…",
+    "count": 1,
+    "lines": [
+      1800
+    ]
+  },
+  {
+    "arabic": "خامل",
+    "english": "Idle",
+    "count": 1,
+    "lines": [
+      3243
+    ]
+  },
+  {
+    "arabic": "خروج",
+    "english": "Exit",
+    "count": 1,
+    "lines": [
+      1827
+    ]
+  },
+  {
+    "arabic": "داكن",
+    "english": "Dark theme",
+    "count": 1,
+    "lines": [
+      1822
+    ]
+  },
+  {
+    "arabic": "سقف {0}% (استئناف {1}%)",
+    "english": "Limit {0}% (resume {1}%)",
+    "count": 1,
+    "lines": [
+      809
+    ]
+  },
+  {
+    "arabic": "سقف الشحن",
+    "english": "Charge limit",
+    "count": 1,
+    "lines": [
+      2769
+    ]
+  },
+  {
+    "arabic": "سقف الشحن %",
+    "english": "Charge limit %",
+    "count": 1,
+    "lines": [
+      2512
+    ]
+  },
+  {
+    "arabic": "سقف مخصص…",
+    "english": "Custom limit…",
+    "count": 1,
+    "lines": [
+      1808
+    ]
+  },
+  {
+    "arabic": "شحن طبيعي (بدون سقف)",
+    "english": "Standard charging (no limit)",
+    "count": 1,
+    "lines": [
+      1805
+    ]
+  },
+  {
+    "arabic": "شحن طبيعي · ",
+    "english": "Standard charging · ",
+    "count": 1,
+    "lines": [
+      1699
+    ]
+  },
+  {
+    "arabic": "شحن طبيعي داخل النافذة",
+    "english": "Standard charging in this time window",
+    "count": 1,
+    "lines": [
+      2499
+    ]
+  },
+  {
+    "arabic": "شحن طبيعي — بلا سقف",
+    "english": "Standard charging — no limit",
+    "count": 1,
+    "lines": [
+      1784
+    ]
+  },
+  {
+    "arabic": "صحة {0}%",
+    "english": "Battery health {0}%",
+    "count": 1,
+    "lines": [
+      755
+    ]
+  },
+  {
+    "arabic": "صحة البطارية منخفضة",
+    "english": "Low battery health",
+    "count": 1,
+    "lines": [
+      1602
+    ]
+  },
+  {
+    "arabic": "طاقة الشاحن · البطارية خاملة",
+    "english": "Charger power · battery idle",
+    "count": 1,
+    "lines": [
+      751
+    ]
+  },
+  {
+    "arabic": "عدّل النافذة المحددة.",
+    "english": "Edit the selected time window.",
+    "count": 1,
+    "lines": [
+      2707
+    ]
+  },
+  {
+    "arabic": "عرض {0} من {1} سطرًا · {2}",
+    "english": "Showing {0} of {1} lines · {2}",
+    "count": 1,
+    "lines": [
+      3549
+    ]
+  },
+  {
+    "arabic": "على الكهرباء",
+    "english": "Plugged in",
+    "count": 1,
+    "lines": [
+      1699
+    ]
+  },
+  {
+    "arabic": "عمر أطول — 60% / 55%",
+    "english": "Longevity — 60% / 55%",
+    "count": 1,
+    "lines": [
+      1807
+    ]
+  },
+  {
+    "arabic": "عند التفعيل يتوقف الشحن عند السقف المحدد بدل 100%.",
+    "english": "When activated, charging stops at the specified limit instead of 100%.",
+    "count": 1,
+    "lines": [
+      2699
+    ]
+  },
+  {
+    "arabic": "غير مدعوم",
+    "english": "Unsupported",
+    "count": 1,
+    "lines": [
+      736
+    ]
+  },
+  {
+    "arabic": "فاتح",
+    "english": "Light theme",
+    "count": 1,
+    "lines": [
+      1821
+    ]
+  },
+  {
+    "arabic": "قيد الشحن",
+    "english": "Charging",
+    "count": 1,
+    "lines": [
+      3243
+    ]
+  },
+  {
+    "arabic": "لا توجد نوافذ جدولة بعد.\\nاضغط «إضافة…» لإنشاء أول نافذة.",
+    "english": "No schedule time windows yet.\nClick “Add…” to create the first one.",
+    "count": 1,
+    "lines": [
+      2928
+    ]
+  },
+  {
+    "arabic": "لا نافذة جدولة نشطة",
+    "english": "No active schedule time window",
+    "count": 1,
+    "lines": [
+      795
+    ]
+  },
+  {
+    "arabic": "لم يستجب مزوّد HP للتحكم بالشحن. ستتم إعادة المحاولة تلقائيًا.",
+    "english": "The HP battery provider did not respond. Retrying automatically.",
+    "count": 1,
+    "lines": [
+      1461
+    ]
+  },
+  {
+    "arabic": "ملف نصي (*.txt)|*.txt|كل الملفات (*.*)|*.*",
+    "english": "Text file (*.txt)|*.txt|All files (*.*)|*.*",
+    "count": 1,
+    "lines": [
+      3564
+    ]
+  },
+  {
+    "arabic": "من اليسار إلى اليمين (LTR)",
+    "english": "Left to right (LTR)",
+    "count": 1,
+    "lines": [
+      3099
+    ]
+  },
+  {
+    "arabic": "من اليمين إلى اليسار (RTL)",
+    "english": "Right to left (RTL)",
+    "count": 1,
+    "lines": [
+      3098
+    ]
+  },
+  {
+    "arabic": "موصى به — 80% / 75%",
+    "english": "Recommended — 80% / 75%",
+    "count": 1,
+    "lines": [
+      1806
+    ]
+  },
+  {
+    "arabic": "نافذة واحدة",
+    "english": "One time window",
+    "count": 1,
+    "lines": [
+      1918
+    ]
+  },
+  {
+    "arabic": "نافذتان",
+    "english": "Two time windows",
+    "count": 1,
+    "lines": [
+      1919
+    ]
+  },
+  {
+    "arabic": "نوافذ الجدولة بالترتيب؛ أول نافذة مطابقة للوقت هي التي تُطبَّق.",
+    "english": "Schedule time windows are checked in order; the first matching time window applies.",
+    "count": 1,
+    "lines": [
+      2705
+    ]
+  },
+  {
+    "arabic": "نوافذ زمنية متعددة؛ كل نافذة لها سقف مستقل أو شحن طبيعي.",
+    "english": "Multiple time windows; each has its own limit or standard charging.",
+    "count": 1,
+    "lines": [
+      2704
+    ]
+  },
+  {
+    "arabic": "وضع التعويم (طاقة الشاحن)",
+    "english": "Float mode (charger power)",
+    "count": 1,
+    "lines": [
+      1809
+    ]
+  },
+  {
+    "arabic": "وضع التعويم — إبقاء الجهاز على طاقة الشاحن بعد السقف",
+    "english": "Float mode — keep the device on charger power after limit",
+    "count": 1,
+    "lines": [
+      2788
+    ]
+  },
+  {
+    "arabic": "يرسل إشعارًا فوريًا للتأكد من وصول التنبيهات، حتى لو كانت الإشعارات موقوفة.",
+    "english": "Sends an immediate notification to verify delivery, even when notifications are off.",
+    "count": 1,
+    "lines": [
+      3161
+    ]
+  },
+  {
+    "arabic": "يعرض رقم السقف داخل أيقونة البطارية.",
+    "english": "Show the limit number inside the battery icon.",
+    "count": 1,
+    "lines": [
+      2716
+    ]
+  },
+  {
+    "arabic": "يعمل على البطارية",
+    "english": "Runs on battery",
+    "count": 1,
+    "lines": [
+      1776
+    ]
+  }
+]

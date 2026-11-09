@@ -1,0 +1,154 @@
+000 | Normal charging | شحن طبيعي
+001 | On the battery | على البطارية
+002 | Connected to electricity | متصل بالكهرباء
+003 | · Health {0}% |  · صحة {0}%
+004 | D |  د
+005 | with |  مع 
+006 | . Adjust the times before saving. | . عدّل الأوقات قبل الحفظ.
+007 | Cancel | إلغاء
+008 | To | إلى
+009 | Schedule | الجدولة الزمنية
+010 | Window | تتعارض النافذة 
+011 | Discharging | تفريغ
+012 | Save | حفظ
+013 | Ceiling {0}% · Resume {1}% | سقف {0}% · استئناف {1}%
+014 | charging | شحن
+015 | normal | طبيعي
+016 | No log yet. | لا يوجد سجل بعد.
+017 | From | من
+018 | (ceiling |  (سقف 
+019 | (normal) |  (طبيعي)
+020 | · {0}°C |  · {0}°م
+021 | · Float mode on |  · التعويم مفعّل
+022 | Ceiling {0}% |  · السقف {0}%
+023 | Cycles {0} |  · دورات {0}
+024 | S |  س
+025 | S |  س 
+026 | window |  نافذة
+027 | Windows |  نوافذ
+028 | — adjust one before saving. |  — عدّل إحداهما قبل الحفظ.
+029 | ! Schedule windows overlap | ! تداخل في نوافذ الجدولة
+030 | : Normal charging | : شحن طبيعي
+031 | BatteryGuard — Settings | BatteryGuard — الإعدادات
+032 | BatteryGuard — Log | BatteryGuard — السجل
+033 | {0:N0} / {1:N0} mWh {2}% accuracy | {0:N0} / {1:N0} mWh · صحة {2}%
+034 | {0}% · Charge soon | {0}% · اشحن الجهاز قريبًا
+035 | {0}% · Capacity {1:N0} of {2:N0} mWh | {0}% · السعة {1:N0} من {2:N0} mWh
+036 | {0}% · You can disconnect the charger | {0}% · يمكنك فصل الشاحن
+037 | °M | °م
+038 | Add at least one scheduling window or stop scheduling. | أضف نافذة جدولة واحدة على الأقل أو أوقف الجدولة.
+039 | Add a new window (from/to/ceiling). | أضف نافذة جديدة (من/إلى/السقف).
+040 | The highest percentage that charging reaches before stopping (50–100%). | أعلى نسبة يصل إليها الشحن قبل إيقافه (50–100%).
+041 | If the start and end times are the same, the window is applied to the entire day. | إذا تساوى وقتا البداية والنهاية، تُطبَّق النافذة على اليوم كاملًا.
+042 | Demo notification — Notifications are working. | إشعار تجريبي — التنبيهات تعمل.
+043 | Notification when the specified charging completion percentage is reached. | إشعار عند بلوغ نسبة اكتمال الشحن المحددة.
+044 | Notification when battery health deteriorates below limit. | إشعار عند تدهور صحة البطارية تحت الحد.
+045 | Notification when the battery drops below the specified limit. | إشعار عند هبوط البطارية تحت الحد المحدد.
+046 | Add a scheduling window | إضافة نافذة جدولة
+047 | Add… | إضافة…
+048 | Show the ceiling number on the icon | إظهار رقم سقف الشحن على الأيقونة
+049 | Recharge | إعادة الشحن
+050 | Close | إغلاق
+051 | Interface direction | اتجاه الواجهة
+052 | Interface direction: Automatic by system, or explicit RTL/LTR. | اتجاه الواجهة: تلقائي حسب النظام، أو RTL/LTR صريح.
+053 | Delete the selected window. | احذف النافذة المحددة.
+054 | Test notification | اختبار التنبيه
+055 | Drag the green handle to cap the charge and the orange to recharge (up to 1%). | اسحب المقبض الأخضر لسقف الشحن والبرتقالي لإعادة الشحن (حتى 1%).
+056 | Notify when charge reaches | اكتمال الشحن عند
+057 | Battery fully charged | اكتمل شحن البطارية
+058 | Settings… | الإعدادات…
+059 | Battery | البطارية
+060 | Battery {0}% · {1} | البطارية {0}% · {1}
+061 | The battery is draining even though the charger is connected. | البطارية تفرغ رغم توصيل الشاحن.
+062 | Battery is low | البطارية منخفضة
+063 | Charge control | التحكم بالشحن
+064 | Charge control… | التحكم بالشحن…
+065 | Start with Windows | التشغيل مع ويندوز
+066 | Notifications | التنبيهات
+067 | Scheduling is enabled | الجدولة مفعّلة · 
+068 | Schedule off | الجدولة موقوفة
+069 | Scheduling is suspended.
+Enable “Enable scheduling” and then add a window. | الجدولة موقوفة.\nفعّل «تفعيل الجدولة الزمنية» ثم أضف نافذة.
+070 | Log… | السجل…
+071 | Current capacity {0:N0} mWh | السعة الحالية {0:N0} mWh
+072 | Ceiling | السقف
+073 | Charging stopped | الشحن موقوف
+074 | Remaining ≈ | المتبقي ≈ 
+075 | Appearance | المظهر
+076 | The percentage at which charging resumes after a drop, from 1% to 5 points below the ceiling. | النسبة التي يُستأنف عندها الشحن بعد الهبوط، من 1% وحتى 5 نقاط تحت السقف.
+077 | Interface and behavior | الواجهة والسلوك
+078 | Low battery under | انخفاض البطارية تحت
+079 | Low battery health under | انخفاض صحة البطارية تحت
+080 | After reaching the ceiling, the device remains on charger power and does not return to the battery. | بعد بلوغ السقف يبقى الجهاز على طاقة الشاحن ولا يعود للبطارية.
+081 | Refresh | تحديث
+082 | Float mode warning | تحذير وضع التعويم
+083 | Warning: The battery dies despite the charger | تحذير: البطارية تفرغ رغم الشاحن
+084 | Schedule conflict | تداخل جدولة
+085 | Schedule conflict | تداخل في الجدولة
+086 | Turn all system notifications on or off (test notifications are always on). | تشغيل أو إيقاف كل إشعارات النظام (الإشعارات الاختبارية تعمل دائمًا).
+087 | Export log | تصدير السجل
+088 | Export… | تصدير…
+089 | Apply charge ceiling and resume level | تطبيق سقف الشحن وإعادة الشحن
+090 | Edit schedule… | تعديل الجدولة…
+091 | Edit schedule window | تعديل نافذة جدولة
+092 | Edit… | تعديل…
+093 | Export failed: | تعذر التصدير: 
+094 | Could not read the log. | تعذر قراءة السجل.
+095 | Could not read the log: | تعذر قراءة السجل: 
+096 | Unable to read battery status | تعذر قراءة حالة البطارية
+097 | Forced discharge | تفريغ قسري
+098 | Enable system notifications | تفعيل إشعارات النظام
+099 | Enable scheduling | تفعيل الجدولة الزمنية
+100 | Auto (system theme) | تلقائي (ثيم النظام)
+101 | Automatic (system) | تلقائي (حسب النظام)
+102 | Charging has been stopped | تم إيقاف الشحن
+103 | Charging has resumed | تم استئناف الشحن
+104 | Log exported to: | تم تصدير السجل إلى:\n
+105 | Changes apply immediately when saved. | تُطبَّق التغييرات فور الحفظ.
+106 | Schedule | جدولة 
+107 | Schedule {0}–{1}: ceiling {2}% | جدولة {0}-{1}: سقف {2}%
+108 | Until full ≈ | حتى الامتلاء ≈ 
+109 | Full threshold (50–100%). | حد الاكتمال (50–100%).
+110 | Low threshold (5–50%). | حد الانخفاض (5–50%).
+111 | Health threshold (40–95%). | حد الصحة (40–95%).
+112 | Delete | حذف
+113 | Resolve schedule conflict… | حل تداخل الجدولة…
+114 | Idle | خامل
+115 | Exit | خروج
+116 | Dark | داكن
+117 | Ceiling {0}% (resume {1}%) | سقف {0}% (استئناف {1}%)
+118 | Charge ceiling | سقف الشحن
+119 | Charge ceiling % | سقف الشحن %
+120 | Custom ceiling… | سقف مخصص…
+121 | Normal charging (no ceiling) | شحن طبيعي (بدون سقف)
+122 | Normal charging · | شحن طبيعي · 
+123 | Normal charging in this window | شحن طبيعي داخل النافذة
+124 | Normal charging — no ceiling | شحن طبيعي — بلا سقف
+125 | Health {0}% | صحة {0}%
+126 | Low battery health | صحة البطارية منخفضة
+127 | Charger power · battery idle | طاقة الشاحن · البطارية خاملة
+128 | Edit the selected window. | عدّل النافذة المحددة.
+129 | Showing {0} of {1} lines · {2} | عرض {0} من {1} سطرًا · {2}
+130 | Plugged in | على الكهرباء
+131 | Longevity — 60% / 55% | عمر أطول — 60% / 55%
+132 | When activated, charging stops at the specified ceiling instead of 100%. | عند التفعيل يتوقف الشحن عند السقف المحدد بدل 100%.
+133 | Unsupported | غير مدعوم
+134 | Light | فاتح
+135 | Charging | قيد الشحن
+136 | There are no scheduling windows yet.
+Click “Add…” to create the first window. | لا توجد نوافذ جدولة بعد.\nاضغط «إضافة…» لإنشاء أول نافذة.
+137 | No active schedule window | لا نافذة جدولة نشطة
+138 | The HP battery provider did not respond. Retrying automatically. | لم يستجب مزوّد HP للتحكم بالشحن. ستتم إعادة المحاولة تلقائيًا.
+139 | Text file (*.txt)|*.txt|All files (*.*)|*.* | ملف نصي (*.txt)|*.txt|كل الملفات (*.*)|*.*
+140 | Left to right (LTR) | من اليسار إلى اليمين (LTR)
+141 | Right to left (RTL) | من اليمين إلى اليسار (RTL)
+142 | Recommended — 80% / 75% | موصى به — 80% / 75%
+143 | One window | نافذة واحدة
+144 | Two windows | نافذتان
+145 | Schedule windows are checked in order; the first matching window applies. | نوافذ الجدولة بالترتيب؛ أول نافذة مطابقة للوقت هي التي تُطبَّق.
+146 | Multiple time windows; each has its own ceiling or normal charging. | نوافذ زمنية متعددة؛ كل نافذة لها سقف مستقل أو شحن طبيعي.
+147 | Float mode (charger power) | وضع التعويم (طاقة الشاحن)
+148 | Float mode — keep the device on charger power after ceiling | وضع التعويم — إبقاء الجهاز على طاقة الشاحن بعد السقف
+149 | Sends an immediate notification to verify delivery, even when notifications are off. | يرسل إشعارًا فوريًا للتأكد من وصول التنبيهات، حتى لو كانت الإشعارات موقوفة.
+150 | Show the ceiling number inside the battery icon. | يعرض رقم السقف داخل أيقونة البطارية.
+151 | Runs on battery | يعمل على البطارية

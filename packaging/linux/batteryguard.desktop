@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=BatteryGuard
+Comment=Read-only battery monitor
+Exec=batteryguard
+Icon=batteryguard
+Terminal=true
+Categories=System;Utility;
+Keywords=battery;power;health;
