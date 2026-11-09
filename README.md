@@ -94,7 +94,7 @@ GitHub Actions builds native installers for all supported systems:
 | Linux x64, ARM64 | `.deb`, `.rpm`, `.AppImage` |
 | macOS Intel, Apple silicon | `.pkg` |
 
-The current release is [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0), with all 11 installers attached.
+The current release is [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0), with all 11 installers attached. These packages install the cross-platform `batteryguard` CLI from `portable/`; the C# Windows tray in `battery/` is not linked into them and remains a separate source build.
 
 Every branch build signs the installers with a keyless Sigstore build-provenance
 attestation and keeps them as workflow artifacts. A GitHub Release is created

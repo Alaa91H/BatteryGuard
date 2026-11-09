@@ -104,6 +104,10 @@ as short-lived Actions artifacts, but never create a GitHub Release.
 No packaging tool is run in the repository root on a normal local build; the
 CI jobs use the platform tools installed on their hosted runner.
 
+The current installer payload is the Rust `batteryguard` CLI. The C# Windows
+tray in `battery/` is not linked into it and is not part of these packages; it
+remains a source-built application until a tray MSI is added deliberately.
+
 ## Verification boundaries
 
 - The first hosted run (`42622500646`) exposed a crate-path bug and failed in

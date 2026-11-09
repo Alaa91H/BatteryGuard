@@ -54,6 +54,8 @@ All notable changes to this project are documented here. The format follows the 
 - No installer was launched on a clean VM, and no real Linux/macOS battery
   reading was taken.
 - Linux/macOS widgets and charge control remain out of scope for this release.
+- The installers package the Rust `batteryguard` CLI, not the C# Windows tray;
+  the tray remains a separate source build.
 
 ## 2026-11-09 — portable Rust core
 
