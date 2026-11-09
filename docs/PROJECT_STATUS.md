@@ -56,6 +56,7 @@ Passed in this session (2026-11-09):
 | GitHub Actions `42638941970` | All 7 packaging jobs succeeded; 14 installers; x64 MSI and EXE install/uninstall plus the published `v0.1.0` → EXE upgrade passed with one visible Apps & Features entry and a clean uninstall |
 | GitHub Actions `42652367294` | Branch run for `0.2.0` succeeded; all 7 packaging jobs; 14 installers; x64 MSI/EXE and `v0.1.0` upgrade checks passed |
 | GitHub Actions `42653411073` | Tag run succeeded; `v0.2.0` published with 14 assets (3 EXE, 3 MSI, 6 Linux packages, 2 PKG); SignPath skipped |
+| Local SAC test (2026-11-09) | Windows 11 Home 10.0.26300 with SAC enforcement blocked the unsigned `v0.2.0` x64 EXE at launch; no install or upgrade occurred; existing `0.1.0` remained |
 
 Locale inventory: 30 JSON files, 151 keys in each file including the `Monitoring only` key; no missing keys and no placeholder mismatches.
 
@@ -92,6 +93,11 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
   the assets carry GitHub/Sigstore build-provenance attestations only.
 - CI ran the quiet x64 MSI/EXE install, uninstall and `v0.1.0` upgrade checks;
   the interactive wizard was not visually tested.
+- **Smart App Control:** a local Windows 11 Home 10.0.26300 test with SAC
+  enforcement (`VerifiedAndReputablePolicyState=1`) blocked the unsigned x64
+  EXE at launch (`An Application Control policy has blocked this file.`). No
+  `0.2.0` installation or upgrade occurred; the existing `0.1.0` installation
+  and Apps & Features entries remained.
 
 ## Portable core (phase 1)
 

@@ -19,6 +19,21 @@
 - The Windows x64 job passed the quiet MSI/EXE install, uninstall and
   `v0.1.0` upgrade checks. The interactive wizard was not tested.
 
+### Smart App Control check
+
+- Host: Windows 11 Home 10.0.26300; SAC enforcement
+  (`VerifiedAndReputablePolicyState=1`, `SAC_EnforcementReason=1`).
+- Downloaded `BatteryGuard-0.2.0-windows-x64.exe`, 1,309,109 bytes, SHA-256
+  `6c41267667e92bde41f76efd7430c925d1e2750d91e559b7b79fbee72e4a59e3`;
+  `Get-AuthenticodeSignature` reports `NotSigned`.
+- Running the installer elevated failed before installation:
+  `An Application Control policy has blocked this file.` No `0.2.0` install
+  or upgrade occurred; the existing `0.1.0` files and Apps & Features entries
+  remained. The installed `batteryguard.exe --version` was also blocked from
+  running by Application Control.
+- This is not a signed-artifact test. CI's quiet install/upgrade checks passed
+  on hosted runners; this host has SAC enforcement.
+
 ## 2026-11-09 — SignPath Foundation signing path
 
 ### Goal

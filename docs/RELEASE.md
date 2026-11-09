@@ -216,6 +216,12 @@ the interactive wizard or a physical clean VM.
   [`v0.2.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.2.0) with
   three Windows EXE bootstrappers, three MSIs, six Linux packages and two
   macOS PKGs. The artifacts are unsigned because SignPath is not configured.
+- Local Smart App Control check (2026-11-09): Windows 11 Home 10.0.26300 with
+  SAC enforcement (`VerifiedAndReputablePolicyState=1`) blocked the unsigned
+  x64 EXE before installation with `An Application Control policy has blocked
+  this file.` The existing `0.1.0` installation remained; no `0.2.0` upgrade
+  occurred. This is a failure result for the unsigned artifact, not a signing
+  test.
 - Hosted run `42642577968` passed all seven packaging jobs with the optional
   SignPath configuration absent. The SignPath steps were skipped, the PFX steps
   had no certificate, and the unsigned installers were built, installed,

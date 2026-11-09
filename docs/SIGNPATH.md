@@ -116,3 +116,13 @@ enforcement mode:
 
 The previous unsigned artifacts remain blocked. Do not describe a build as
 signed until the SignPath request succeeds and the verification commands pass.
+
+## Measured Smart App Control result
+
+On 2026-11-09, a Windows 11 Home 10.0.26300 host with SAC enforcement
+(`VerifiedAndReputablePolicyState=1`) blocked the unsigned
+`BatteryGuard-0.2.0-windows-x64.exe` at launch with `An Application Control
+policy has blocked this file.` The download was `NotSigned` (SHA-256
+`6c41267667e92bde41f76efd7430c925d1e2750d91e559b7b79fbee72e4a59e3`). No
+installation or upgrade occurred; the existing `0.1.0` installation remained.
+This is the expected unsigned result, not a test of a signed build.

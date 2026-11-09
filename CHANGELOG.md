@@ -29,6 +29,9 @@ First release with Windows tray installers.
 
 - The installers are unsigned: no SignPath project, token, PFX or Developer ID
   certificate is configured. Smart App Control may still block them.
+- On 2026-11-09, Windows 11 Home 10.0.26300 with SAC enforcement blocked the
+  unsigned x64 EXE at launch; no installation or upgrade occurred, and the
+  existing `0.1.0` installation remained.
 - The interactive installer wizard and a physical clean VM were not tested.
 
 ## v0.2.0 details — SignPath Foundation signing path
