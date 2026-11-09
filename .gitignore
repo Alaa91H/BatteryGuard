@@ -27,6 +27,7 @@ battery/tests/*.err.log
 portable/target/
 dist/
 packaging/windows/staging/
+packaging/windows/ProductLocales.wxs
 .freebuff/
 
 # Localization generation cache (catalogs themselves are tracked)

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package
       Name="BatteryGuard"
@@ -13,21 +13,60 @@
 
     <Icon Id="BatteryGuard.ico" SourceFile="$(var.SourceDir)\batteryguard.ico" />
     <Property Id="ARPPRODUCTICON" Value="BatteryGuard.ico" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <Property Id="ARPNOMODIFY" Value="1" />
 
     <Feature Id="MainFeature" Title="BatteryGuard" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="LocaleComponents" />
+      <ComponentGroupRef Id="ShortcutComponents" />
     </Feature>
   </Package>
 
   <Fragment>
     <StandardDirectory Id="ProgramFiles6432Folder">
-      <Directory Id="INSTALLFOLDER" Name="BatteryGuard" />
+      <Directory Id="INSTALLFOLDER" Name="BatteryGuard">
+        <Directory Id="RESOURCESFOLDER" Name="resources" />
+        <Directory Id="LOCALESFOLDER" Name="locales" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonProgramsFolder">
+      <Directory Id="BatteryGuardProgramsFolder" Name="BatteryGuard" />
     </StandardDirectory>
 
     <ComponentGroup Id="ProductComponents">
-      <Component Id="MainExecutable" Directory="INSTALLFOLDER">
-        <File Id="BatteryGuardExe" Source="$(var.SourceDir)\batteryguard.exe" KeyPath="yes" />
+      <Component Id="TrayExecutable" Directory="INSTALLFOLDER" Guid="A9E4C6B7-4F4A-4B62-9A5F-8E3A1D0C2B71">
+        <File Id="BatteryGuardTrayExe" Source="$(var.SourceDir)\application.exe" KeyPath="yes" />
+      </Component>
+
+      <Component Id="CliExecutable" Directory="INSTALLFOLDER" Guid="7C2D5B4A-9E18-4F73-B6A4-2D0C9E8F1A35">
+        <File Id="BatteryGuardCliExe" Source="$(var.SourceDir)\batteryguard.exe" KeyPath="yes" />
         <Environment Id="PathEntry" Name="PATH" Value="[INSTALLFOLDER]" Part="last" Action="set" System="yes" />
+      </Component>
+
+      <Component Id="ApplicationIcon" Directory="RESOURCESFOLDER" Guid="C6B0E8F2-5A31-4D9C-8E47-1F6A2B3C4D80">
+        <File Id="ApplicationIconFile" Source="$(var.SourceDir)\resources\application.ico" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="ShortcutComponents">
+      <Component Id="StartMenuShortcuts" Directory="BatteryGuardProgramsFolder" Guid="5D1A7C3E-8B62-4F09-A5D6-3C7E9B1F2A48">
+        <Shortcut Id="StartMenuShortcut"
+                  Name="BatteryGuard"
+                  Description="BatteryGuard battery monitor"
+                  Target="[#BatteryGuardTrayExe]"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="BatteryGuard.ico">
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="BatteryGuard.Tray" />
+        </Shortcut>
+        <Shortcut Id="UninstallShortcut"
+                  Name="Uninstall BatteryGuard"
+                  Description="Uninstall BatteryGuard"
+                  Target="[SystemFolder]msiexec.exe"
+                  Arguments="/x [ProductCode]" />
+        <RemoveFolder Id="RemoveBatteryGuardProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKMU" Key="Software\BatteryGuard" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </ComponentGroup>
   </Fragment>

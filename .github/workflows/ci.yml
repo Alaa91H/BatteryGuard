@@ -167,6 +167,14 @@ jobs:
             "$binary" --version
           fi
 
+      - name: Build Windows tray payload
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path (Get-Location) 'battery/scripts/build.ps1')
+          if ($LASTEXITCODE -ne 0) { throw "Windows tray build failed with exit code $LASTEXITCODE" }
+
       - name: Package Windows MSI
         if: matrix.platform == 'windows'
         shell: pwsh
@@ -174,12 +182,56 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $stage = Join-Path (Get-Location) 'packaging/windows/staging'
           $dist = Join-Path (Get-Location) 'dist'
-          New-Item -ItemType Directory -Force -Path $stage, $dist | Out-Null
+          $locales = Join-Path $stage 'locales'
+          $resources = Join-Path $stage 'resources'
+          New-Item -ItemType Directory -Force -Path $stage, $dist, $locales, $resources | Out-Null
+          Copy-Item 'battery/application.exe' (Join-Path $stage 'application.exe') -Force
           Copy-Item "portable/target/$env:TARGET/release/batteryguard.exe" (Join-Path $stage 'batteryguard.exe') -Force
           Copy-Item 'battery/resources/application.ico' (Join-Path $stage 'batteryguard.ico') -Force
+          Copy-Item 'battery/resources/application.ico' (Join-Path $resources 'application.ico') -Force
+          Copy-Item 'battery/locales/*.json' $locales -Force
+
+          $localeWxs = Join-Path $stage 'ProductLocales.wxs'
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path (Get-Location) 'packaging/windows/generate-locales.ps1') -SourceDir $stage -OutputPath $localeWxs
+          if ($LASTEXITCODE -ne 0) { throw "Locale manifest generation failed with exit code $LASTEXITCODE" }
+
           $msi = Join-Path $dist "BatteryGuard-$env:VERSION$env:VERSION_SUFFIX-windows-${{ matrix.arch }}.msi"
-          wix build -arch ${{ matrix.msi_arch }} -d "Version=$env:VERSION" -d "SourceDir=$stage" -o $msi packaging/windows/Product.wxs
+          wix build -arch ${{ matrix.msi_arch }} -d "Version=$env:VERSION" -d "SourceDir=$stage" -o $msi packaging/windows/Product.wxs $localeWxs
           if ($LASTEXITCODE -ne 0) { throw "wix build failed with exit code $LASTEXITCODE" }
+
+      - name: Smoke-test Windows MSI
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $msi = Get-ChildItem 'dist/*.msi' | Select-Object -First 1
+          if (-not $msi) { throw 'No MSI was produced' }
+          $installLog = Join-Path $env:RUNNER_TEMP 'batteryguard-install.log'
+          $install = Start-Process -FilePath msiexec.exe -ArgumentList @('/i', ('"' + $msi.FullName + '"'), '/qn', '/norestart', '/l*v', ('"' + $installLog + '"')) -Wait -PassThru
+          if ($install.ExitCode -ne 0) {
+              Get-Content $installLog -Tail 80 -ErrorAction SilentlyContinue
+              throw "MSI install failed with exit code $($install.ExitCode)"
+          }
+
+          $installDir = Join-Path ${env:ProgramFiles} 'BatteryGuard'
+          $expected = @('application.exe', 'batteryguard.exe', 'resources\application.ico', 'locales\ar.json', 'locales\zh-CN.json')
+          foreach ($relative in $expected) {
+              $path = Join-Path $installDir $relative
+              if (-not (Test-Path -LiteralPath $path)) { throw "Missing installed payload: $path" }
+          }
+
+          $shortcut = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\BatteryGuard\BatteryGuard.lnk'
+          if (-not (Test-Path -LiteralPath $shortcut)) { throw "Missing Start Menu shortcut: $shortcut" }
+          $shell = New-Object -ComObject WScript.Shell
+          $link = $shell.CreateShortcut($shortcut)
+          if ($link.TargetPath -notlike '*application.exe') { throw "Shortcut target is wrong: $($link.TargetPath)" }
+
+          $uninstall = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\BatteryGuard\Uninstall BatteryGuard.lnk'
+          if (-not (Test-Path -LiteralPath $uninstall)) { throw "Missing uninstall shortcut: $uninstall" }
+
+          $remove = Start-Process -FilePath msiexec.exe -ArgumentList @('/x', ('"' + $msi.FullName + '"'), '/qn', '/norestart') -Wait -PassThru
+          if ($remove.ExitCode -ne 0) { throw "MSI uninstall failed with exit code $($remove.ExitCode)" }
+          if (Test-Path -LiteralPath $installDir) { throw "Install directory remains after uninstall: $installDir" }
 
       - name: Package Linux DEB, RPM and AppImage
         if: matrix.platform == 'linux'
