@@ -1,5 +1,76 @@
 # Session log
 
+## 2026-11-09 — cross-platform installers and tag-gated release CI
+
+### Goal
+
+Replace the repository's ad-hoc build notes with one professional CI workflow
+that builds installers for every supported system, signs them, does not publish
+on ordinary pushes, and publishes only when a tag matches the release version.
+Keep the Windows tray, the read-only Rust core and the safety boundary intact.
+
+### Work performed
+
+1. Added `.github/workflows/ci.yml` as the only workflow. It validates the
+   three-part version in `portable/Cargo.toml`, derives a snapshot version for
+   branch builds, and requires a tag of exactly `v<version>`.
+2. Added seven native packaging jobs:
+   - Windows x86/x64/ARM64 MSI through WiX 5.0.2.
+   - Linux x64/ARM64 static-musl DEB, RPM and AppImage through
+     `packaging/linux/build-linux.sh`.
+   - macOS Intel and Apple-silicon PKG through
+     `packaging/macos/build-pkg.sh`.
+3. Added Rust unit tests and a `batteryguard --version` smoke test on every
+   runnable target. Windows ARM64 is cross-compiled but not executed on the
+   x64 hosted runner.
+4. Added keyless GitHub/Sigstore build-provenance attestations for the
+   installers and kept ordinary artifacts on branch runs.
+5. Added the `release` job. It is skipped unless the ref is a `v*` tag, rejects
+   unexpected file extensions, and publishes only `.msi`, `.deb`, `.rpm`,
+   `.AppImage` and `.pkg` assets.
+6. Fixed the packaging paths after the first hosted runs:
+   - `d34e2c4` added `portable/` to the Cargo manifest paths.
+   - `531167f` used the Cargo target directory from both Unix packagers.
+   - `f1ce6cb` moved the actions to Node 24 releases, added a GNU build-id to
+     Linux binaries, and added the CLI smoke test.
+7. Added `docs/RELEASE.md` and updated the README, agent instructions and
+   architecture/status/roadmap/decision records for the new pipeline.
+
+### Verification
+
+- Hosted run [`42623422341`](https://github.com/Alaa91H/BatteryGuard/actions/runs/42623422341)
+  completed successfully: all 7 packaging jobs and the final run are green;
+  the release job was skipped because the ref was a branch.
+- Seven artifacts covered 11 installers: 3 MSI, 6 Linux packages and 2 PKG
+  files. A `Keep only installer payload` step removes non-installer output
+  such as the WiX `.wixpdb` before attestation and upload.
+- The Rust tests and `BatteryGuard portable core 0.1.0` CLI smoke test passed
+  on Windows x64/x86, Linux x64/ARM64 and macOS Intel/Apple silicon.
+- The final logs contain no GitHub warning, Node deprecation warning, RPM
+  missing-build-id warning or error. The earlier run's Node 20 and RPM warnings
+  were corrected by the action upgrades and Linux build-id flag.
+- No native Authenticode, Apple notarization or GPG signature was produced;
+  there are no certificate secrets in this repository.
+
+### Limitations observed
+
+- No local linked Rust binary or local Rust test run was possible: this host
+  lacks the MSVC linker and Application Control blocks Cargo and the available
+  GNU/lld linkers.
+- No real Linux or macOS battery reading was taken. Hosted runners have no
+  battery hardware.
+- The installers were built but were not installed or launched on clean
+  Windows, Linux or macOS systems.
+- The Windows tray C# code was not changed, so its previously recorded
+  regression results still apply; no new visual or hardware check was made.
+
+### Next
+
+- Tag `v0.1.0` on the final documentation commit, wait for the release job and
+  verify the published asset list and release notes.
+- Add native OS signing and clean-VM install tests in a later release-hardening
+  pass.
+
 ## 2026-11-09 — portable Rust core and support matrix
 
 ### Goal

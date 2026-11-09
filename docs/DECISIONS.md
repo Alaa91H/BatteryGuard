@@ -96,7 +96,7 @@
 **Status:** accepted 2026-11-09  
 **Decision:** Start the cross-platform work as a dependency-free Rust library and CLI under `portable/`, leaving the C# Windows application intact. Use `rustc`/Cargo with no third-party crates and platform modules behind `cfg(target_os)`.  
 **Why:** The policy and formatting are pure and portable, while Windows charge control is firmware-specific. A separate core allows Windows, Linux and macOS to share behavior without risking the working tray application or inventing cross-platform firmware writes.  
-**Consequence:** The core is not linked into the tray yet. Windows, Linux and macOS backends are read-only; installers, widgets and runtime verification are later phases.
+**Consequence:** The core is not linked into the tray yet. Windows, Linux and macOS backends are read-only; installers are now produced by CI, while widgets and real hardware runtime verification remain later phases.
 
 ## ADR-015 — Read-only portable backends, fail closed
 
@@ -104,3 +104,10 @@
 **Decision:** The Windows backend uses PowerShell/WMI read-only; Linux reads `power_supply` sysfs; macOS runs `pmset -g batt`. A missing measurement becomes `None`, and no backend writes charge state.  
 **Why:** These interfaces are present across architectures and distributions without bundling vendor SDKs. Kernel and firmware charge-threshold interfaces vary too much to write safely without per-device confirmation.  
 **Consequence:** The portable core supports monitoring everywhere it can read a battery, but charge control stays on the existing HP Windows path until a documented, tested controller exists.
+
+## ADR-016 — One tag-gated workflow for every installer
+
+**Status:** accepted 2026-11-09
+**Decision:** Use a single GitHub Actions workflow for validation, native builds, packaging, attestation and release. Build all installers on every push, upload them as workflow artifacts, and create a GitHub Release only for a tag that exactly matches the Cargo version. Restrict release assets to installer extensions.
+**Why:** Separate packaging workflows drift in versions and permissions, while publishing individual files invites raw binaries and debug artifacts into a release. A single matrix gives one reproducible path for every platform, and the tag/version check ties the published filenames to the source version.
+**Consequence:** A normal push spends CI time building every installer but publishes nothing. `v0.1.0` is the first valid tag for Cargo `0.1.0`. The signature is a keyless Sigstore build-provenance attestation; Windows Authenticode, Apple notarization and GPG signing require separate credentials and are not claimed.

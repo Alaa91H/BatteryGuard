@@ -41,3 +41,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
+
+# Local CI API/log scratch files
+.ci-*
+.ci-logs/

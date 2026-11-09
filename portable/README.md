@@ -11,16 +11,24 @@ existing Windows tray application remains in `battery/` and is unchanged.
 - **Cross-target type-check:** all 12 targets listed in
   [`PLATFORMS.md`](PLATFORMS.md) compile the library, test harness and CLI with
   `rustc --emit=metadata`.
-- **Not yet executed here:** the MSVC linker is not installed on this machine,
-  and Application Control blocks `cargo`, the GNU Rust compiler and the
-  available `lld`/GNU linkers. As a result no linked `batteryguard.exe` and no
-  test binary were produced on this host. The unit tests have therefore not
-  run. Linux and macOS runtimes were not available either.
+- **Hosted CI:** GitHub Actions run `42623422341` linked and tested the core,
+  ran `batteryguard --version` on Windows x64/x86, Linux x64/ARM64 and macOS
+  Intel/Apple silicon, and built 3 MSI, 6 Linux packages and 2 PKG files. It
+  also attested each installer with GitHub/Sigstore build provenance.
+- **Not yet executed locally:** the MSVC linker is not installed on this
+  machine, and Application Control blocks `cargo`, the GNU Rust compiler and
+  the available `lld`/GNU linkers. As a result no linked `batteryguard.exe` and
+  no test binary were produced on this host. A Linux or macOS battery was not
+  available for a real runtime reading either.
 - **Read-only:** the portable backend does not write charge modes. Charge
   control remains limited to the native Windows HP controller.
+- **Installers:** CI produces `.msi` for Windows x86/x64/ARM64, `.deb`, `.rpm`
+  and `.AppImage` for Linux x64/ARM64, and `.pkg` for macOS Intel/Apple
+  silicon. Branch builds keep them as artifacts; only a matching `v*` tag
+  publishes a GitHub Release.
 
-This is intentionally honest about the boundary: the source and type-check
-matrix are done, while linked binaries, installers and widgets are later work.
+No local binary was produced; the CI result is a hosted build and runtime
+smoke test, not a hardware test.
 
 ## What it provides
 
@@ -43,6 +51,9 @@ cd portable
 cargo build --release
 cargo test
 ```
+
+Installer creation is intentionally owned by CI, not by this local build. See
+[`../docs/RELEASE.md`](../docs/RELEASE.md) for the matrix and tag rules.
 
 On a host without Cargo, the scripts use `rustc` directly:
 

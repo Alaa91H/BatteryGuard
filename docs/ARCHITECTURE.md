@@ -93,6 +93,17 @@ The `portable/` directory is a separate, dependency-free Rust core. It is not li
 
 All platform modules are behind `#[cfg(target_os)]`; the library, test harness and CLI type-check on 12 Windows/Linux/macOS targets. The backends do not write firmware. A future controller adapter must probe capabilities and fail closed to monitoring. The existing Windows HP controller remains the only charge writer.
 
+## CI and installer pipeline
+
+`.github/workflows/ci.yml` is the single build path:
+
+1. `prepare` reads `portable/Cargo.toml`, validates a three-part version and, for a tag, requires `refs/tags/v<version>`. It derives a snapshot suffix for branch builds.
+2. Seven native jobs build the CLI for Windows x86/x64/ARM64, Linux x64/ARM64 and macOS Intel/Apple silicon. Linux uses static musl targets. Every runnable target runs the Rust tests and `batteryguard --version`; Windows ARM64 is cross-compiled but not executed on the x64 hosted runner.
+3. The packaging jobs create the MSI, DEB, RPM, AppImage and PKG files. The release job downloads the artifacts, filters by the installer extension allowlist, attests each subject and uploads the branch artifacts.
+4. A tag event runs the same jobs and then creates the GitHub Release from the filtered installer set. A branch event stops before the release job.
+
+Artifacts are signed with GitHub/Sigstore build provenance, bound to the repository, commit and workflow identity. This is a supply-chain attestation, not Windows Authenticode or Apple notarization. The workflow needs no long-lived signing key; native OS signing remains a separate hardening phase.
+
 ## Window sizing
 
 - Settings: 780×1000 design size, minimum 620×480, `AutoScaleMode.Dpi`. The scrolling content panel holds a 930 px root table; the Save/Cancel/Test footer is docked outside it, so it stays visible. The root keeps a 660 px minimum width and uses horizontal scrolling below that.

@@ -197,6 +197,20 @@ jobs:
             "portable/target/$TARGET/release/batteryguard" \
             "$VERSION" "$VERSION_SUFFIX" "${{ matrix.arch }}" "dist"
 
+      - name: Keep only installer payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          # WiX also emits a .wixpdb. Keep the uploaded and attested payload to
+          # the exact release allowlist instead of carrying debug metadata.
+          find dist -maxdepth 1 -type f \
+            ! -name '*.msi' \
+            ! -name '*.deb' \
+            ! -name '*.rpm' \
+            ! -name '*.AppImage' \
+            ! -name '*.pkg' \
+            -delete
+
       - name: List installer payload
         shell: bash
         run: |

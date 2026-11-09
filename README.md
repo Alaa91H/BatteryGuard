@@ -1,5 +1,7 @@
 # Workspace
 
+[![Build, attest and release](https://github.com/Alaa91H/BatteryGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/Alaa91H/BatteryGuard/actions/workflows/ci.yml)
+
 This workspace contains three areas:
 
 | Project | Location | Purpose |
@@ -42,6 +44,12 @@ portable/
   scripts/             rustc build/test and cross-target checks
   README.md            portable core guide
   PLATFORMS.md         OS, architecture and packaging matrix
+packaging/
+  windows/Product.wxs  WiX MSI definition
+  linux/               DEB, RPM, AppImage and desktop assets
+  macos/build-pkg.sh   macOS installer builder
+.github/workflows/
+  ci.yml               the single build, attest and release workflow
 docs/
   ARCHITECTURE.md
   DECISIONS.md
@@ -76,6 +84,22 @@ Type-check the portable Rust core for Windows, Linux and macOS targets:
 powershell -NoProfile -ExecutionPolicy Bypass -File portable/scripts/check-targets.ps1
 ```
 
+## Installers and releases
+
+GitHub Actions builds native installers for all supported systems:
+
+| Platform | Formats |
+| --- | --- |
+| Windows x86, x64, ARM64 | `.msi` |
+| Linux x64, ARM64 | `.deb`, `.rpm`, `.AppImage` |
+| macOS Intel, Apple silicon | `.pkg` |
+
+Every branch build signs the installers with a keyless Sigstore build-provenance
+attestation and keeps them as workflow artifacts. A GitHub Release is created
+only from a matching `v*` tag; branch builds never publish. See
+[`docs/RELEASE.md`](docs/RELEASE.md) for the version rule, signing boundary and
+asset policy.
+
 Run the hardware-independent regression checks:
 
 ```powershell
@@ -92,8 +116,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-Layout.ps
 
 ## Status
 
-- Build: `battery/application.exe`, 99,328 bytes at the last build.
-- Portable core: the read-only Rust library, CLI and test harness type-check on 12 Windows/Linux/macOS targets. No linked binary or test run was possible on this host because the MSVC linker is absent and Application Control blocks Cargo and the available GNU/lld linkers. Installers, packages and Linux/macOS widgets are not included yet.
+- Build: `battery/application.exe`, 99,328 bytes at the last local build.
+- Release CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the only workflow. Hosted run [42623422341](https://github.com/Alaa91H/BatteryGuard/actions/runs/42623422341) passed all seven native packaging jobs and produced 11 installers: three MSI, six Linux packages and two macOS PKG files. Branch builds attest and upload artifacts; a matching `v*` tag is the only path that publishes a GitHub Release.
+- Portable core: the read-only Rust library, CLI and test harness type-check on 12 Windows/Linux/macOS targets. The hosted CI links, tests and runs `batteryguard --version` on six native runners. No linked binary or test run was possible locally because the MSVC linker is absent and Application Control blocks Cargo and the available GNU/lld linkers. Linux/macOS widgets and native Authenticode/notarization remain later work.
 - Float policy: 13/13 decision cases pass; float starts only at the limit and holds until the resume point.
 - Electrical readings: the tooltip, tray menu, status balloon and Settings card show pack voltage and charge/discharge power; the real reading was `11.8 V · 0.0 W` while the charger held the battery idle.
 - Notification identity: the Start Menu shortcut and `System.AppUserModel.ID` were verified as `BatteryGuard.Tray`; the banner label itself was not captured because browser notifications occupied the screen during the check.
@@ -110,6 +135,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-Layout.ps
 - [`portable/README.md`](portable/README.md) — portable Rust core, CLI and build/test notes.
 - [`portable/PLATFORMS.md`](portable/PLATFORMS.md) — architecture, distribution and packaging support matrix.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — process model, components and data flow.
+- [`docs/RELEASE.md`](docs/RELEASE.md) — CI matrix, tag/version rule, attestation and release policy.
 - [`docs/DEVICE_SUPPORT.md`](docs/DEVICE_SUPPORT.md) — supported devices and the monitoring-only boundary.
 - [`docs/LOCALIZATION.md`](docs/LOCALIZATION.md) — language resolution, catalogs and maintenance.
 - [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) — current state and known gaps.

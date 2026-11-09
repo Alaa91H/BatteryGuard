@@ -2,13 +2,16 @@
 
 ## Now
 
-- **Portable runtime verification.** Link and run `batteryguard` on Windows x64, Linux x64 and macOS, then run the parser/policy tests and check a real reading. This host cannot link because the MSVC linker is absent and Application Control blocks Cargo and the available linkers.
+- **Hardware smoke tests.** Hosted CI now links, tests and runs the CLI on six native runners; run it against real batteries on Windows, Linux and macOS and record the readings. Do not treat a hosted build as a hardware test.
+- **Native signing.** Add Windows Authenticode and Apple Developer ID/notarization when certificates and a secret-management policy exist. Keep the current Sigstore provenance attestation as an additional layer, not a substitute.
 - **Native translation review.** Have the 30 catalogs reviewed by speakers, starting with the visible menu, settings labels and notification text. Keep the English source keys stable during review.
 - **Live language switch.** Rebuild or reload the open Settings window when the language changes so RTL/LTR and labels update immediately.
 - **Release checklist.** Build, run the hardware-independent suite, launch elevated, inspect the tray and settings windows in LTR and RTL, and verify log rotation.
 - **DPI visual pass.** The three dialogs are captured at 100% in light/dark and English/Arabic; repeat at 125% and 150%.
 
 ## Done
+
+- **One tag-gated CI pipeline.** Added `.github/workflows/ci.yml` to build Windows x86/x64/ARM64 MSI, Linux x64/ARM64 DEB/RPM/AppImage and macOS Intel/Apple-silicon PKG packages; attest every installer with GitHub/Sigstore provenance; upload branch artifacts; and publish only for a `v*` tag matching `portable/Cargo.toml`. Hosted run `42623422341` passed all seven packaging jobs with 11 installers and no warnings.
 
 - **Portable Rust core (phase 1).** Added the shared battery model, formatting, 13-case policy, read-only Windows/Linux/macOS backends, text/JSON/watch CLI, build/test scripts and a 12-target metadata check. The 12 Windows/Linux/macOS targets type-check; no binary or runtime test was possible on this host.
 - **Voltage and power readout.** The tooltip, tray menu, status balloon and Settings battery card show pack voltage and charge/discharge power from `BatteryStatus`; the real idle reading was `11.8 V · 0.0 W`.
@@ -20,7 +23,8 @@
 
 ## Next
 
-- **Linked binaries and installers.** Produce signed x86/x64/ARM64 Windows builds and an installer; produce Linux `.deb`/`.rpm`/Arch/AppImage packages and macOS `.pkg`/`.dmg` only after a linked, tested CLI exists. Add Linux/macOS tray or menu-bar widgets after the runtime backends are verified.
+- **Linux/macOS widgets.** Add a tray or menu-bar interface after the read-only backends are verified on real hardware. The Windows tray remains the active UI.
+- **Distribution hardening.** Add native OS code signatures and a documented upgrade/uninstall test on clean VMs. The current workflow publishes installers with Sigstore build provenance only.
 - **Notification banner check.** Trigger a status balloon on a clean notification area and confirm the Windows app label visually.
 - **Localization QA tooling.** Detect untranslated values, wrong placeholders, text expansion and RTL truncation. Add a catalog coverage report per language.
 - **UI automation.** Add a repeatable smoke test that opens the menu and dialogs and checks visible labels without depending on Arabic/English assertions.

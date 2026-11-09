@@ -35,7 +35,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File portable/scripts/build.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File portable/scripts/test.ps1
 ```
 
-`check-targets.ps1` only emits metadata and needs no linker. `build.ps1`/`test.ps1` need a platform linker; on this machine the MSVC linker is absent and Application Control blocks Cargo, GNU rustc and the available lld/GNU linkers. Do not claim those runtime tests passed unless the binary actually ran.
+`check-targets.ps1` only emits metadata and needs no linker. `build.ps1`/`test.ps1` need a platform linker; on this machine the MSVC linker is absent and Application Control blocks Cargo, GNU rustc and the available lld/GNU linkers. Do not claim those runtime tests passed unless the binary actually ran. Hosted CI does link and test the core on its native runners; local success is still required to be reported separately.
+
+## CI and release
+
+- `.github/workflows/ci.yml` is the only workflow. Do not add a second workflow for packaging, attestation or releases; extend this file instead.
+- Every push builds the installer matrix, creates build-provenance attestations and uploads branch artifacts. Only a `v*` tag may create or update a GitHub Release.
+- The tag must be exactly `v` plus the version in `portable/Cargo.toml` (currently `v0.1.0`). The prepare job rejects a mismatch before building.
+- Release assets are restricted to `.msi`, `.deb`, `.rpm`, `.AppImage` and `.pkg`. Do not publish raw executables, archives, `.wixpdb`, debug symbols, logs or test data.
+- The current signature is GitHub/Sigstore keyless build provenance through `actions/attest-build-provenance`. It is not Windows Authenticode or Apple notarization. Do not describe it as either, and do not add certificate secrets without explicit approval and a documented verification step.
+- Keep the matrix buildable without repository secrets. `contents: read`, `id-token: write` and `attestations: write` are intentional; the release job alone needs `contents: write`.
+- After changing the workflow, the Rust version or packaging, wait for a green hosted run and record the run ID in `docs/SESSION_LOG.md`.
 
 `battery/tests/VisualCapture.ps1` renders the Settings, schedule and log windows in English/Arabic and light/dark. It backs up and restores `interface.ini` and `theme.ini`; it needs no hardware, WMI writes or elevation.
 
@@ -68,7 +78,7 @@ PowerShell scripts that contain non-ASCII text must be UTF-8 (BOM is accepted). 
 
 ## Generated files
 
-`application.exe`, `settings.json`, `interface.ini`, `theme.ini`, `capacity.ini`, `application.log`, `application.previous.log`, test screenshots and logs are local/generated. They are ignored by `.gitignore` and must not be committed. `portable/target/` is also generated and ignored.
+`application.exe`, `settings.json`, `interface.ini`, `theme.ini`, `capacity.ini`, `application.log`, `application.previous.log`, test screenshots and logs are local/generated. They are ignored by `.gitignore` and must not be committed. `portable/target/`, `dist/`, `packaging/windows/staging/` and temporary CI API/log files are generated and ignored.
 
 ## Documentation
 
@@ -79,6 +89,7 @@ Keep these in sync with behavior:
 - `portable/README.md`
 - `portable/PLATFORMS.md`
 - `docs/ARCHITECTURE.md`
+- `docs/RELEASE.md`
 - `docs/DEVICE_SUPPORT.md`
 - `docs/PROJECT_STATUS.md`
 - `docs/ROADMAP.md`

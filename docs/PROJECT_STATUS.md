@@ -3,7 +3,7 @@
 **Date:** 2026-11-09  
 **Application:** BatteryGuard tray monitor  
 **Build:** `battery/application.exe` — 99,328 bytes  
-**Portable core:** Rust source complete; metadata type-check passes on 12 Windows/Linux/macOS targets; no linked binary/test run on this host
+**CI:** single tag-gated workflow; hosted run `42623422341` green with 11 installers
 
 ## Completed
 
@@ -45,6 +45,7 @@ Passed in this session (2026-11-09):
 | `Test-Layout.ps1` | Settings 780×601/700×520/620×480/560×420, schedule 500×400/440×320/380×300 and log 760×560/520×360/440×300 OK |
 | `VisualCapture.ps1` | 13 images in English/Arabic and light/dark; Settings Arabic light/dark, English dark and the full Settings content re-inspected with the electrical value |
 | `build.ps1` | csc exit 0 |
+| GitHub Actions `42623422341` | All 7 packaging jobs succeeded; 11 installers; Rust/CLI smoke tests passed; no Node/RPM warnings |
 
 Locale inventory: 30 JSON files, 151 keys in each file including the `Monitoring only` key; no missing keys and no placeholder mismatches.
 
@@ -57,14 +58,22 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 - `portable/src/main.rs` provides a text/JSON/watch CLI; `Cargo.toml` and `rustc` build/test scripts are included.
 - `portable/scripts/check-targets.ps1` type-checks the library, test harness and CLI for 12 targets: x86/x64/ARM64 Windows, x86/x64/ARMv7/ARM64 Linux and Intel/Apple-silicon macOS.
 - The check passed 12/12. It uses `--emit=metadata`, so it validates conditional compilation and types but does not link or execute.
-- **Not verified:** no linked `batteryguard` executable, no executed Rust tests and no Linux/macOS runtime. This host has no MSVC linker; Application Control blocks Cargo, GNU rustc and the available lld/GNU linkers.
-- **Not included:** Windows/Linux/macOS installers or packages, Linux/macOS widgets, and cross-platform charge control.
+- **Hosted verification:** GitHub Actions run `42623422341` linked and tested the Rust core on Windows x64/x86, Linux x64/ARM64 and macOS Intel/Apple silicon, then built 3 MSI, 6 Linux packages and 2 PKG files. The CLI printed `BatteryGuard portable core 0.1.0` on every runnable target.
+- **Not verified locally:** no linked `batteryguard` executable, no executed Rust tests and no local Linux/macOS runtime. This host has no MSVC linker; Application Control blocks Cargo, GNU rustc and the available lld/GNU linkers.
+- **Not included:** Linux/macOS widgets, cross-platform charge control and native Authenticode/Apple notarization. The installers carry Sigstore build-provenance attestations, not OS code signatures.
+
+## Release CI
+
+- `.github/workflows/ci.yml` is the only workflow. It validates the Cargo version, builds the full matrix, attests the installers and uploads branch artifacts.
+- The release job is skipped unless the ref is `refs/tags/v<Cargo version>`; it filters assets to `.msi`, `.deb`, `.rpm`, `.AppImage` and `.pkg`.
+- Branch run `42623422341` covered all 7 native packaging jobs and produced 11 installers without warnings. Earlier runs exposed missing Cargo paths (`42622500646`) and Unix packaging paths; both were fixed before this run.
+- `v0.1.0` is the release tag for the current `portable/Cargo.toml` version `0.1.0`.
 
 ## Known limitations
 
 1. **Charge control is HP-only.** Lenovo, Dell, ASUS, MSI, Acer and other vendors are monitored but not controlled; see `docs/DEVICE_SUPPORT.md` for the matrix and safety rationale.
 2. **Translation review.** The non-English catalogs are machine-generated; this pass corrected charge, health and schedule terminology, but long sentences and technical wording have not been reviewed by native speakers.
-3. **Portable runtime.** The Rust core has no linked binary or runtime test on this host; its 12-target check is compile-time only. Cargo and the available linkers are blocked by Application Control, and no Linux/macOS hardware was available.
+3. **Portable runtime.** Hosted CI now links, runs the unit tests and invokes the CLI on six native runners. This Windows host still cannot link locally because Cargo and the available linkers are blocked by Application Control; no Linux/macOS hardware was available for a real battery reading.
 4. **Live visual check.** Settings Arabic light/dark, English dark and the full Settings content were re-inspected with the electrical reading; status balloon capture was not possible because browser notifications occupied the desktop, so the final Windows label was not visually confirmed. The native tray menu could not be captured; its RTL flags are set but its pixels were not reviewed. 125%/150% DPI was not exercised.
 5. **Elevation.** HP's WMI provider requires an elevated process. `start.ps1` requests elevation; `-NoElevate` is intended for the logon task or for hosts that are already elevated. Tests that write charge mode need elevation.
 6. **Smart App Control.** Unsigned `application.exe` may be blocked on this machine; the launcher falls back to compiling the same source in the signed PowerShell host.
@@ -76,4 +85,4 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 - Cloud accounts, telemetry or network services.
 - Forced discharge or battery calibration.
 - Charge-control writes on non-HP firmware without a documented, hardware-verified interface.
-- A signed installer or auto-update channel.
+- Native Authenticode/Apple Developer ID signing, notarization and an auto-update channel. The CI attestation is a separate supply-chain signature.

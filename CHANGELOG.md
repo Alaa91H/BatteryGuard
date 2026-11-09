@@ -1,6 +1,56 @@
 # Changelog
 
-All notable changes to this project are documented here. The format follows the spirit of Keep a Changelog; versions are not used because the application is distributed as a portable build.
+All notable changes to this project are documented here. The format follows the spirit of Keep a Changelog. Releases use the version from `portable/Cargo.toml` and a matching `v*` tag.
+
+## 2026-11-09 — cross-platform installers and release CI (v0.1.0)
+
+### Added
+
+- One tag-gated workflow, `.github/workflows/ci.yml`, that validates the
+  three-part Cargo version and builds native installers for Windows x86/x64/ARM64
+  (`.msi`), Linux x64/ARM64 (`.deb`, `.rpm`, `.AppImage`) and macOS Intel/Apple
+  silicon (`.pkg`).
+- Keyless GitHub/Sigstore build-provenance attestations for every installer.
+- Release job restricted to `v*` tags; it downloads the packaging artifacts,
+  allows only installer extensions and publishes a GitHub Release.
+- Linux static-musl packaging with a GNU build-id, AppImage 1.9.1 metadata and
+  a system `PATH` entry in the Windows MSI.
+- `docs/RELEASE.md` with the matrix, version rule, signing boundary and asset
+  policy.
+
+### Changed
+
+- `Cargo.lock` now lives in `portable/` and the CLI reports the Cargo package
+  version, so tag, source and package filenames share one source of truth.
+- CI actions use their Node 24 releases; the Rust CLI gets a smoke test on
+  every runnable target.
+- README, agent instructions, architecture, status, roadmap and decision
+  records now document the CI pipeline and its verification boundary.
+
+### Fixed
+
+- Cargo manifest paths after the first hosted run failed in `prepare`.
+- Unix packaging paths now resolve from the workspace root.
+- GitHub Actions Node 20 deprecation warnings and the RPM "missing build-id"
+  warning.
+
+### Verification
+
+- Hosted run `42623422341` passed all seven packaging jobs and produced 11
+  installers: 3 MSI, 6 Linux packages and 2 PKG files.
+- Rust tests and `BatteryGuard portable core 0.1.0` passed on Windows x64/x86,
+  Linux x64/ARM64 and macOS Intel/Apple silicon. Windows ARM64 was packaged but
+  not executed on the x64 hosted runner.
+- The final logs contain no workflow warning, Node deprecation warning or RPM
+  build-id warning.
+
+### Known limitations
+
+- The attestation is not Windows Authenticode, Apple notarization or a GPG
+  signature; no OS code-signing certificate is configured.
+- No installer was launched on a clean VM, and no real Linux/macOS battery
+  reading was taken.
+- Linux/macOS widgets and charge control remain out of scope for this release.
 
 ## 2026-11-09 — portable Rust core
 

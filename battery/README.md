@@ -2,7 +2,7 @@
 
 BatteryGuard is a native Win32 tray monitor for Windows notebooks. On supported HP notebooks it also controls charging through the BIOS WMI interface. It is a single .NET Framework 4.x process with no external packages and no background service.
 
-A separate read-only Rust core under [`../portable`](../portable/README.md) is the first phase of the Windows/Linux/macOS shared work. It is not linked into this tray and does not control charging. Its 12-target type-check matrix and packaging boundary are documented in [`../portable/PLATFORMS.md`](../portable/PLATFORMS.md).
+A separate read-only Rust core under [`../portable`](../portable/README.md) is the first phase of the Windows/Linux/macOS shared work. It is not linked into this tray and does not control charging. Its 12-target type-check matrix and packaging boundary are documented in [`../portable/PLATFORMS.md`](../portable/PLATFORMS.md); CI-built Windows, Linux and macOS installers and the tag policy are in [`../docs/RELEASE.md`](../docs/RELEASE.md).
 
 ## Features
 
