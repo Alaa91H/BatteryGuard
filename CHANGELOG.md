@@ -25,11 +25,10 @@ All notable changes to this project are documented here. The format follows the 
 
 ### Verification
 
-- Hosted run `42644241107` passed all seven packaging jobs with the SignPath
-  path unconfigured. That run used the earlier four-request layout; the current
-  three-request workflow still needs its own hosted run. The signing steps were
-  skipped, and the x64 MSI/EXE install-uninstall and `v0.1.0` upgrade checks
-  passed; no signed artifact was produced.
+- Hosted run `42647767077` passed all seven packaging jobs with the current
+  three-request SignPath path unconfigured. The signing steps were skipped, and
+  the x64 MSI/EXE install-uninstall and `v0.1.0` upgrade checks passed; no
+  signed artifact was produced.
 - No SignPath account, project or token exists. No signing request was
   submitted and no signed artifact was produced. The existing unsigned CI path
   remains the only verified path.

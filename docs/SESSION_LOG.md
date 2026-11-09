@@ -27,12 +27,11 @@ signing configuration.
 
 ### Verification
 
-- Hosted run `42644241107` passed all seven packaging jobs with the SignPath
-  configuration absent. The SignPath steps were skipped, the unsigned path
-  remained green, and the Windows x64 MSI/EXE install-uninstall and `v0.1.0`
-  upgrade checks passed. The run used the earlier four-request layout; a run of
-  the current three-request workflow is still pending. This checks the fallback,
-  not a signed artifact.
+- Hosted run `42647767077` passed all seven packaging jobs with the current
+  three-request SignPath configuration absent. The SignPath steps were skipped,
+  the unsigned path remained green, and the Windows x64 MSI/EXE install-uninstall
+  and `v0.1.0` upgrade checks passed. This checks the fallback, not a signed
+  artifact.
 - No SignPath account, project, artifact configuration or API token exists in
   this repository, so no signing request ran and no signed artifact was
   produced.

@@ -207,12 +207,11 @@ wizard or a physical clean VM.
 - Hosted run `42632698346` added the Windows x64 C# suite and kept all seven
   packaging jobs green. The optional signing steps were skipped (no secrets),
   so this run verifies the unsigned path only.
-- Hosted run `42644241107` passed all seven packaging jobs with the SignPath
-  configuration absent. Every SignPath step was skipped, the PFX steps had no
-  certificate, and the Windows x64 MSI/EXE install-uninstall and `v0.1.0`
-  upgrade checks passed. This validates the no-secret fallback, not a signed
-  artifact. The run used the earlier four-request layout; a run of the current
-  three-request workflow is pending.
+- Hosted run `42647767077` passed all seven packaging jobs with the current
+  three-request SignPath configuration absent. Every SignPath step was skipped,
+  the PFX steps had no certificate, and the Windows x64 MSI/EXE
+  install-uninstall and `v0.1.0` upgrade checks passed. This validates the
+  no-secret fallback, not a signed artifact.
 - Hosted run `42642577968` passed all seven packaging jobs with the optional
   SignPath configuration absent. The SignPath steps were skipped, the PFX steps
   had no certificate, and the unsigned installers were built, installed,
