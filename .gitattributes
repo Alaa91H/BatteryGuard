@@ -1,0 +1,12 @@
+* text=auto
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
+*.rs text eol=lf
+*.toml text eol=lf
+*.lock text eol=lf
+*.wxs text eol=lf
+*.desktop text eol=lf
+*.svg text eol=lf
+*.ps1 text eol=crlf
+*.md text eol=lf

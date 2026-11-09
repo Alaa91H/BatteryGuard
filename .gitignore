@@ -31,6 +31,8 @@ packaging/windows/staging/
 
 # Localization generation cache (catalogs themselves are tracked)
 tools/locale_cache/
+tools/__pycache__/
+*.pyc
 battery.backup/
 
 # Editor and OS noise
