@@ -125,7 +125,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-Layout.ps
 ## Status
 
 - Build: `battery/application.exe`, 99,328 bytes at the last local build.
-- Release CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the only workflow. Hosted run [42644241107](https://github.com/Alaa91H/BatteryGuard/actions/runs/42644241107) passed all seven native packaging jobs and produced the installer artifacts. The Windows x64 job ran the eight-test C# suite; the x64 EXE and MSI install/uninstall, a clean-runner upgrade from the published `v0.1.0` MSI, and native DEB/PKG install-and-run checks passed. The installer wizard itself was not visually tested: this host has no Windows Sandbox/VM and Application Control blocks the EXE, while hosted runners are non-interactive. The four-request SignPath signing path was skipped because no SignPath account or token is configured. Branch builds attest and upload artifacts; a matching `v*` tag is the only path that publishes a GitHub Release. The tag release [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) remains the earlier CLI-only release.
+- Release CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the only workflow. Hosted run [42644241107](https://github.com/Alaa91H/BatteryGuard/actions/runs/42644241107) passed all seven native packaging jobs and produced the installer artifacts. The Windows x64 job ran the eight-test C# suite; the x64 EXE and MSI install/uninstall, a clean-runner upgrade from the published `v0.1.0` MSI, and native DEB/PKG install-and-run checks passed. The installer wizard itself was not visually tested: this host has no Windows Sandbox/VM and Application Control blocks the EXE, while hosted runners are non-interactive. The SignPath signing path was skipped because no SignPath account or token is configured. Branch builds attest and upload artifacts; a matching `v*` tag is the only path that publishes a GitHub Release. The tag release [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) remains the earlier CLI-only release.
 - Portable core: the read-only Rust library, CLI and test harness type-check on 12 Windows/Linux/macOS targets. Run 42644241107 linked, tested and ran `batteryguard --version` on six native runners, and installed/ran the DEB and PKG packages. No linked binary or test run was possible locally because the MSVC linker is absent and Application Control blocks Cargo and the available GNU/lld linkers. Linux/macOS widgets and BIOS charger wattage remain later work; optional native signing hooks exist but are unconfigured.
 - Float policy: 13/13 decision cases pass; float starts only at the limit and holds until the resume point.
 - Electrical readings: the tooltip, tray menu, status balloon and Settings card show pack voltage and charge/discharge power; the real reading was `11.8 V · 0.0 W` while the charger held the battery idle.
@@ -136,6 +136,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-Layout.ps
 - Device support: HP charge control; every other vendor monitored with an explicit **Monitoring only** state.
 - Translation review: catalogs are machine-generated from the curated English source with targeted glossary overrides. Native-speaker review is still recommended before treating every wording as final.
 - The Settings window was re-inspected in Arabic light/dark and English dark with the electrical value; the schedule and log windows retain their Arabic-light layout captures. The native tray menu and the final notification banner could not be captured, and 125%/150% DPI were not exercised.
+
+## Code signing policy
+
+BatteryGuard's [code signing policy](docs/CODE_SIGNING_POLICY.md) defines the
+Windows artifact scope, team roles, signing approval and privacy statement.
+Signing is not active yet: no SignPath project or token is configured. Free
+code signing is provided by [SignPath.io](https://about.signpath.io/),
+certificate by [SignPath Foundation](https://signpath.org/).
 
 ## Documentation
 
@@ -148,6 +156,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-Layout.ps
 - [`docs/LOCALIZATION.md`](docs/LOCALIZATION.md) — language resolution, catalogs and maintenance.
 - [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) — current state and known gaps.
 - [`docs/SIGNPATH.md`](docs/SIGNPATH.md) — free SignPath Foundation signing setup for the MIT-licensed project.
+- [`docs/CODE_SIGNING_POLICY.md`](docs/CODE_SIGNING_POLICY.md) — artifact scope, roles, approval and privacy policy.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — planned work.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — architecture decisions.
 - [`docs/SESSION_LOG.md`](docs/SESSION_LOG.md) — work log.

@@ -12,23 +12,27 @@ signing configuration.
 
 1. Added the MIT `LICENSE` and the Cargo package license metadata required for
    the public project's SignPath Foundation application.
-2. Added optional Windows steps for four SignPath requests: the tray/CLI
-   binaries before MSI packaging, the MSI before the EXE is built, the detached
-   Burn engine, and the final EXE. Each returned artifact is verified with
+2. Added optional Windows steps for three SignPath requests: the tray/CLI
+   binaries before MSI packaging, the MSI before the EXE is built, and the final
+   EXE. The upstream WiX Burn engine is included unsigned and is not signed with
+   the Foundation certificate. Each returned artifact is verified with
    `signtool verify /pa /all`.
 3. Kept the existing PFX path as the fallback and made SignPath take precedence
-   only when all seven `SIGNPATH_*` variables are present. The unsigned path
-   still works when no signing configuration exists.
-4. Added `docs/SIGNPATH.md` with the application steps, artifact configuration
-   layout, required GitHub variables and Smart App Control verification notes.
+   only when all six `SIGNPATH_*` variables are present. The unsigned path still
+   works when no signing configuration exists.
+4. Added `docs/SIGNPATH.md` and `docs/CODE_SIGNING_POLICY.md` with the
+   application prerequisites, artifact configuration layout, required GitHub
+   variables, team roles, privacy statement and Smart App Control verification
+   notes.
 
 ### Verification
 
-- Hosted run `42644241107` passed all seven packaging jobs with all four
-  SignPath requests unconfigured. The SignPath steps were skipped, the unsigned
-  path remained green, and the Windows x64 MSI/EXE install-uninstall and
-  `v0.1.0` upgrade checks passed. This checks the fallback, not a signed
-  artifact.
+- Hosted run `42644241107` passed all seven packaging jobs with the SignPath
+  configuration absent. The SignPath steps were skipped, the unsigned path
+  remained green, and the Windows x64 MSI/EXE install-uninstall and `v0.1.0`
+  upgrade checks passed. The run used the earlier four-request layout; a run of
+  the current three-request workflow is still pending. This checks the fallback,
+  not a signed artifact.
 - No SignPath account, project, artifact configuration or API token exists in
   this repository, so no signing request ran and no signed artifact was
   produced.
@@ -44,9 +48,9 @@ signing configuration.
 
 ### Next
 
-- Apply to SignPath, configure the four artifact configurations and GitHub
-  variables, then run and verify a signed build on Windows 11 with Smart App
-  Control enforcement.
+- Publish a release containing the Windows EXE, apply to SignPath, configure
+  the three artifact configurations and GitHub variables, then run and verify
+  a signed build on Windows 11 with Smart App Control enforcement.
 
 ## 2026-11-09 — Windows single-EXE bootstrapper
 

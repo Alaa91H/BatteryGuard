@@ -8,12 +8,15 @@ All notable changes to this project are documented here. The format follows the 
 
 - MIT `LICENSE`, required for the public project's SignPath Foundation
   application.
-- Optional Windows signing through SignPath Foundation, with four requests:
-  tray/CLI binaries, the MSI before the EXE is built, the detached Burn engine,
-  and the final EXE. The requests are driven by `SIGNPATH_*` repository
+- Optional Windows signing through SignPath Foundation, with three requests:
+  tray/CLI binaries, the MSI before the EXE is built, and the final EXE. The
+  upstream WiX Burn engine is included unsigned and is not signed with the
+  Foundation certificate. The requests are driven by `SIGNPATH_*` repository
   variables and the `SIGNPATH_API_TOKEN` secret.
 - `docs/SIGNPATH.md` documents eligibility, artifact configurations, GitHub
   variables, verification and the unresolved Smart App Control test.
+- `docs/CODE_SIGNING_POLICY.md` records the Windows artifact scope, team roles,
+  manual approval, privacy statement and SignPath attribution.
 
 ### Changed
 
@@ -22,10 +25,11 @@ All notable changes to this project are documented here. The format follows the 
 
 ### Verification
 
-- Hosted run `42644241107` passed all seven packaging jobs with the four-request
-  SignPath path unconfigured. The signing steps were skipped, and the x64
-  MSI/EXE install-uninstall and `v0.1.0` upgrade checks passed; no signed
-  artifact was produced.
+- Hosted run `42644241107` passed all seven packaging jobs with the SignPath
+  path unconfigured. That run used the earlier four-request layout; the current
+  three-request workflow still needs its own hosted run. The signing steps were
+  skipped, and the x64 MSI/EXE install-uninstall and `v0.1.0` upgrade checks
+  passed; no signed artifact was produced.
 - No SignPath account, project or token exists. No signing request was
   submitted and no signed artifact was produced. The existing unsigned CI path
   remains the only verified path.

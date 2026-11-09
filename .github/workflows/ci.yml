@@ -133,9 +133,8 @@ jobs:
       SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
       SIGNPATH_ARTIFACT_CONFIGURATION_BINARIES: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_BINARIES }}
       SIGNPATH_ARTIFACT_CONFIGURATION_MSI: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_MSI }}
-      SIGNPATH_ARTIFACT_CONFIGURATION_ENGINE: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_ENGINE }}
       SIGNPATH_ARTIFACT_CONFIGURATION_EXE: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_EXE }}
-      SIGNPATH_ENABLED: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' && vars.SIGNPATH_PROJECT_SLUG != '' && vars.SIGNPATH_SIGNING_POLICY_SLUG != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_BINARIES != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_MSI != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_ENGINE != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_EXE != '' }}
+      SIGNPATH_ENABLED: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' && vars.SIGNPATH_PROJECT_SLUG != '' && vars.SIGNPATH_SIGNING_POLICY_SLUG != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_BINARIES != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_MSI != '' && vars.SIGNPATH_ARTIFACT_CONFIGURATION_EXE != '' }}
       WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
       WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
       MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
@@ -454,70 +453,6 @@ jobs:
             -d "Version=$env:VERSION" -d "MsiPath=$($msi.FullName)" -d "IconPath=$icon" `
             -o $bundle packaging/windows/Bundle.wxs
           if ($LASTEXITCODE -ne 0) { throw "wix bundle build failed with exit code $LASTEXITCODE" }
-
-      - name: Prepare Burn engine for SignPath
-        if: matrix.platform == 'windows' && env.SIGNPATH_ENABLED == 'true' && env.SIGNPATH_API_TOKEN != ''
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $stage = Join-Path (Get-Location) '.signpath/engine'
-          New-Item -ItemType Directory -Force -Path $stage | Out-Null
-          $bundle = Get-ChildItem 'dist/*.exe' | Select-Object -First 1
-          if (-not $bundle) { throw 'No EXE bundle was produced' }
-          wix burn detach $bundle.FullName -engine (Join-Path $stage 'burn-engine.exe')
-          if ($LASTEXITCODE -ne 0) { throw "wix burn detach failed with exit code $LASTEXITCODE" }
-
-      - name: Upload unsigned Burn engine
-        id: signpath_upload_engine
-        if: matrix.platform == 'windows' && env.SIGNPATH_ENABLED == 'true' && env.SIGNPATH_API_TOKEN != ''
-        uses: actions/upload-artifact@v7
-        with:
-          name: signpath-engine-${{ matrix.id }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .signpath/engine
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: Sign Burn engine with SignPath
-        id: signpath_sign_engine
-        if: matrix.platform == 'windows' && env.SIGNPATH_ENABLED == 'true' && env.SIGNPATH_API_TOKEN != ''
-        uses: signpath/github-action-submit-signing-request@v3
-        with:
-          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
-          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
-          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
-          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_ENGINE }}
-          github-artifact-id: ${{ steps.signpath_upload_engine.outputs.artifact-id }}
-          wait-for-completion: true
-          wait-for-completion-timeout-in-seconds: "3600"
-          output-artifact-directory: .signpath/engine-signed
-
-      - name: Reattach SignPath-signed Burn engine
-        if: matrix.platform == 'windows' && env.SIGNPATH_ENABLED == 'true' && env.SIGNPATH_API_TOKEN != ''
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $signedDir = Join-Path (Get-Location) '.signpath/engine-signed'
-          $signedEngine = Get-ChildItem -LiteralPath $signedDir -Filter burn-engine.exe -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $signedEngine) { throw 'SignPath did not return burn-engine.exe' }
-          $bundle = Get-ChildItem 'dist/*.exe' | Select-Object -First 1
-          $engine = Join-Path (Get-Location) '.signpath/engine/burn-engine.exe'
-          $reattached = Join-Path (Get-Location) '.signpath/bundle-reattached.exe'
-          Copy-Item -LiteralPath $signedEngine.FullName -Destination $engine -Force
-          wix burn reattach $bundle.FullName -engine $engine -o $reattached
-          if ($LASTEXITCODE -ne 0) { throw "wix burn reattach failed with exit code $LASTEXITCODE" }
-          Move-Item -LiteralPath $reattached -Destination $bundle.FullName -Force
-          $tool = (Get-Command signtool.exe -ErrorAction SilentlyContinue | Select-Object -First 1).Source
-          if (-not $tool) {
-            $kit = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'
-            $tool = Get-ChildItem -Path $kit -Filter signtool.exe -Recurse -ErrorAction SilentlyContinue |
-              Where-Object { $_.FullName -match '\\x64\\' } |
-              Sort-Object FullName -Descending |
-              Select-Object -First 1 -ExpandProperty FullName
-          }
-          if (-not $tool) { throw 'signtool.exe was not found' }
-          & $tool verify /pa /all $engine
-          if ($LASTEXITCODE -ne 0) { throw "SignPath engine verification failed with exit code $LASTEXITCODE" }
 
       - name: Stage Windows EXE for SignPath
         if: matrix.platform == 'windows' && env.SIGNPATH_ENABLED == 'true' && env.SIGNPATH_API_TOKEN != ''

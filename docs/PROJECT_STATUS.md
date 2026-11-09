@@ -3,7 +3,7 @@
 **Date:** 2026-11-09  
 **Application:** BatteryGuard tray monitor  
 **Build:** `battery/application.exe` — 99,328 bytes  
-**CI:** single tag-gated workflow; hosted run `42644241107` green with all seven packaging jobs, the C# suite, the Windows tray MSI and EXE, a clean-runner upgrade from the published `v0.1.0` MSI, and all four optional SignPath requests skipped because no account/token is configured; published release remains `v0.1.0` (CLI-only)
+**CI:** single tag-gated workflow; hosted run `42644241107` green with all seven packaging jobs, the C# suite, the Windows tray MSI and EXE, a clean-runner upgrade from the published `v0.1.0` MSI, and the optional SignPath requests skipped because no account/token is configured; published release remains `v0.1.0` (CLI-only)
 
 ## Completed
 
@@ -13,7 +13,7 @@
 - **Voltage and power readout.** The tray tooltip, menu, status balloon and Settings battery card show the current pack voltage and charge/discharge power, for example `11.8 V · 0.0 W`. Unavailable values are omitted; zero watts is shown when voltage confirms a battery reading. This is battery-pack power, not AC adapter input wattage.
 - **Windows tray MSI and EXE.** The branch MSI installs `application.exe`, `batteryguard.exe`, the icon and all 30 locale catalogs under `Program Files\BatteryGuard`; the EXE is a Burn bootstrapper around the same MSI with a standard wizard, icon, version, launch-after-install and Apps & Features entry. Both create an all-users Start Menu shortcut with `BatteryGuard.Tray` and an **Uninstall BatteryGuard** shortcut. The x64 install/uninstall paths for both are tested in CI; x86 and ARM64 are built but not cross-installed on the x64 runner.
 - **C# CI gate.** The Windows x64 job runs eight hardware-independent C# tests before packaging; the same suite passed locally.
-- **Optional SignPath and native signing.** The MIT-licensed project has a free SignPath Foundation path with four requests: tray/CLI binaries, the MSI before the EXE is built, the detached Burn engine and the final EXE. It becomes active only when all `SIGNPATH_*` variables and `SIGNPATH_API_TOKEN` exist. The PFX path remains the fallback; macOS Developer ID/notarization still requires the documented Apple secrets. No SignPath project or certificate is configured, so the unsigned path is what the current green run exercises.
+- **Optional SignPath and native signing.** The MIT-licensed project has a free SignPath Foundation path with three requests: tray/CLI binaries, the MSI before the EXE is built and the final EXE. The upstream WiX Burn engine is included unsigned and is not signed with the Foundation certificate. It becomes active only when all `SIGNPATH_*` variables and `SIGNPATH_API_TOKEN` exist. The PFX path remains the fallback; macOS Developer ID/notarization still requires the documented Apple secrets. No SignPath project or certificate is configured, so the unsigned path is what the current green run exercises.
 - Charge ceiling, resume point, float mode, scheduled time windows, overlap detection and conflict banners.
 - Battery health, capacity, cycle, temperature and remaining-time display.
 - System notifications, test notification, log viewer, export and 1 MiB rotation.
@@ -94,7 +94,7 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 - The release job is skipped unless the ref is `refs/tags/v<Cargo version>`; it filters assets to `.exe`, `.msi`, `.deb`, `.rpm`, `.AppImage` and `.pkg`.
 - Branch run `42629998330` covered all 7 native packaging jobs and produced 11 installers. Its x64 MSI passed install, payload, Start Menu/uninstall-shortcut and uninstall checks; Linux DEB and macOS PKG install-and-run checks passed.
 - Branch run `42632698346` added the eight-test C# suite and kept all seven packaging jobs green, including the x64 MSI and native package checks. The optional signing steps were skipped because no certificate secrets are configured.
-- Branch run `42644241107` validated the four-request SignPath workflow with no SignPath configuration. All seven packaging jobs and the x64 MSI/EXE install-uninstall plus `v0.1.0` upgrade checks passed; every SignPath step was skipped.
+- Branch run `42644241107` validated the SignPath fallback with no SignPath configuration. All seven packaging jobs and the x64 MSI/EXE install-uninstall plus `v0.1.0` upgrade checks passed; every SignPath step was skipped. This run used the earlier four-request layout; a run of the current three-request workflow is still pending.
 - Branch run `42642577968` added the optional SignPath Foundation signing path and MIT license; SignPath was unconfigured, so its steps were skipped and the unsigned installers remained green. The run also produced 14 installers and passed the earlier `v0.1.0` → EXE upgrade test.
 - Branch run `42638941970` added the clean-runner `v0.1.0` → EXE upgrade test and produced 14 installers. The x64 job passed MSI/EXE install-uninstall and the upgrade, including one visible Apps & Features entry and a clean uninstall; the optional signing steps were skipped because no certificates are configured. Earlier runs exposed duplicate bundle/MSI registration, missing Cargo paths (`42622500646`), Unix packaging paths, the invalid `CommonProgramsFolder` WiX id and cross-architecture MSI installation; all were fixed.
 - Tag run `42624635716` passed all jobs and published [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with exactly the 11 installer files; the tag points to commit `449245b` and remains CLI-only.
@@ -113,7 +113,7 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 10. **Language switch layout.** Choosing a different language updates the tray after refresh, but an already-open Settings window keeps its original layout until reopened.
 11. **Undocumented firmware.** HP charge modes are model-specific. Unsupported models fail closed to monitoring.
 12. **Interactive installer UI.** CI exercises quiet install, upgrade and uninstall only. The wizard, launch-after-install checkbox and visual layout were not tested: this Windows 11 Home host has no Windows Sandbox/VM tools and Application Control blocks the EXE, while GitHub-hosted runners have no interactive desktop.
-13. **SignPath signing is not active.** MIT licensing, four optional signing requests and `docs/SIGNPATH.md` are in place, but no SignPath account, project, artifact configuration or API token exists. The installers remain unsigned and are still blocked by Smart App Control; do not describe them as signed or trusted.
+13. **SignPath signing is not active.** MIT licensing, three optional signing requests and `docs/SIGNPATH.md` are in place, but no SignPath account, project, artifact configuration or API token exists. The installers remain unsigned and are still blocked by Smart App Control; do not describe them as signed or trusted.
 
 ## Out of scope
 

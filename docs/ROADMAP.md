@@ -3,7 +3,7 @@
 ## Now
 
 - **Hardware smoke tests.** Hosted CI now links, tests and runs the CLI on six native runners; run it against real batteries on Windows, Linux and macOS and record the readings. Do not treat a hosted build as a hardware test.
-- **SignPath Foundation signing.** The MIT license, optional four-request Windows path and `docs/SIGNPATH.md` are in place, but there is no SignPath account, project, artifact configuration or token. Apply to SignPath, configure the seven variables and API token, run a signed build and verify it on Windows 11 with Smart App Control. Keep Sigstore provenance as an additional layer, not a substitute.
+- **SignPath Foundation signing.** The MIT license, optional three-request Windows path and `docs/SIGNPATH.md` are in place, but there is no SignPath account, project, artifact configuration or token. Apply to SignPath, configure the six variables and API token, run a signed build and verify it on Windows 11 with Smart App Control. Keep Sigstore provenance as an additional layer, not a substitute.
 - **PFX and macOS signing.** The existing Windows Authenticode PFX fallback and macOS Developer ID/notarization hooks still have no certificates configured. Add the documented secrets and verify the signed artifacts if that path is used instead of SignPath.
 - **Native translation review.** Have the 30 catalogs reviewed by speakers, starting with the visible menu, settings labels and notification text. Keep the English source keys stable during review.
 - **Live language switch.** Rebuild or reload the open Settings window when the language changes so RTL/LTR and labels update immediately.
