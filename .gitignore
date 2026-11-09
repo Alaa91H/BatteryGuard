@@ -28,6 +28,7 @@ portable/target/
 dist/
 packaging/windows/staging/
 packaging/windows/ProductLocales.wxs
+.signpath/
 .freebuff/
 
 # Localization generation cache (catalogs themselves are tracked)

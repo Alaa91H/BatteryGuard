@@ -43,7 +43,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File portable/scripts/test.ps1
 - Every push builds the installer matrix, creates build-provenance attestations and uploads branch artifacts. Only a `v*` tag may create or update a GitHub Release.
 - The Windows MSI and Burn EXE bundle the C# tray, Rust CLI, icon, locale catalogs, Start Menu shortcut and uninstall shortcut. Linux and macOS packages remain CLI-only. CI installs/uninstalls the x64 MSI and EXE, upgrades the published `v0.1.0` MSI with the EXE on a clean runner, and installs/runs the DEB and PKG; x86/ARM64 installers and RPM are build-only on the current runners. The interactive installer wizard is not covered by CI.
 - The Windows x64 job runs the C# suite (`Test-FloatLogic`, `Test-ScheduleConflict`, `Test-UiPolish`, `Test-Settings`, `Test-AppIdentity`, `Test-LogRotation`, `Test-Icons`, `Test-Layout`). Do not replace it with a build-only check.
-- Native signing is conditional on repository secrets: `WINDOWS_CERTIFICATE_BASE64`/`WINDOWS_CERTIFICATE_PASSWORD` for Authenticode (tray, CLI, MSI, Burn engine and EXE bundle), and the documented `MACOS_*` certificate/notary secrets. Missing secrets mean an unsigned package and a notice, not a failed or falsely signed build. Never commit certificate material.
+- Native signing is optional. The preferred free path is SignPath Foundation for this MIT-licensed public project: three signing requests (tray/CLI, detached Burn engine, MSI + final EXE) using `SIGNPATH_*` repository variables and the `SIGNPATH_API_TOKEN` secret. The PFX fallback remains `WINDOWS_CERTIFICATE_BASE64`/`WINDOWS_CERTIFICATE_PASSWORD` for Authenticode (tray, CLI, MSI, Burn engine and EXE bundle), and the documented `MACOS_*` certificate/notary secrets remain for macOS. Missing configuration means an unsigned package and a notice, not a failed or falsely signed build. Never commit tokens or certificate material. See `docs/SIGNPATH.md`.
 - The tag must be exactly `v` plus the version in `portable/Cargo.toml` (currently `v0.1.0`). The prepare job rejects a mismatch before building.
 - Release assets are restricted to `.exe`, `.msi`, `.deb`, `.rpm`, `.AppImage` and `.pkg`. The `.exe` must be the Burn installer, never a raw application binary. Do not publish archives, `.wixpdb`, debug symbols, logs or test data.
 - The current signature is GitHub/Sigstore keyless build provenance through `actions/attest-build-provenance`. It is not Windows Authenticode or Apple notarization. Do not describe it as either, and do not add certificate secrets without explicit approval and a documented verification step.
@@ -61,6 +61,7 @@ PowerShell scripts that contain non-ASCII text must be UTF-8 (BOM is accepted). 
 ## Conventions
 
 - .NET Framework 4.x only; no NuGet, no external runtime packages.
+- The project is MIT licensed. SignPath Foundation eligibility depends on keeping the repository public and free of proprietary components; do not add a commercial-only component without revisiting that decision.
 - The Rust core uses only the standard library: no crates, no build scripts and no network access.
 - Keep the display name **BatteryGuard**. Keep the C# namespace `BatteryGuardTray` for compatibility with existing scripts and tests.
 - Source, resources, scripts, tests and data files use neutral names; do not add product/version names to new paths.

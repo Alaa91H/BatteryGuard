@@ -76,11 +76,32 @@ signed by Sigstore/Fulcio using the workflow's OIDC identity and binds the
 artifact digest to this repository, commit and workflow run. No long-lived
 signing key is stored in the repository.
 
-The workflow also supports native signing when these repository secrets are
-configured. With no secrets it builds unsigned packages and emits a notice; it
-does not claim an OS signature.
+The Windows job supports two mutually exclusive Authenticode paths. With
+neither configured it builds unsigned packages and emits a notice; it does not
+claim an OS signature.
 
-Windows Authenticode:
+SignPath Foundation (free for this MIT-licensed public project):
+
+- Apply at [signpath.org/apply](https://signpath.org/apply) and install the
+  SignPath GitHub App.
+- The workflow uses three signing requests: tray/CLI binaries, the detached Burn
+  engine, and the final MSI + EXE. The returned binaries are verified with
+  `signtool verify /pa /all` before they are packaged or published.
+- Required repository secret: `SIGNPATH_API_TOKEN`.
+- Required repository variables: `SIGNPATH_ORGANIZATION_ID`,
+  `SIGNPATH_PROJECT_SLUG`, `SIGNPATH_SIGNING_POLICY_SLUG`,
+  `SIGNPATH_ARTIFACT_CONFIGURATION_BINARIES`,
+  `SIGNPATH_ARTIFACT_CONFIGURATION_ENGINE` and
+  `SIGNPATH_ARTIFACT_CONFIGURATION_INSTALLERS`.
+- The publisher is **SignPath Foundation**. The path is implemented but has not
+  been exercised because there is no SignPath account, project or token in this
+  repository. It is not valid to describe a build as signed until a request
+  completes and verification passes.
+- If all SignPath variables are set but `SIGNPATH_API_TOKEN` is missing, the
+  Windows job fails before signing. If the variables are absent, the PFX path
+  or the unsigned path is used.
+
+Windows Authenticode PFX fallback:
 
 - `WINDOWS_CERTIFICATE_BASE64` — base64 of the PFX; `WINDOWS_CERTIFICATE_PASSWORD` — PFX password.
 - The tray and CLI are signed before the MSI is built, so their signatures are
@@ -90,6 +111,8 @@ Windows Authenticode:
   and the outer installer.
 - `signtool verify /pa /all` must pass for the two executables, the MSI, the
   Burn engine and the EXE bundle.
+- SignPath and the PFX path are mutually exclusive: when all SignPath variables
+  are set, the PFX signing steps are skipped.
 
 macOS Developer ID and notarization:
 
@@ -104,10 +127,10 @@ macOS Developer ID and notarization:
   then submitted, stapled and checked with `xcrun stapler` and
   `pkgutil --check-signature`.
 
-No certificate secrets are configured in this repository, so the native
-signing paths are implemented but have not been exercised by the current green
-hosted run. Do not claim a signed artifact until the secrets are configured
-and those verification commands pass.
+Neither a SignPath project nor certificate secrets are configured in this
+repository, so the native signing paths are implemented but have not been
+exercised by the current green hosted run. Do not claim a signed artifact until
+a real signing request completes and those verification commands pass.
 
 This is a cryptographic supply-chain signature; it is **not** Windows
 Authenticode and it is **not** Apple notarization. Attestations are available

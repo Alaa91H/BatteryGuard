@@ -3,6 +3,7 @@ name = "batteryguard"
 version = "0.1.0"
 edition = "2021"
 description = "Platform-neutral BatteryGuard battery core"
+license = "MIT"
 
 [lib]
 name = "batteryguard_core"

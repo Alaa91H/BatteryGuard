@@ -100,12 +100,13 @@ The published release is [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/rele
 
 The Windows x64 job runs the hardware-independent C# suite before packaging, then installs and removes both the MSI and the EXE bootstrapper.
 Every branch build also creates a keyless Sigstore build-provenance attestation
-and keeps the installers as workflow artifacts. Windows Authenticode and macOS
-Developer ID/notarization are optional: the workflow uses them when the
-documented certificate secrets exist and leaves the packages unsigned when
-they do not. A GitHub Release is created only from a matching `v*` tag; branch
-builds never publish. See [`docs/RELEASE.md`](docs/RELEASE.md) for the version
-rule, signatures and asset policy.
+and keeps the installers as workflow artifacts. Windows Authenticode can use
+the free [SignPath Foundation](docs/SIGNPATH.md) path for this MIT-licensed
+public project or the repository PFX path; macOS Developer ID/notarization uses
+the documented certificate secrets. Without either configuration the packages
+remain unsigned. A GitHub Release is created only from a matching `v*` tag;
+branch builds never publish. See [`docs/RELEASE.md`](docs/RELEASE.md) for the
+version rule, signatures and asset policy.
 
 Run the hardware-independent regression checks:
 
@@ -146,8 +147,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-Layout.ps
 - [`docs/DEVICE_SUPPORT.md`](docs/DEVICE_SUPPORT.md) — supported devices and the monitoring-only boundary.
 - [`docs/LOCALIZATION.md`](docs/LOCALIZATION.md) — language resolution, catalogs and maintenance.
 - [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) — current state and known gaps.
+- [`docs/SIGNPATH.md`](docs/SIGNPATH.md) — free SignPath Foundation signing setup for the MIT-licensed project.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — planned work.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — architecture decisions.
 - [`docs/SESSION_LOG.md`](docs/SESSION_LOG.md) — work log.
 - [`CHANGELOG.md`](CHANGELOG.md) — changes in English.
 - [`AGENTS.md`](AGENTS.md) — repository instructions for coding agents.
+
+## License
+
+BatteryGuard is released under the [MIT License](LICENSE). The MIT license is
+required for the project's SignPath Foundation application; it does not change
+the local-only, no-network behavior described above.
