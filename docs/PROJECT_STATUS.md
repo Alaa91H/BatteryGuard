@@ -3,7 +3,7 @@
 **Date:** 2026-11-09  
 **Application:** BatteryGuard tray monitor  
 **Build:** `battery/application.exe` — 99,328 bytes  
-**CI:** single tag-gated workflow; hosted run `42647767077` green with all seven packaging jobs, the C# suite, the Windows tray MSI and EXE, a clean-runner upgrade from the published `v0.1.0` MSI, and the optional SignPath requests skipped because no account/token is configured; published release remains `v0.1.0` (CLI-only)
+**CI:** single tag-gated workflow; branch run `42652367294` and tag run `42653411073` green with all seven packaging jobs, the C# suite, the Windows tray MSI and EXE, and a clean-runner upgrade from the published `v0.1.0` MSI; SignPath was unconfigured, so the published `v0.2.0` release has 14 unsigned installers, including 3 EXE and 3 MSI
 
 ## Completed
 
@@ -54,6 +54,8 @@ Passed in this session (2026-11-09):
 | GitHub Actions `42632698346` | All 7 packaging jobs succeeded; Windows x64 C# suite, x64 MSI install/uninstall, DEB install/run and PKG install/run checks passed |
 | GitHub Actions `42636451138` | All 7 packaging jobs succeeded; 14 installers; Windows x64 C# suite, x64 MSI and EXE install/uninstall, DEB install/run and PKG install/run checks passed |
 | GitHub Actions `42638941970` | All 7 packaging jobs succeeded; 14 installers; x64 MSI and EXE install/uninstall plus the published `v0.1.0` → EXE upgrade passed with one visible Apps & Features entry and a clean uninstall |
+| GitHub Actions `42652367294` | Branch run for `0.2.0` succeeded; all 7 packaging jobs; 14 installers; x64 MSI/EXE and `v0.1.0` upgrade checks passed |
+| GitHub Actions `42653411073` | Tag run succeeded; `v0.2.0` published with 14 assets (3 EXE, 3 MSI, 6 Linux packages, 2 PKG); SignPath skipped |
 
 Locale inventory: 30 JSON files, 151 keys in each file including the `Monitoring only` key; no missing keys and no placeholder mismatches.
 
@@ -77,6 +79,20 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
   kernel/userspace, not a physical Linux device or battery.
 - **macOS:** no macOS host was available; the PKG was not installed or run.
 
+## Published v0.2.0 release
+
+- Release: [`v0.2.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.2.0),
+  published 2026-11-09 from tag `v0.2.0` (commit `9e0bf24`) by run
+  `42653411073`.
+- Assets: 14 — three Windows EXE bootstrappers, three Windows MSIs, three
+  x64 Linux packages, three ARM64 Linux packages and two macOS PKGs. The
+  Windows payload is the C# tray plus the Rust CLI; Linux and macOS remain
+  CLI-only.
+- The release is **unsigned**. SignPath and PFX signing were not configured;
+  the assets carry GitHub/Sigstore build-provenance attestations only.
+- CI ran the quiet x64 MSI/EXE install, uninstall and `v0.1.0` upgrade checks;
+  the interactive wizard was not visually tested.
+
 ## Portable core (phase 1)
 
 - `portable/src/model.rs`, `format.rs` and `policy.rs` implement the shared battery model, electrical/duration formatting and the 13-case charge/float policy.
@@ -98,6 +114,7 @@ The Settings reflection test reported `780×601` client size on this 1280×720 d
 - Branch run `42642577968` added the optional SignPath Foundation signing path and MIT license; SignPath was unconfigured, so its steps were skipped and the unsigned installers remained green. The run also produced 14 installers and passed the earlier `v0.1.0` → EXE upgrade test.
 - Branch run `42638941970` added the clean-runner `v0.1.0` → EXE upgrade test and produced 14 installers. The x64 job passed MSI/EXE install-uninstall and the upgrade, including one visible Apps & Features entry and a clean uninstall; the optional signing steps were skipped because no certificates are configured. Earlier runs exposed duplicate bundle/MSI registration, missing Cargo paths (`42622500646`), Unix packaging paths, the invalid `CommonProgramsFolder` WiX id and cross-architecture MSI installation; all were fixed.
 - Tag run `42624635716` passed all jobs and published [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with exactly the 11 installer files; the tag points to commit `449245b` and remains CLI-only.
+- Branch run `42652367294` validated the `0.2.0` version bump and the same seven-job matrix. Tag run `42653411073` published [`v0.2.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.2.0) with 14 unsigned assets, including three EXE bootstrappers and three MSIs; SignPath steps were skipped.
 
 ## Known limitations
 

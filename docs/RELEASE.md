@@ -211,6 +211,11 @@ the interactive wizard or a physical clean VM.
   the PFX steps had no certificate, and the Windows x64 MSI/EXE
   install-uninstall and `v0.1.0` upgrade checks passed. This validates the
   no-secret fallback, not a signed artifact.
+- Branch run `42652367294` passed all seven packaging jobs for Cargo `0.2.0`,
+  and tag run `42653411073` passed every job and published
+  [`v0.2.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.2.0) with
+  three Windows EXE bootstrappers, three MSIs, six Linux packages and two
+  macOS PKGs. The artifacts are unsigned because SignPath is not configured.
 - Hosted run `42642577968` passed all seven packaging jobs with the optional
   SignPath configuration absent. The SignPath steps were skipped, the PFX steps
   had no certificate, and the unsigned installers were built, installed,

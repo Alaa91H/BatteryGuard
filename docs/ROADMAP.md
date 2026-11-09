@@ -13,7 +13,7 @@
 
 ## Done
 
-- **One tag-gated CI pipeline.** Added `.github/workflows/ci.yml` to build Windows x86/x64/ARM64 MSI, Linux x64/ARM64 DEB/RPM/AppImage and macOS Intel/Apple-silicon PKG packages; attest every installer with GitHub/Sigstore provenance; upload branch artifacts; and publish only for a `v*` tag matching `portable/Cargo.toml`. Hosted run `42629998330` passed all seven packaging jobs and the native install checks. Tag run `42624635716` published [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with exactly those 11 assets.
+- **One tag-gated CI pipeline.** Added `.github/workflows/ci.yml` to build Windows x86/x64/ARM64 MSI, Linux x64/ARM64 DEB/RPM/AppImage and macOS Intel/Apple-silicon PKG packages; attest every installer with GitHub/Sigstore provenance; upload branch artifacts; and publish only for a `v*` tag matching `portable/Cargo.toml`. Hosted run `42629998330` passed all seven packaging jobs and the native install checks. Tag run `42624635716` published [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with 11 assets, and tag run `42653411073` published [`v0.2.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.2.0) with 14 assets, including three EXE bootstrappers and three MSIs.
 
 - **Windows tray MSI and package install checks.** The per-machine MSI now bundles the C# tray, Rust CLI, all 30 locale catalogs, a Start Menu shortcut with `BatteryGuard.Tray` and an uninstall shortcut. CI installs/uninstalls the x64 MSI and installs/runs the DEB and PKG. Windows x86/ARM64 and RPM are build-only on the current runners.
 

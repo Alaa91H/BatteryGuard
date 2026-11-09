@@ -1,5 +1,24 @@
 # Session log
 
+## 2026-11-09 — v0.2.0 release
+
+### Work performed
+
+1. Bumped `portable/Cargo.toml` and `portable/Cargo.lock` to `0.2.0` and updated
+   the release, README and agent documentation.
+2. Committed the version bump as `9e0bf24`, created annotated tag `v0.2.0`, and
+   pushed the tag to trigger the release workflow.
+
+### Verification
+
+- Branch run `42652367294` passed all seven packaging jobs.
+- Tag run `42653411073` passed and published
+  [`v0.2.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.2.0) with
+  14 assets: 3 EXE, 3 MSI, 6 Linux packages and 2 PKG files. SignPath and PFX
+  signing were unconfigured, so the assets are unsigned.
+- The Windows x64 job passed the quiet MSI/EXE install, uninstall and
+  `v0.1.0` upgrade checks. The interactive wizard was not tested.
+
 ## 2026-11-09 — SignPath Foundation signing path
 
 ### Goal

@@ -2,7 +2,36 @@
 
 All notable changes to this project are documented here. The format follows the spirit of Keep a Changelog. Releases use the version from `portable/Cargo.toml` and a matching `v*` tag.
 
-## Unreleased — SignPath Foundation signing path
+## 2026-11-09 — v0.2.0
+
+First release with Windows tray installers.
+
+### Added
+
+- Per-machine Windows MSI and single-EXE Burn bootstrapper containing the C#
+  tray, Rust CLI, icon, 30 locale catalogs, Start Menu shortcut and uninstall
+  shortcut.
+- MIT `LICENSE`, SignPath Foundation signing integration and code-signing
+  policy.
+
+### Changed
+
+- `portable/Cargo.toml` and `Cargo.lock` now use `0.2.0`; the `v0.2.0` tag
+  publishes the 14-asset matrix.
+
+### Verification
+
+- Branch run `42652367294` and tag run `42653411073` passed all seven packaging
+  jobs. The release contains 3 EXE, 3 MSI, 6 Linux packages and 2 PKG files.
+  The x64 MSI/EXE install, uninstall and `v0.1.0` upgrade checks passed.
+
+### Known limitations
+
+- The installers are unsigned: no SignPath project, token, PFX or Developer ID
+  certificate is configured. Smart App Control may still block them.
+- The interactive installer wizard and a physical clean VM were not tested.
+
+## v0.2.0 details — SignPath Foundation signing path
 
 ### Added
 
@@ -33,7 +62,7 @@ All notable changes to this project are documented here. The format follows the 
   submitted and no signed artifact was produced. The existing unsigned CI path
   remains the only verified path.
 
-## Unreleased — Windows single-EXE bootstrapper
+## v0.2.0 details — Windows single-EXE bootstrapper
 
 ### Added
 
@@ -72,7 +101,7 @@ All notable changes to this project are documented here. The format follows the 
   Windows Sandbox/VM and Application Control blocks the EXE; hosted runners
   are non-interactive.
 
-## Unreleased — C# CI gate, optional native signing and v0.1.0 checks
+## v0.2.0 details — C# CI gate, optional native signing and v0.1.0 checks
 
 ### Added
 
