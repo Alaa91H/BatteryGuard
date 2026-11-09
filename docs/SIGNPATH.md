@@ -14,6 +14,7 @@ unsigned and Smart App Control will continue to block them.
 
 ## Before applying
 
+- Copy-paste answers: [SIGNPATH_APPLICATION.md](SIGNPATH_APPLICATION.md).
 - Use the public `v0.2.0` release, which contains the MSI and EXE bootstrapper.
   The earlier `v0.1.0` release is CLI-only and cannot cover the final EXE
   request.
