@@ -431,6 +431,16 @@ jobs:
           }
           if (Test-Path -LiteralPath $installDir) { throw "Install directory remains after EXE uninstall: $installDir" }
 
+      - name: Test Windows v0.1.0 upgrade
+        if: matrix.platform == 'windows' && matrix.arch == 'x64'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $bundle = Get-ChildItem 'dist/*.exe' | Select-Object -First 1
+          if (-not $bundle) { throw 'No EXE bundle was produced' }
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path (Get-Location) 'packaging/windows/Test-WindowsUpgrade.ps1') -Bundle $bundle.FullName
+          if ($LASTEXITCODE -ne 0) { throw "Windows v0.1.0 upgrade test failed with exit code $LASTEXITCODE" }
+
       - name: Package Linux DEB, RPM and AppImage
         if: matrix.platform == 'linux'
         shell: bash
