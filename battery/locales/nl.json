@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · Binnenkort opladen",
   "{0}% · You can disconnect the charger": "{0}% · U kunt de oplader loskoppelen",
   "°C": "°C",
-  "Monitoring only": "Alleen bewaking"
+  "Monitoring only": "Alleen bewaking",
+  "Installed version {0}": "Installed version {0}"
 }

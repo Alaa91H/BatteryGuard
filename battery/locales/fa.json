@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}٪ · به زودی شارژ کنید",
   "{0}% · You can disconnect the charger": "{0}٪ · می توانید شارژر را جدا کنید",
   "°C": "درجه سانتی گراد",
-  "Monitoring only": "فقط پایش"
+  "Monitoring only": "فقط پایش",
+  "Installed version {0}": "Installed version {0}"
 }

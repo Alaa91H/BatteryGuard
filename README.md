@@ -1,6 +1,6 @@
 # Workspace
 
-[![Build, attest and release](https://github.com/Alaa91H/BatteryGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/Alaa91H/BatteryGuard/actions/workflows/ci.yml)
+[![Build and release](https://github.com/Alaa91H/BatteryGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/Alaa91H/BatteryGuard/actions/workflows/ci.yml)
 
 This workspace contains three areas:
 
@@ -51,7 +51,7 @@ packaging/
   linux/               DEB, RPM, AppImage and desktop assets
   macos/build-pkg.sh   macOS installer builder
 .github/workflows/
-  ci.yml               the single build, attest and release workflow
+  ci.yml               the single build and release workflow
 docs/
   ARCHITECTURE.md
   DECISIONS.md
@@ -96,17 +96,13 @@ GitHub Actions builds native installers for all supported systems:
 | Linux x64, ARM64 | `.deb`, `.rpm`, `.AppImage` |
 | macOS Intel, Apple silicon | `.pkg` |
 
-The latest release is [`v0.2.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.2.0), with all 14 installers attached. The Windows x86/x64/ARM64 assets install the C# tray and the Rust CLI: `application.exe`, `batteryguard.exe`, the 30 locale catalogs, an all-users Start Menu shortcut carrying `BatteryGuard.Tray`, and an uninstall shortcut. The MSI and the per-machine **single-EXE bootstrapper** use the standard WiX installer UI, show the version, offer launch after install and unregister through Apps & Features. Linux DEB/RPM/AppImage and macOS PKG still bundle the CLI only. The earlier `v0.1.0` release remains CLI-only.
+The latest release is [`v0.3.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.3.0), with all 14 installers attached. The Windows x86/x64/ARM64 assets install the C# tray and the Rust CLI: `application.exe`, `batteryguard.exe`, the 30 locale catalogs, an all-users Start Menu shortcut carrying `BatteryGuard.Tray`, and an uninstall shortcut. The MSI and the per-machine **single-EXE bootstrapper** use the standard WiX installer UI, show the version, offer launch after install and unregister through Apps & Features. Linux DEB/RPM/AppImage and macOS PKG still bundle the CLI only. The `v0.2.0` release added the Windows tray installers; `v0.1.0` remains CLI-only.
 
 The Windows x64 job runs thirteen C# checks before packaging, including `Test-UI`, `Test-Theme` and `Test-TrayHost` in the injected monitoring-only mode, then installs and removes both the MSI and the EXE bootstrapper. Hosted run [42700624192](https://github.com/Alaa91H/BatteryGuard/actions/runs/42700624192) passed with that suite. Those three start the real tray but have no provider, WMI gateway or `WriteGuard`, so no charge write is possible. The write-capable checks remain outside CI. The safe local suite and the HP-safe `Test-ThemeLive` pass are recorded in [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).
-Every branch build also creates a keyless Sigstore build-provenance attestation
-and keeps the installers as workflow artifacts. Windows Authenticode can use
-the free [SignPath Foundation](docs/SIGNPATH.md) path for this MIT-licensed
-public project or the repository PFX path; macOS Developer ID/notarization uses
-the documented certificate secrets. Without either configuration the packages
-remain unsigned. A GitHub Release is created only from a matching `v*` tag;
-branch builds never publish. See [`docs/RELEASE.md`](docs/RELEASE.md) for the
-version rule, signatures and asset policy.
+Every branch build keeps the installers as workflow artifacts. Windows Smart
+App Control may block the installers. A GitHub Release is created only from a
+matching `v*` tag; branch builds never publish. See
+[`docs/RELEASE.md`](docs/RELEASE.md) for the version rule and asset policy.
 
 Run the hardware-independent regression checks:
 
@@ -138,27 +134,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File battery/tests/Test-TrayHost.
 
 ## Status
 
-- Build: `battery/application.exe`, 115,712 bytes at the last local build.
-- Release CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the only workflow. Hosted branch run [42652367294](https://github.com/Alaa91H/BatteryGuard/actions/runs/42652367294) passed all seven native packaging jobs and produced the 14 installer artifacts; tag run [42653411073](https://github.com/Alaa91H/BatteryGuard/actions/runs/42653411073) published them. The current workflow runs thirteen C# checks, including Test-ControllerFoundation, Test-TrayMenu and the three injected-mode tray tests. The x64 EXE and MSI install/uninstall, a clean-runner upgrade from the published `v0.1.0` MSI, and native DEB/PKG install-and-run checks passed. The installer wizard itself was not visually tested: this host has no Windows Sandbox/VM and Application Control blocks the EXE, while hosted runners are non-interactive. The SignPath signing path was skipped because no SignPath account or token is configured. Branch builds attest and upload artifacts; a matching `v*` tag is the only path that publishes a GitHub Release. The published [`v0.2.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.2.0) release contains 3 EXE, 3 MSI, 6 Linux packages and 2 macOS PKGs; the earlier [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) release remains CLI-only.
-- Smart App Control: on 2026-11-09, Windows 11 Home 10.0.26300 with SAC enforcement (`VerifiedAndReputablePolicyState=1`) blocked the unsigned `BatteryGuard-0.2.0-windows-x64.exe` before installation with `An Application Control policy has blocked this file.` The existing `0.1.0` installation remained unchanged; no `0.2.0` install or upgrade occurred. SignPath is not configured, so a trusted signature is still required.
-- Portable core: the read-only Rust library, CLI and test harness type-check on 12 Windows/Linux/macOS targets. Run 42652367294 linked, tested and ran `batteryguard --version` on six native runners, and installed/ran the DEB and PKG packages. No linked binary or test run was possible locally because the MSVC linker is absent and Application Control blocks Cargo and the available GNU/lld linkers. Linux/macOS widgets and BIOS charger wattage remain later work; optional native signing hooks exist but are unconfigured.
+- Build: `battery/application.exe`, 120,832 bytes at the last local build.
+- Release CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the only workflow. Hosted branch run [42652367294](https://github.com/Alaa91H/BatteryGuard/actions/runs/42652367294) passed all seven native packaging jobs and produced the 14 installer artifacts; tag run [42653411073](https://github.com/Alaa91H/BatteryGuard/actions/runs/42653411073) published them. The current workflow runs thirteen C# checks, including Test-ControllerFoundation, Test-TrayMenu and the three injected-mode tray tests. The x64 EXE and MSI install/uninstall, a clean-runner upgrade from the published `v0.1.0` MSI, and native DEB/PKG install-and-run checks passed. The installer wizard itself was not visually tested: this host has no Windows Sandbox/VM and Application Control blocks the EXE, while hosted runners are non-interactive. Branch builds upload artifacts; a matching `v*` tag is the only path that publishes a GitHub Release. The published [`v0.2.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.2.0) release contains 3 EXE, 3 MSI, 6 Linux packages and 2 macOS PKGs; the earlier [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) release remains CLI-only.
+- Smart App Control: on 2026-11-09, Windows 11 Home 10.0.26300 with SAC enforcement (`VerifiedAndReputablePolicyState=1`) blocked the `BatteryGuard-0.2.0-windows-x64.exe` before installation with `An Application Control policy has blocked this file.` The existing `0.1.0` installation remained unchanged; no `0.2.0` install or upgrade occurred.
+- Portable core: the read-only Rust library, CLI and test harness type-check on 12 Windows/Linux/macOS targets. Run 42652367294 linked, tested and ran `batteryguard --version` on six native runners, and installed/ran the DEB and PKG packages. No linked binary or test run was possible locally because the MSVC linker is absent and Application Control blocks Cargo and the available GNU/lld linkers. Linux/macOS widgets and BIOS charger wattage remain later work.
 - Float policy: 13/13 decision cases pass; float starts only at the limit and holds until the resume point.
 - Electrical readings: the tooltip, tray menu, status balloon and Settings card show pack voltage and charge/discharge power; the real reading was `11.8 V · 0.0 W` while the charger held the battery idle.
 - Notification identity: the Start Menu shortcut and `System.AppUserModel.ID` were verified as `BatteryGuard.Tray`; the banner label itself was not captured because browser notifications occupied the screen during the check. No reliable automated banner-label test is included yet.
-- Localization: 30 catalogs, 151 keys each, placeholder validation clean.
-- Regression checks: float logic, controller foundation, schedule conflicts, UI polish, settings, battery readings, notification identity, log rotation, icon rendering, adaptive layout and the injected-mode UI/theme/host checks passed; the injected tests produced no charge-write line.
-- Window sizing: Settings 780×1000 design size (minimum 620×480; content scrolls and the Save/Cancel/Test footer stays pinned), schedule window 500×400 (minimum 440×320; content scrolls and the buttons stay pinned), activity log 760×560 (minimum 520×360; the action bar wraps). All are DPI-aware and clamp to the working area.
+- Localization: 30 catalogs, 152 keys each, placeholder validation clean.
+- Regression checks: float logic, controller foundation, schedule conflicts, UI polish, settings, battery readings, notification identity, log rotation, icon rendering, responsive settings, appearance selection, installed version, adaptive layout and the injected-mode UI/theme checks passed; the injected tests produced no charge-write line.
+- Window sizing: Settings 980×620 design size (minimum 720×480; two columns at 900 px and wider, one scrollable column below; the Save/Cancel/Test footer stays pinned), schedule window 500×350 (minimum 440×350; content scrolls and the 56 px button bar stays pinned), activity log 760×560 (minimum 520×360; the action bar wraps). All are DPI-aware and clamp to the working area. `Test-Layout` now exercises 100%, 125% and 150% in English and Arabic: 222 checks, zero failures, every nested control inside its parent, no horizontal scrollbar; 150% uses vertical scrolling for the taller Settings content.
 - Device support: HP charge control; Acer, Dell and Lenovo are read-only candidate profiles; every other vendor is monitored with an explicit **Monitoring only** state. No candidate writer is enabled without two independent hardware reports and read-back.
 - Translation review: catalogs are machine-generated from the curated English source with targeted glossary overrides. Native-speaker review is still recommended before treating every wording as final.
-- The Settings window was re-inspected in Arabic light/dark and English dark with the electrical value; the schedule and log windows retain their Arabic-light layout captures. The native tray menu and the final notification banner could not be captured, and 125%/150% DPI were not exercised.
-
-## Code signing policy
-
-BatteryGuard's [code signing policy](docs/CODE_SIGNING_POLICY.md) defines the
-Windows artifact scope, team roles, signing approval and privacy statement.
-Signing is not active yet: no SignPath project or token is configured. Free
-code signing is provided by [SignPath.io](https://about.signpath.io/),
-certificate by [SignPath Foundation](https://signpath.org/).
+- The Settings window was reviewed in English and Arabic, light and dark, with the electrical value, language selector, appearance selector and installed version; the schedule and log windows were reviewed in English-light and Arabic-light respectively. The native tray menu and the final notification banner could not be captured. The 125%/150% matrix is covered by `Test-Layout`'s scaled layout and font simulation; native screenshots at those scales were not captured.
 
 ## Documentation
 
@@ -166,13 +154,11 @@ certificate by [SignPath Foundation](https://signpath.org/).
 - [`portable/README.md`](portable/README.md) — portable Rust core, CLI and build/test notes.
 - [`portable/PLATFORMS.md`](portable/PLATFORMS.md) — architecture, distribution and packaging support matrix.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — process model, components and data flow.
-- [`docs/RELEASE.md`](docs/RELEASE.md) — CI matrix, tag/version rule, attestation and release policy.
+- [`docs/RELEASE.md`](docs/RELEASE.md) — CI matrix, tag/version rule and release policy.
 - [`docs/DEVICE_SUPPORT.md`](docs/DEVICE_SUPPORT.md) — supported devices and the monitoring-only boundary.
 - [`docs/CONTROLLER_VALIDATION.md`](docs/CONTROLLER_VALIDATION.md) — probe, simulator, hardware protocol and evidence gates.
 - [`docs/LOCALIZATION.md`](docs/LOCALIZATION.md) — language resolution, catalogs and maintenance.
 - [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) — current state and known gaps.
-- [`docs/SIGNPATH.md`](docs/SIGNPATH.md) — free SignPath Foundation signing setup for the MIT-licensed project.
-- [`docs/CODE_SIGNING_POLICY.md`](docs/CODE_SIGNING_POLICY.md) — artifact scope, roles, approval and privacy policy.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — planned work.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — architecture decisions.
 - [`docs/SESSION_LOG.md`](docs/SESSION_LOG.md) — work log.
@@ -181,6 +167,5 @@ certificate by [SignPath Foundation](https://signpath.org/).
 
 ## License
 
-BatteryGuard is released under the [MIT License](LICENSE). The MIT license is
-required for the project's SignPath Foundation application; it does not change
-the local-only, no-network behavior described above.
+BatteryGuard is released under the [MIT License](LICENSE). The license does
+not change the local-only, no-network behavior described above.

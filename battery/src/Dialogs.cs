@@ -47,6 +47,34 @@ namespace BatteryGuardTray
         }
     }
 
+    internal static class UiLayoutRuntime
+    {
+        private const string ScaledTag = "BatteryGuardDpiScaled";
+
+        // .NET Framework 4.8 with app.config high-DPI support can still leave a
+        // form at its 96-DPI client size on first show. Scale it once using the
+        // real DeviceDpi, then let the form-specific layout pass take over.
+        public static void EnsureDpiScale(Form form)
+        {
+            try
+            {
+                if (form == null || form.DeviceDpi <= 96) return;
+                if (string.Equals(form.Tag as string, ScaledTag, StringComparison.Ordinal)) return;
+
+                float scale = form.DeviceDpi / 96f;
+                Size design = form.ClientSize;
+                form.AutoScaleDimensions = new SizeF(96f, 96f);
+                form.PerformAutoScale();
+                form.PerformLayout();
+                form.ClientSize = new Size(
+                    (int)Math.Round(design.Width * scale),
+                    (int)Math.Round(design.Height * scale));
+                form.Tag = ScaledTag;
+            }
+            catch { }
+        }
+    }
+
     internal sealed class WindowRuleForm : Form
     {
         private readonly DateTimePicker _from = new DateTimePicker();
@@ -68,8 +96,8 @@ namespace BatteryGuardTray
             ShowInTaskbar = false;
             ShowIcon = false;
             AutoScaleMode = AutoScaleMode.Dpi;
-            ClientSize = new Size(500, 400);
-            MinimumSize = new Size(440, 320);
+            ClientSize = new Size(500, 350);
+            MinimumSize = new Size(440, 350);
             RightToLeft = UiSettings.Rtl ? RightToLeft.Yes : RightToLeft.No;
             RightToLeftLayout = UiSettings.Rtl;
             Font = new Font("Segoe UI", 9.5f);
@@ -136,7 +164,7 @@ namespace BatteryGuardTray
 
             var buttons = new FlowLayoutPanel();
             buttons.Dock = DockStyle.Bottom;
-            buttons.Height = 48;
+            buttons.Height = 56;
             buttons.FlowDirection = UiSettings.Rtl ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
             if (UiSettings.Rtl) buttons.RightToLeft = RightToLeft.No;
             buttons.Padding = new Padding(12, 8, 12, 8);
@@ -173,6 +201,13 @@ namespace BatteryGuardTray
             bool dark = ThemeSettings.MenuDark;
             note.ForeColor = UiTheme.Muted(dark);
             UiTheme.Primary(ok, dark);
+            UiLayout.Fit(this);
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            UiLayoutRuntime.EnsureDpiScale(this);
             UiLayout.Fit(this);
         }
 
@@ -239,7 +274,9 @@ namespace BatteryGuardTray
         private readonly CheckBox _healthNotify = new CheckBox();
         private readonly NumericUpDown _healthThreshold = new NumericUpDown();
         private readonly ComboBox _language = new ComboBox();
+        private readonly ComboBox _appearance = new ComboBox();
         private readonly ComboBox _direction = new ComboBox();
+        private readonly Label _versionLabel = new Label();
         private readonly CheckBox _showCeiling = new CheckBox();
         private readonly CheckBox _notifications = new CheckBox();
         private readonly Label _batteryInfo = new Label();
@@ -247,7 +284,17 @@ namespace BatteryGuardTray
         private readonly Label _scheduleEmpty = new Label();
         private readonly Button _saveButton = new Button();
         private readonly Label _footerHint = new Label();
+        private FlowLayoutPanel _footer;
+        internal int LayoutDpiForTest = 0;
         private TableLayoutPanel _scheduleGrid;
+        private TableLayoutPanel _root;
+        private Control _batteryCard;
+        private Control _chargeCard;
+        private Control _scheduleCard;
+        private Control _notificationsCard;
+        private Control _interfaceCard;
+        private bool _wideLayout;
+        private bool _layoutInitialized;
         private readonly ToolTip _tips = new ToolTip();
         internal bool SuppressMessages { get; set; }
         internal string ValidationError;
@@ -280,6 +327,26 @@ namespace BatteryGuardTray
             base.Dispose(disposing);
         }
 
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            UiLayoutRuntime.EnsureDpiScale(this);
+            int dpi = LayoutDpiForTest > 0 ? LayoutDpiForTest : DeviceDpi;
+            if (dpi <= 96) return;
+
+            // AutoScale runs after the constructor. Clamp the scaled window and
+            // rebuild the root with DPI-relative row heights before the user sees it.
+            // Two passes also cover a footer that wraps only after the first pass.
+            for (int pass = 0; pass < 2; pass++)
+            {
+                UiLayout.Fit(this);
+                if (_footer != null) AdjustFooter(_footer);
+                ApplySettingsLayout(ClientSize.Width);
+                if (_root != null) _root.PerformLayout();
+            }
+            BeginInvoke(new Action(ResizeScheduleColumns));
+        }
+
         private void BuildUi()
         {
             SuspendLayout();
@@ -292,10 +359,11 @@ namespace BatteryGuardTray
             TopMost = true;
             ShowInTaskbar = true;
             AutoScaleMode = AutoScaleMode.Dpi;
-            ClientSize = new Size(780, 1000);
-            MinimumSize = new Size(620, 480);
+            ClientSize = new Size(980, 620);
+            MinimumSize = new Size(720, 480);
             Font = new Font("Segoe UI", 9.5f);
             AutoScroll = false;
+            AutoSize = false;
             RightToLeft = UiSettings.Rtl ? RightToLeft.Yes : RightToLeft.No;
             RightToLeftLayout = UiSettings.Rtl;
 
@@ -305,46 +373,52 @@ namespace BatteryGuardTray
             content.AutoScroll = true;
             content.Margin = new Padding(0);
 
-            var root = new TableLayoutPanel();
-            root.Name = "SettingsRoot";
-            root.Dock = DockStyle.None;
-            root.AutoSize = false;
-            root.Location = new Point(0, 0);
-            root.Width = 780;
-            root.Height = 930;
-            root.ColumnCount = 1;
-            root.RowCount = 5;
-            root.Padding = new Padding(14, 12, 14, 8);
-            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 104f));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 240f));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 210f));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 180f));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 176f));
-            content.Controls.Add(root);
+            _root = new TableLayoutPanel();
+            _root.Name = "SettingsRoot";
+            _root.Dock = DockStyle.None;
+            _root.AutoSize = false;
+            _root.Location = new Point(0, 0);
+            _root.Width = 980;
+            _root.Height = 554;
+            _root.ColumnCount = 2;
+            _root.RowCount = 3;
+            _root.Padding = new Padding(14, 12, 14, 8);
+            _root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            _root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            _root.RowStyles.Add(new RowStyle(SizeType.Absolute, 80f));
+            _root.RowStyles.Add(new RowStyle(SizeType.Absolute, 230f));
+            _root.RowStyles.Add(new RowStyle(SizeType.Absolute, 224f));
+            content.Controls.Add(_root);
 
-            var battery = new CardPanel(Loc.T("Battery"));
-            battery.Dock = DockStyle.Fill;
+            _batteryCard = new CardPanel(Loc.T("Battery"));
+            _batteryCard.Dock = DockStyle.Fill;
             _batteryInfo.Dock = DockStyle.Fill;
             _batteryInfo.AutoSize = false;
             _batteryInfo.AutoEllipsis = false;
             _batteryInfo.Font = new Font("Segoe UI", 10.25f);
             _batteryInfo.TextAlign = UiSettings.Rtl ? ContentAlignment.MiddleRight : ContentAlignment.MiddleLeft;
-            battery.Controls.Add(_batteryInfo);
-            root.Controls.Add(battery);
+            _batteryCard.Controls.Add(_batteryInfo);
+            _root.Controls.Add(_batteryCard, 0, 0);
+            _root.SetColumnSpan(_batteryCard, 2);
 
-            root.Controls.Add(BuildChargeCard());
-            root.Controls.Add(BuildScheduleCard());
-            root.Controls.Add(BuildNotificationsCard());
-            root.Controls.Add(BuildInterfaceCard());
+            _chargeCard = BuildChargeCard();
+            _scheduleCard = BuildScheduleCard();
+            _notificationsCard = BuildNotificationsCard();
+            _interfaceCard = BuildInterfaceCard();
+            _root.Controls.Add(_chargeCard, 0, 1);
+            _root.Controls.Add(_scheduleCard, 1, 1);
+            _root.Controls.Add(_notificationsCard, 0, 2);
+            _root.Controls.Add(_interfaceCard, 1, 2);
 
             var footer = BuildButtons();
             footer.Name = "SettingsFooter";
-            content.Resize += delegate { root.Width = Math.Max(660, content.ClientSize.Width); };
+            _footer = footer;
+            content.Resize += delegate { ApplySettingsLayout(content.ClientSize.Width); };
             Controls.Add(content);
             Controls.Add(footer);
             Resize += delegate { AdjustFooter(footer); };
             AdjustFooter(footer);
+            ApplySettingsLayout(ClientSize.Width);
 
             _tips.SetToolTip(_limitEnabled, Loc.T("When activated, charging stops at the specified limit instead of 100%."));
             _tips.SetToolTip(_slider, Loc.T("Drag the green handle to cap the charge and the orange to recharge (up to 1%)."));
@@ -362,6 +436,7 @@ namespace BatteryGuardTray
             _tips.SetToolTip(_lowThreshold, Loc.T("Low threshold (5–50%)."));
             _tips.SetToolTip(_healthNotify, Loc.T("Notification when battery health deteriorates below limit."));
             _tips.SetToolTip(_healthThreshold, Loc.T("Health threshold (40–95%)."));
+            _tips.SetToolTip(_appearance, Loc.T("Appearance: follow Windows, or force the light or dark theme."));
             _tips.SetToolTip(_direction, Loc.T("Interface direction: Automatic by system, or explicit RTL/LTR."));
             _tips.SetToolTip(_showCeiling, Loc.T("Show the limit number inside the battery icon."));
             _tips.SetToolTip(_notifications, Loc.T("Turn all system notifications on or off (test notifications are always on)."));
@@ -369,6 +444,67 @@ namespace BatteryGuardTray
             ResumeLayout(false);
             PerformLayout();
             UiLayout.Fit(this);
+        }
+
+        // Wide windows use two columns so every card and the pinned footer fit
+        // without a fake full-content screenshot. Narrow windows fall back to a
+        // single scrolling column instead of cropping the right side.
+        private void ApplySettingsLayout(int width)
+        {
+            if (_root == null || _batteryCard == null) return;
+
+            int dpi = LayoutDpiForTest > 0 ? LayoutDpiForTest : DeviceDpi;
+            float scale = Math.Max(1f, dpi / 96f);
+            int logicalWidth = (int)Math.Round(width / scale);
+            bool wide = logicalWidth >= 900;
+            int usableWidth = wide ? width : Math.Max((int)Math.Ceiling(520f * scale), width - SystemInformation.VerticalScrollBarWidth);
+            int targetWidth = Math.Max((int)Math.Ceiling((wide ? 900f : 520f) * scale), usableWidth);
+            int targetHeight = (int)Math.Ceiling((wide ? 554f : 944f) * scale);
+            if (_layoutInitialized && _wideLayout == wide && _root.Width == targetWidth && _root.Height == targetHeight)
+                return;
+
+            _root.SuspendLayout();
+            _root.ColumnStyles.Clear();
+            _root.RowStyles.Clear();
+            _root.ColumnCount = wide ? 2 : 1;
+            _root.RowCount = wide ? 3 : 5;
+            _root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, wide ? 50f : 100f));
+            if (wide) _root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            _root.RowStyles.Add(new RowStyle(SizeType.Absolute, (float)Math.Ceiling(80f * scale)));
+            _root.RowStyles.Add(new RowStyle(SizeType.Absolute, (float)Math.Ceiling(230f * scale)));
+            if (wide)
+            {
+                _root.RowStyles.Add(new RowStyle(SizeType.Absolute, (float)Math.Ceiling(224f * scale)));
+            }
+            else
+            {
+                _root.RowStyles.Add(new RowStyle(SizeType.Absolute, (float)Math.Ceiling(210f * scale)));
+                _root.RowStyles.Add(new RowStyle(SizeType.Absolute, (float)Math.Ceiling(180f * scale)));
+                _root.RowStyles.Add(new RowStyle(SizeType.Absolute, (float)Math.Ceiling(224f * scale)));
+            }
+
+            _root.SetCellPosition(_batteryCard, new TableLayoutPanelCellPosition(0, 0));
+            _root.SetColumnSpan(_batteryCard, wide ? 2 : 1);
+            _root.SetCellPosition(_chargeCard, new TableLayoutPanelCellPosition(0, 1));
+            if (wide)
+            {
+                _root.SetCellPosition(_scheduleCard, new TableLayoutPanelCellPosition(1, 1));
+                _root.SetCellPosition(_notificationsCard, new TableLayoutPanelCellPosition(0, 2));
+                _root.SetCellPosition(_interfaceCard, new TableLayoutPanelCellPosition(1, 2));
+            }
+            else
+            {
+                _root.SetCellPosition(_scheduleCard, new TableLayoutPanelCellPosition(0, 2));
+                _root.SetCellPosition(_notificationsCard, new TableLayoutPanelCellPosition(0, 3));
+                _root.SetCellPosition(_interfaceCard, new TableLayoutPanelCellPosition(0, 4));
+            }
+
+            _root.Width = targetWidth;
+            _root.Height = targetHeight;
+            _root.ResumeLayout(true);
+            ResizeScheduleColumns();
+            _wideLayout = wide;
+            _layoutInitialized = true;
         }
 
         private Control BuildChargeCard()
@@ -379,6 +515,7 @@ namespace BatteryGuardTray
             var layout = new TableLayoutPanel();
             layout.Dock = DockStyle.Fill;
             layout.ColumnCount = 1;
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
             if (!_canControl)
             {
                 layout.RowCount = 1;
@@ -408,11 +545,11 @@ namespace BatteryGuardTray
             }
 
             layout.RowCount = 5;
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 66f));
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34f));
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34f));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 64f));
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));
             card.Controls.Add(layout);
 
             _limitEnabled.Text = Loc.T("Apply charge limit and resume level");
@@ -437,21 +574,23 @@ namespace BatteryGuardTray
             _ceilingValue.Maximum = 100;
             _ceilingValue.Value = 80;
             _ceilingValue.Width = 64;
+            _ceilingValue.Margin = new Padding(0);
             _ceilingValue.ValueChanged += OnCeilingValueChanged;
 
             _resumeValue.Minimum = 1;
             _resumeValue.Maximum = 95;
             _resumeValue.Value = 75;
             _resumeValue.Width = 64;
+            _resumeValue.Margin = new Padding(0);
             _resumeValue.ValueChanged += OnResumeValueChanged;
 
-            values.Controls.Add(MakeCaption(Loc.T("Charge limit")));
+            values.Controls.Add(MakeInlineCaption(Loc.T("Charge limit")));
             values.Controls.Add(_ceilingValue);
-            values.Controls.Add(MakeCaption("%"));
+            values.Controls.Add(MakeInlineCaption("%"));
             values.Controls.Add(MakeSpacer(14));
-            values.Controls.Add(MakeCaption(Loc.T("Recharge")));
+            values.Controls.Add(MakeInlineCaption(Loc.T("Recharge")));
             values.Controls.Add(_resumeValue);
-            values.Controls.Add(MakeCaption("%"));
+            values.Controls.Add(MakeInlineCaption("%"));
             layout.Controls.Add(values);
 
             var presets = new FlowLayoutPanel();
@@ -464,7 +603,7 @@ namespace BatteryGuardTray
             presets.Controls.Add(MakeChip("60 / 55", 60, 55));
             layout.Controls.Add(presets);
 
-            _floatMode.Text = Loc.T("Float mode — keep the device on charger power after limit");
+            _floatMode.Text = Loc.T("Float mode (charger power)");
             _floatMode.AutoSize = true;
             layout.Controls.Add(_floatMode);
 
@@ -479,11 +618,12 @@ namespace BatteryGuardTray
             var layout = new TableLayoutPanel();
             layout.Dock = DockStyle.Fill;
             layout.ColumnCount = 1;
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
             layout.RowCount = 4;
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30f));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34f));
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 0f));
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36f));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34f));
             card.Controls.Add(layout);
             _scheduleGrid = layout;
 
@@ -530,16 +670,19 @@ namespace BatteryGuardTray
             _scheduleAdd.Text = Loc.T("Add…");
             _scheduleAdd.Width = 84;
             _scheduleAdd.Height = 28;
+            _scheduleAdd.Margin = new Padding(0, 0, 8, 0);
             _scheduleAdd.Click += delegate { AddScheduleRule(); };
 
             _scheduleEdit.Text = Loc.T("Edit…");
             _scheduleEdit.Width = 84;
             _scheduleEdit.Height = 28;
+            _scheduleEdit.Margin = new Padding(0, 0, 8, 0);
             _scheduleEdit.Click += delegate { EditScheduleRule(); };
 
             _scheduleRemove.Text = Loc.T("Delete");
             _scheduleRemove.Width = 84;
             _scheduleRemove.Height = 28;
+            _scheduleRemove.Margin = new Padding(0);
             _scheduleRemove.Click += delegate { RemoveScheduleRule(); };
 
             var buttons = new FlowLayoutPanel();
@@ -559,10 +702,10 @@ namespace BatteryGuardTray
         {
             if (_scheduleList.Columns.Count < 3) return;
 
-            int width = _scheduleList.ClientSize.Width;
+            int width = _scheduleList.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 4;
             if (width < 160) return;
 
-            int edge = Math.Max(64, (width - 8) / 3);
+            int edge = Math.Max(64, width / 3);
             _scheduleList.Columns[0].Width = edge;
             _scheduleList.Columns[1].Width = edge;
             _scheduleList.Columns[2].Width = Math.Max(64, width - edge - edge - 4);
@@ -708,6 +851,7 @@ namespace BatteryGuardTray
             var layout = new TableLayoutPanel();
             layout.Dock = DockStyle.Fill;
             layout.ColumnCount = 1;
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
             layout.RowCount = 3;
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 33.33f));
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 33.33f));
@@ -770,14 +914,14 @@ namespace BatteryGuardTray
             var layout = new TableLayoutPanel();
             layout.Dock = DockStyle.Fill;
             layout.ColumnCount = 1;
-            layout.RowCount = 4;
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            layout.RowCount = 6;
+            for (int row = 0; row < 6; row++)
+                layout.RowStyles.Add(new RowStyle(SizeType.Absolute, row < 3 ? 33f : (row < 5 ? 27f : 29f)));
 
             _language.DropDownStyle = ComboBoxStyle.DropDownList;
             _language.Width = 190;
+            _language.Margin = new Padding(0);
             _language.Items.Add(Loc.T("Automatic (system)"));
             foreach (var language in Loc.All) _language.Items.Add(language.Name);
 
@@ -788,10 +932,27 @@ namespace BatteryGuardTray
             languageRow.Margin = new Padding(0);
             languageRow.Controls.Add(MakeCaption(Loc.T("Language")));
             languageRow.Controls.Add(_language);
-            layout.Controls.Add(languageRow);
+            layout.Controls.Add(languageRow, 0, 0);
+
+            _appearance.DropDownStyle = ComboBoxStyle.DropDownList;
+            _appearance.Width = 190;
+            _appearance.Margin = new Padding(0);
+            _appearance.Items.Add(Loc.T("Auto (system theme)"));
+            _appearance.Items.Add(Loc.T("Light theme"));
+            _appearance.Items.Add(Loc.T("Dark theme"));
+
+            var appearanceRow = new FlowLayoutPanel();
+            appearanceRow.Dock = DockStyle.Fill;
+            appearanceRow.FlowDirection = FlowDirection.LeftToRight; // the form mirrors the row in RTL
+            appearanceRow.WrapContents = false;
+            appearanceRow.Margin = new Padding(0);
+            appearanceRow.Controls.Add(MakeCaption(Loc.T("Appearance")));
+            appearanceRow.Controls.Add(_appearance);
+            layout.Controls.Add(appearanceRow, 0, 1);
 
             _direction.DropDownStyle = ComboBoxStyle.DropDownList;
             _direction.Width = 190;
+            _direction.Margin = new Padding(0);
             _direction.Items.Add(Loc.T("Automatic (system)"));
             _direction.Items.Add(Loc.T("Right to left (RTL)"));
             _direction.Items.Add(Loc.T("Left to right (LTR)"));
@@ -803,15 +964,26 @@ namespace BatteryGuardTray
             directionRow.Margin = new Padding(0);
             directionRow.Controls.Add(MakeCaption(Loc.T("Interface direction")));
             directionRow.Controls.Add(_direction);
-            layout.Controls.Add(directionRow);
+            layout.Controls.Add(directionRow, 0, 2);
 
             _showCeiling.Text = Loc.T("Show the limit number on the icon");
             _showCeiling.AutoSize = true;
-            layout.Controls.Add(_showCeiling);
+            _showCeiling.Margin = new Padding(0);
+            layout.Controls.Add(_showCeiling, 0, 3);
 
             _notifications.Text = Loc.T("Enable system notifications");
             _notifications.AutoSize = true;
-            layout.Controls.Add(_notifications);
+            _notifications.Margin = new Padding(0);
+            layout.Controls.Add(_notifications, 0, 4);
+
+            _versionLabel.Name = "SettingsVersion";
+            _versionLabel.AutoSize = false;
+            _versionLabel.Margin = new Padding(0);
+            _versionLabel.Dock = DockStyle.Fill;
+            _versionLabel.Font = new Font("Segoe UI", 8.5f);
+            _versionLabel.TextAlign = UiSettings.Rtl ? ContentAlignment.MiddleRight : ContentAlignment.MiddleLeft;
+            _versionLabel.Text = Loc.F("Installed version {0}", Program.InstalledVersion);
+            layout.Controls.Add(_versionLabel, 0, 5);
 
             card.Controls.Add(layout);
             return card;
@@ -850,7 +1022,7 @@ namespace BatteryGuardTray
 
             _footerHint.Text = Loc.T("Changes apply immediately when saved.");
             _footerHint.AutoSize = true;
-            _footerHint.MaximumSize = new Size(260, 0);
+            _footerHint.MaximumSize = new Size(360, 0);
             _footerHint.Margin = new Padding(14, 10, 0, 0);
 
             buttons.Controls.Add(_saveButton);
@@ -883,8 +1055,9 @@ namespace BatteryGuardTray
         {
             var button = new Button();
             button.Text = text;
-            button.AutoSize = true;
-            button.Height = 26;
+            button.AutoSize = false;
+            button.Width = 84;
+            button.Height = 28;
             button.Margin = new Padding(0, 0, 8, 0);
             button.FlatStyle = FlatStyle.Flat;
             button.Click += delegate
@@ -907,6 +1080,13 @@ namespace BatteryGuardTray
             label.Text = text;
             label.AutoSize = true;
             label.Margin = new Padding(0, 9, 6, 0);
+            return label;
+        }
+
+        private static Label MakeInlineCaption(string text)
+        {
+            var label = MakeCaption(text);
+            label.Margin = new Padding(0, 0, 6, 0);
             return label;
         }
 
@@ -1026,6 +1206,8 @@ namespace BatteryGuardTray
                 if (string.Equals(Loc.All[index].Code, UiSettings.Language, StringComparison.OrdinalIgnoreCase))
                     _language.SelectedIndex = index + 1;
 
+            _appearance.SelectedIndex = ThemeSettings.Mode == ThemeMode.Dark ? 2
+                : (ThemeSettings.Mode == ThemeMode.Light ? 1 : 0);
             _direction.SelectedIndex = string.Equals(UiSettings.Direction, "rtl", StringComparison.OrdinalIgnoreCase) ? 1
                 : (string.Equals(UiSettings.Direction, "ltr", StringComparison.OrdinalIgnoreCase) ? 2 : 0);
             _showCeiling.Checked = UiSettings.ShowCeiling;
@@ -1129,6 +1311,10 @@ namespace BatteryGuardTray
             UiSettings.Notifications = _notifications.Checked;
             UiSettings.Save();
 
+            ThemeMode appearance = _appearance.SelectedIndex == 2 ? ThemeMode.Dark
+                : (_appearance.SelectedIndex == 1 ? ThemeMode.Light : ThemeMode.Auto);
+            if (ThemeSettings.Mode != appearance) ThemeSettings.SetMode(appearance);
+
             config.Save(_configPath);
             DialogResult = DialogResult.OK;
             Close();
@@ -1141,6 +1327,7 @@ namespace BatteryGuardTray
             bool dark = ThemeSettings.MenuDark;
             _footerHint.ForeColor = UiTheme.Muted(dark);
             _batteryInfo.ForeColor = UiTheme.Ink(dark);
+            _versionLabel.ForeColor = UiTheme.Muted(dark);
             UiTheme.Primary(_saveButton, dark);
             RefreshScheduleState();
         }
@@ -1185,8 +1372,8 @@ namespace BatteryGuardTray
 
             _text.Multiline = true;
             _text.ReadOnly = true;
-            _text.ScrollBars = ScrollBars.Both;
-            _text.WordWrap = false;
+            _text.ScrollBars = ScrollBars.Vertical;
+            _text.WordWrap = true;
             _text.Dock = DockStyle.Fill;
             _text.BorderStyle = BorderStyle.FixedSingle;
             _text.Font = new Font("Consolas", 9f);
@@ -1224,8 +1411,11 @@ namespace BatteryGuardTray
             export.FlatStyle = FlatStyle.Flat;
             export.Click += delegate { ExportLog(); };
 
-            _status.AutoSize = true;
-            _status.MaximumSize = new Size(360, 0);
+            _status.AutoSize = false;
+            _status.Width = 360;
+            _status.Height = 24;
+            _status.AutoEllipsis = true;
+            _status.TextAlign = UiSettings.Rtl ? ContentAlignment.MiddleRight : ContentAlignment.MiddleLeft;
             _status.Margin = new Padding(14, 9, 0, 0);
             _status.Text = string.Empty;
 
@@ -1263,6 +1453,13 @@ namespace BatteryGuardTray
             _status.ForeColor = UiTheme.Muted(dark);
 
             LoadLines();
+            UiLayout.Fit(this);
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            UiLayoutRuntime.EnsureDpiScale(this);
             UiLayout.Fit(this);
         }
 

@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · Segera isi daya",
   "{0}% · You can disconnect the charger": "{0}% · Anda dapat melepaskan pengisi daya",
   "°C": "°C",
-  "Monitoring only": "Pemantauan saja"
+  "Monitoring only": "Pemantauan saja",
+  "Installed version {0}": "Installed version {0}"
 }

@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · 充电很快",
   "{0}% · You can disconnect the charger": "{0}% · 您可以断开充电器",
   "°C": "℃",
-  "Monitoring only": "仅监控"
+  "Monitoring only": "仅监控",
+  "Installed version {0}": "Installed version {0}"
 }

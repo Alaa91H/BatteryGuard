@@ -43,6 +43,7 @@ namespace BatteryGuardTray
     {
         public ControllerResultStatus Status;
         public ChargeMode Observed = ChargeMode.Unsupported;
+        public int ObservedPercent = -1;
         public string Detail = "";
 
         public bool Ok { get { return Status == ControllerResultStatus.Success; } }
@@ -50,6 +51,11 @@ namespace BatteryGuardTray
         public static ControllerResult Success(ChargeMode observed)
         {
             return new ControllerResult { Status = ControllerResultStatus.Success, Observed = observed };
+        }
+
+        public static ControllerResult LimitSuccess(int observedPercent)
+        {
+            return new ControllerResult { Status = ControllerResultStatus.Success, ObservedPercent = observedPercent };
         }
 
         public static ControllerResult Failure(ControllerResultStatus status, string detail)
@@ -60,6 +66,7 @@ namespace BatteryGuardTray
         public override string ToString()
         {
             return Status + (Observed == ChargeMode.Unsupported ? "" : " (" + Observed + ")") +
+                (ObservedPercent < 0 ? "" : " (" + ObservedPercent.ToString(CultureInfo.InvariantCulture) + "%)") +
                 (string.IsNullOrEmpty(Detail) ? "" : ": " + Detail);
         }
     }
@@ -289,6 +296,10 @@ namespace BatteryGuardTray
         public bool Matches(DeviceFingerprint fingerprint)
         {
             if (fingerprint == null) return false;
+            if (string.IsNullOrEmpty(Interface)) return false;
+            if (ManufacturerPatterns == null || ManufacturerPatterns.Length == 0) return false;
+            if (ProductPatterns == null || ProductPatterns.Length == 0) return false;
+            if (BiosPatterns == null || BiosPatterns.Length == 0) return false;
             if (!AnyMatch(ManufacturerPatterns, fingerprint.Manufacturer)) return false;
             if (!AnyMatch(ProductPatterns, fingerprint.Product)) return false;
             if (!AnyMatch(BiosPatterns, fingerprint.BiosVersion)) return false;
@@ -472,6 +483,7 @@ namespace BatteryGuardTray
         DeviceProfile Profile { get; }
         ControllerResult RequestInhibit(bool onAc);
         ControllerResult RequestAuto(bool onAc);
+        ControllerResult RequestLimit(int percent);
     }
 
     internal sealed class HpControllerProvider : IControllerProvider
@@ -570,6 +582,63 @@ namespace BatteryGuardTray
             try { rollback(); }
             catch (Exception ex) { Program.Log("write rollback error: " + ex.Message); }
         }
+
+        // Numeric gate for a future verified FixedThreshold/StartStop provider.
+        // No production provider enables it in this build; the contract is
+        // tested with synthetic delegates so a future writer cannot bypass the
+        // range, AC, read-back or rollback rules.
+        public static ControllerResult ApplyLimit(ControllerCapabilities capabilities, bool onAc, int percent,
+            Func<bool> write, Func<int> read, Action rollback)
+        {
+            if (capabilities == null || !capabilities.IsThreshold)
+                return ControllerResult.Failure(ControllerResultStatus.Unsupported, "no threshold capability");
+            if (!capabilities.Allows(percent))
+                return ControllerResult.Failure(ControllerResultStatus.Rejected,
+                    "limit outside " + capabilities.MinPercent.ToString(CultureInfo.InvariantCulture) + "-" +
+                    capabilities.MaxPercent.ToString(CultureInfo.InvariantCulture) + "%");
+            if (!onAc)
+                return ControllerResult.Failure(ControllerResultStatus.NotOnAc, "charger is not connected");
+            if (!capabilities.CanRestoreAuto)
+                return ControllerResult.Failure(ControllerResultStatus.Unsupported, "auto restore is not supported");
+
+            bool applied;
+            try
+            {
+                applied = write();
+            }
+            catch (Exception ex)
+            {
+                return ControllerResult.Failure(ControllerResultStatus.WriteFailed, ex.Message);
+            }
+
+            if (!applied)
+                return ControllerResult.Failure(ControllerResultStatus.WriteFailed, "write was rejected");
+
+            Thread.Sleep(400);
+
+            int observed;
+            try
+            {
+                observed = read();
+            }
+            catch (Exception ex)
+            {
+                Rollback(rollback);
+                return ControllerResult.Failure(ControllerResultStatus.WriteFailed, "read-back failed: " + ex.Message);
+            }
+
+            if (observed != percent)
+            {
+                Rollback(rollback);
+                ControllerResult mismatch = ControllerResult.Failure(ControllerResultStatus.ReadbackMismatch,
+                    "expected " + percent.ToString(CultureInfo.InvariantCulture) + "%, read " +
+                    observed.ToString(CultureInfo.InvariantCulture) + "%");
+                mismatch.ObservedPercent = observed;
+                return mismatch;
+            }
+
+            return ControllerResult.LimitSuccess(observed);
+        }
     }
 
     internal sealed class WmiCall
@@ -622,6 +691,12 @@ namespace BatteryGuardTray
 
         public HpBiosWmiGateway()
         {
+            // Fail-closed test seam for the missing-provider contract. It can
+            // only deny a provider; it never enables or changes a write.
+            if (string.Equals(Environment.GetEnvironmentVariable("BATTERYGUARD_TEST_WMI"),
+                "missing", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("simulated missing hpqBIntM provider");
+
             _scope = new ManagementScope(@"\\.\root\wmi");
             _scope.Connect();
             _bios = GetBiosInstance(_scope);

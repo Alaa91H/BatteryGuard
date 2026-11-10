@@ -14,7 +14,7 @@ install_gpu() {
     install -m 0755 -d /usr/share/keyrings
     if ! fetch https://nvidia.github.io/libnvidia-container/gpgkey |
         gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg 2>/dev/null; then
-        warn "could not fetch the NVIDIA signing key"
+        warn "could not fetch the NVIDIA repository key"
         return 0
     fi
 

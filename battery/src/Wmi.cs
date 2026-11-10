@@ -89,6 +89,7 @@ namespace BatteryGuardTray
         public bool SetInhibit() { return false; }
         public ControllerResult RequestAuto(bool onAc) { return ControllerResult.Failure(ControllerResultStatus.Unsupported, "monitoring only"); }
         public ControllerResult RequestInhibit(bool onAc) { return ControllerResult.Failure(ControllerResultStatus.Unsupported, "monitoring only"); }
+        public ControllerResult RequestLimit(int percent) { return ControllerResult.Failure(ControllerResultStatus.Unsupported, "monitoring only"); }
         public void Dispose() { }
     }
 
@@ -137,6 +138,19 @@ namespace BatteryGuardTray
 
         public bool WriteMode(uint commandType, byte value, out uint code)
         {
+            code = 0;
+            bool commandAllowed = commandType == TypeChargeMode || commandType == TypeChargeControl;
+            // 0x1f is only the auto fallback; inhibit is allowed only on 0x2b.
+            bool valueAllowed = value == 0x00 ||
+                (value == 0x05 && commandType == TypeChargeMode);
+            if (!commandAllowed || !valueAllowed)
+            {
+                Program.Log("charge write blocked before transport: type=0x" +
+                    commandType.ToString("x2", CultureInfo.InvariantCulture) + " value=0x" +
+                    value.ToString("x2", CultureInfo.InvariantCulture));
+                return false;
+            }
+
             WmiCallResult result = _gateway.Invoke(CommandWrite, commandType,
                 new byte[] { 0x00, value, 0x00, 0x00 });
             code = result.ReturnCode;
@@ -171,6 +185,12 @@ namespace BatteryGuardTray
         public ControllerResult RequestAuto(bool onAc)
         {
             return WriteGuard.Apply(Capabilities, onAc, ChargeMode.Auto, SetAuto, ReadMode, null);
+        }
+
+        public ControllerResult RequestLimit(int percent)
+        {
+            return ControllerResult.Failure(ControllerResultStatus.Unsupported,
+                "HP exposes auto/inhibit modes, not a percentage limit");
         }
 
         public void Dispose()

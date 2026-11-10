@@ -23,9 +23,10 @@ if (-not (Test-Path $compiler)) {
 $sources = @(Get-ChildItem -Path (Join-Path $root 'src') -Filter '*.cs' | Sort-Object Name | ForEach-Object { $_.FullName })
 $output = Join-Path $root 'application.exe'
 $manifest = Join-Path $root 'resources\application.manifest'
+$appConfig = Join-Path $root 'resources\application.config'
 $icon = Join-Path $root 'resources\application.ico'
 
-foreach ($file in @($sources + $manifest + $icon)) {
+foreach ($file in @($sources + $manifest + $appConfig + $icon)) {
     if (-not (Test-Path $file)) { throw "Missing build input: $file" }
 }
 
@@ -50,5 +51,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "csc failed with exit code $LASTEXITCODE"
 }
 
+Copy-Item $appConfig ($output + '.config') -Force
 $file = Get-Item $output
 'built {0} ({1:N0} bytes)' -f $file.FullName, $file.Length
+'config {0}' -f ($output + '.config')

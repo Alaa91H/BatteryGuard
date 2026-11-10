@@ -170,7 +170,7 @@ namespace BatteryGuardTray
         {
             _title = title;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
-            Padding = new Padding(14, 34, 14, 12);
+            Padding = new Padding(14, 30, 14, 8);
             Margin = new Padding(0);
         }
 

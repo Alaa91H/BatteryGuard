@@ -16,6 +16,7 @@ A separate read-only Rust core under [`../portable`](../portable/README.md) is t
 - **30 languages.** English source and fallback; a **Language** submenu above **Appearance** switches manually and refreshes immediately; Automatic follows Windows; RTL for Arabic, Urdu, Persian and Hebrew.
 - **Theme and accessibility.** Light, dark and system theme; owner-drawn menus; high-contrast battery icon rendering.
 - **Adaptive dialogs.** Settings, schedule and log windows clamp to the working area, keep their action buttons visible, scroll long content and wrap toolbars on narrow screens.
+- **Responsive Settings.** The window uses two columns at 900 px and wider and a single scrollable column below that. The language selector sits above the appearance selector, and the installed version is shown at the bottom of the interface card.
 
 ## Requirements
 
@@ -85,7 +86,7 @@ Branch CI builds a per-machine WiX MSI and a single-EXE Burn bootstrapper that i
 - an **Uninstall BatteryGuard** Start Menu shortcut that runs `msiexec /x`.
 - a standard installer wizard with version display, per-machine scope, launch-after-install and an Apps & Features uninstall entry (EXE only).
 
-The workflow installs the x64 MSI and EXE, checks the payload and shortcuts, then uninstalls both. It also installs the published `v0.1.0` CLI MSI on a clean runner, upgrades it with the new EXE, verifies the old product is gone, then uninstalls. The x86 and ARM64 installers are built in the matrix but are not cross-installed on the x64 runner. The Windows x64 job also runs the hardware-independent C# suite. Authenticode signing of the tray, CLI, MSI and EXE is optional and runs only when the documented certificate secrets exist; the EXE signing path also signs the detached Burn engine. The interactive wizard and a physical clean Windows VM were not exercised. See [`../packaging/windows/Product.wxs`](../packaging/windows/Product.wxs), [`../packaging/windows/Bundle.wxs`](../packaging/windows/Bundle.wxs), [`../packaging/windows/Test-WindowsUpgrade.ps1`](../packaging/windows/Test-WindowsUpgrade.ps1) and [`../docs/RELEASE.md`](../docs/RELEASE.md). The published `v0.2.0` release includes these tray installers; `v0.1.0` remains the earlier CLI-only release.
+The workflow installs the x64 MSI and EXE, checks the payload and shortcuts, then uninstalls both. It also installs the published `v0.1.0` CLI MSI on a clean runner, upgrades it with the new EXE, verifies the old product is gone, then uninstalls. The x86 and ARM64 installers are built in the matrix but are not cross-installed on the x64 runner. The Windows x64 job also runs the hardware-independent C# suite. The interactive wizard and a physical clean Windows VM were not exercised. See [`../packaging/windows/Product.wxs`](../packaging/windows/Product.wxs), [`../packaging/windows/Bundle.wxs`](../packaging/windows/Bundle.wxs), [`../packaging/windows/Test-WindowsUpgrade.ps1`](../packaging/windows/Test-WindowsUpgrade.ps1) and [`../docs/RELEASE.md`](../docs/RELEASE.md). The published `v0.3.0` release includes these tray installers; `v0.2.0` remains the earlier tray-installer release and `v0.1.0` is the CLI-only release.
 
 ## Run
 
@@ -93,7 +94,7 @@ The workflow installs the x64 MSI and EXE, checks the payload and shortcuts, the
 powershell -NoProfile -ExecutionPolicy Bypass -File battery/scripts/start.ps1
 ```
 
-`start.ps1` relaunches itself elevated unless `-NoElevate` is supplied. It prefers `application.exe`; when Smart App Control blocks unsigned executables it compiles the same `src/*.cs` files in memory inside the signed PowerShell host.
+`start.ps1` relaunches itself elevated unless `-NoElevate` is supplied. It prefers `application.exe`; when Smart App Control blocks the executable it compiles the same `src/*.cs` files in memory inside the system PowerShell host.
 
 The command-line interface is available separately:
 
@@ -145,11 +146,11 @@ Settings are read at startup and after a save; a `WM_REFRESH` message makes the 
 
 | Window | Design size | Minimum | Notes |
 | --- | --- | --- | --- |
-| Settings | 780×1000 | 620×480 | Resizable; scrolling content, pinned Save/Cancel/Test footer, 660 px minimum content width with horizontal fallback. |
-| Schedule window | 500×400 | 440×320 | Fixed dialog; scrolling content, pinned buttons, narrows to a 360 px layout. |
+| Settings | 980×620 | 720×480 | Resizable; two-column layout at 900 px and wider, one scrollable column below; pinned Save/Cancel/Test footer; language, appearance and installed version in the interface card. |
+| Schedule window | 500×350 | 440×350 | Fixed dialog; 56 px pinned button bar, scrolling content, narrows to a 360 px layout. |
 | Activity log | 760×560 | 520×360 | Resizable; the action bar wraps to a second row on narrow windows. |
 
-All three use `AutoScaleMode.Dpi`. `UiLayout.Fit` caps each window to the screen working area minus 32 px and lowers `MinimumSize` when the display cannot fit it, so a small screen scrolls instead of clipping the title bar or action buttons.
+All three use `AutoScaleMode.Dpi`. `UiLayout.Fit` caps each window to the screen working area minus 32 px and lowers `MinimumSize` when the display cannot fit it, so a small screen scrolls instead of clipping the title bar or action buttons. `Test-Layout` builds the same dialogs at 100%, 125% and 150% in English and Arabic and checks every nested control; at 150% the Settings content scrolls vertically and has no horizontal scrollbar.
 
 ## Languages
 
@@ -197,7 +198,7 @@ monitoring-only controller before any provider or WMI gateway, the log shows
 request is refused. The real HP mode read `Auto` before and after each run, and
 no tray or logon task remained.
 
-All tests compile every `src/*.cs` module. `Test-FloatLogic` checks the 13 charge/float decisions without touching hardware. `Test-ControllerFoundation` drives `HpBios` through a simulated WMI gateway and checks profile matching, capability gates, unplugged inhibition, access denial, empty/mismatched read-back and rollback. `Test-UiPolish` temporarily writes `interface.ini` with `language=en` and restores it. `Test-Layout` resizes the dialogs from 780×601 down to 380×300 and checks pinned action bars, scrolling, combo text and the 360 px rule layout. `Test-TrayMenu` builds the native popup menu with a synthetic charging state and checks that the charge time appears next to the active limit, disappears at the limit, and stays separate under standard charging. It also verifies that the Language submenu sits immediately above Appearance, that a manual language choice is persisted, and that an injected Acer candidate controller shows **Monitoring only** with no threshold menu item; its Settings form also attaches no slider or limit checkbox. A synthetic fixed-80% writable profile verifies the capability-only Settings card and the absence of a generic slider; no non-HP provider is enabled. `Test-LanguageAuto` changes the process UI culture and confirms that `language=auto` still follows the Windows user UI language. `Test-AppIdentity` creates or replaces the current user's BatteryGuard Start Menu shortcut and verifies its AUMID, target, arguments and description.
+All tests compile every `src/*.cs` module. `Test-FloatLogic` checks the 13 charge/float decisions without touching hardware. `Test-ControllerFoundation` drives `HpBios` through a simulated WMI gateway and checks profile matching, capability gates, unplugged inhibition, access denial, empty/mismatched read-back and rollback. `Test-UiPolish` temporarily writes `interface.ini` with `language=en` and restores it. `Test-Layout` resizes the dialogs from 980×620 down to 380×350 and checks the two-column/stacked Settings switch, the pinned footer, no horizontal scroll, the language-above-appearance order, the installed version, combo text and the 360 px rule layout with fully visible buttons. It also simulates 100%/125%/150% DPI in English and Arabic with scaled bounds and fonts; the 222-check matrix verifies every nested control, the footer actions, cards, rule note/buttons and log bar/status. `Test-TrayMenu` builds the native popup menu with a synthetic charging state and checks that the charge time appears next to the active limit, disappears at the limit, and stays separate under standard charging. It also verifies that the Language submenu sits immediately above Appearance, that a manual language choice is persisted, and that an injected Acer candidate controller shows **Monitoring only** with no threshold menu item; its Settings form also attaches no slider or limit checkbox. A synthetic fixed-80% writable profile verifies the capability-only Settings card and the absence of a generic slider; no non-HP provider is enabled. `Test-LanguageAuto` changes the process UI culture and confirms that `language=auto` still follows the Windows user UI language. `Test-AppIdentity` creates or replaces the current user's BatteryGuard Start Menu shortcut and verifies its AUMID, target, arguments and description.
 
 Visual review (no hardware, WMI writes or elevation):
 
@@ -219,7 +220,7 @@ Hardware/elevation-dependent checks:
 
 - The 30 catalogs are machine-generated from the curated English source with targeted glossary corrections. Native-speaker review is still advisable, especially for technical terms and long sentences.
 - The settings window cannot re-layout itself in a new language until it is reopened; the tray menu and tooltip update after the save/refresh cycle.
-- The adaptive-layout pass re-inspected Settings in Arabic light/dark and schedule/log in Arabic light. English and dark schedule/log captures were regenerated but not re-inspected. The native tray popup menu could not be captured from the test host; its RTL flags are set in code but its pixels were not reviewed. 125%/150% DPI and non-HP hardware were not exercised.
+- The adaptive-layout pass re-inspected Settings in Arabic light/dark and schedule/log in Arabic light. English and dark schedule/log captures were regenerated but not re-inspected. The native tray popup menu could not be captured from the test host; its RTL flags are set in code but its pixels were not reviewed. 125%/150% are covered by the layout simulation, not by native screenshots; non-HP hardware was not exercised.
 - The notification identity was verified through the Start Menu shortcut and its `System.AppUserModel.ID`. A real notification banner was requested from the running tray, but the captured desktop was occupied by browser notifications, so the final Windows label was not visually confirmed. The current automated suite does not open or inspect the banner.
 - The 30 catalogs received a terminology/consistency pass for charge, health and schedule terms; native-speaker review is still advisable.
 - HP's WMI interface is undocumented and model-specific. Unsupported models fail closed to monitoring rather than guessing a mode.

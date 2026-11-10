@@ -335,6 +335,35 @@ try {
     finally {
         $fixedSettings.Dispose()
     }
+
+    # Future start-stop provider: range label, never the generic 50-100% slider.
+    $startStopCapabilities = $capabilityType.GetMethod('StartStopThreshold', [System.Reflection.BindingFlags]'Public,Static').Invoke($null, @(50, 100, 80))
+    $startStopProfile = [Activator]::CreateInstance($profileType)
+    $profileType.GetField('Vendor').SetValue($startStopProfile, 'Synthetic start-stop')
+    $profileType.GetField('ManufacturerPatterns').SetValue($startStopProfile, [string[]]@('Synthetic*'))
+    $profileType.GetField('ProductPatterns').SetValue($startStopProfile, [string[]]@('*'))
+    $profileType.GetField('BiosPatterns').SetValue($startStopProfile, [string[]]@('*'))
+    $profileType.GetField('Interface').SetValue($startStopProfile, 'synthetic')
+    $profileType.GetField('Capabilities').SetValue($startStopProfile, $startStopCapabilities)
+    $profileType.GetField('Status').SetValue($startStopProfile, [Enum]::Parse($supportStatusType, 'LabVerified'))
+    $profileType.GetField('Evidence').SetValue($startStopProfile, 'synthetic test only')
+    $startStopSettings = $fixedCtor.Invoke([object[]]@([string](Join-Path $tempHome 'start-stop-settings.json'), $settingsNotify, $startStopProfile))
+    try {
+        $startStopSlider = $settingsType.GetField('_slider', $flags).GetValue($startStopSettings)
+        $startStopLimit = $settingsType.GetField('_limitEnabled', $flags).GetValue($startStopSettings)
+        $startStopFull = [bool]$settingsType.GetField('_fullControl', $flags).GetValue($startStopSettings)
+        $startStopLabel = Find-NamedControl $startStopSettings 'ChargeCapabilityOnly'
+        '--- synthetic start-stop capability ---'
+        '  label: ' + $(if ($startStopLabel) { $startStopLabel.Text } else { '<missing>' })
+        Check 'start-stop profile is writable in the synthetic test' ([bool]$settingsType.GetField('_canControl', $flags).GetValue($startStopSettings)) 'true'
+        Check 'start-stop profile does not get full slider' (-not $startStopFull) 'fullControl=false'
+        Check 'start-stop profile hides the generic slider' ($startStopSlider.Parent -eq $null) 'no slider parent'
+        Check 'start-stop profile hides the generic limit checkbox' ($startStopLimit.Parent -eq $null) 'no checkbox parent'
+        Check 'start-stop profile shows its actual range' ($startStopLabel -and $startStopLabel.Text -eq ('Charge limit 50%' + [char]0x2013 + '100%')) $startStopLabel.Text
+    }
+    finally {
+        $startStopSettings.Dispose()
+    }
 }
 finally {
     if ($tray) { $tray.Dispose() }

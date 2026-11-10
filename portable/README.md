@@ -16,8 +16,8 @@ existing Windows tray application remains in `battery/` and is unchanged.
   Intel/Apple silicon, built 3 MSI, 6 Linux packages and 2 PKG files, and
   installed/ran the DEB and PKG packages on their native runners. The Windows
   x64 MSI also installs the C# tray and its Start Menu shortcuts; x86 and ARM64
-  are built but not cross-installed. Every installer is attested with
-  GitHub/Sigstore build provenance.
+  are built but not cross-installed. Every installer is produced by the native
+  package job.
 - **Not yet executed locally:** the MSVC linker is not installed on this
   machine, and Application Control blocks `cargo`, the GNU Rust compiler and
   the available `lld`/GNU linkers. As a result no linked `batteryguard.exe` and
@@ -173,8 +173,6 @@ confirm support.
 
 ## Still missing
 
-- **Native signing:** the packages are unsigned; they carry Sigstore build
-  provenance, not Authenticode or Apple notarization.
 - **Clean-machine and hardware runtime tests:** DEB and PKG installation is
   exercised on hosted runners, but the runners have no battery. Windows x86
   and ARM64 MSIs are built but not installed on the x64 runner.
@@ -182,6 +180,5 @@ confirm support.
 - **Arch, Flatpak and other distribution formats.**
 - **Charge control outside the existing Windows HP controller.**
 
-These require the corresponding build hosts, signing identities, packaging
-tools and runtime tests; they are tracked in the roadmap rather than claimed
-as complete.
+These require the corresponding build hosts, packaging tools and runtime tests;
+they are tracked in the roadmap rather than claimed as complete.

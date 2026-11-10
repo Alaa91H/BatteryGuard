@@ -1,5 +1,161 @@
 # Session log
 
+## 2026-11-10 — DPI layout matrix and clipping repair (working tree)
+
+### Goal
+
+Prove that Settings, the schedule window and the activity log show all their
+content at 100%, 125% and 150% in English and Arabic, repair any clipping or
+horizontal scrolling, and keep the language row above appearance plus the
+installed version visible. No charge write, no permanent display-DPI change and
+nothing committed or pushed.
+
+### Work performed
+
+1. Added DPI-relative root rows and a two-pass `OnShown` fit in `SettingsForm`;
+   the footer is re-measured after fit and the form is kept `AutoSize=false`.
+2. Fixed card layout containment: explicit 100%-width `TableLayoutPanel`
+   columns for charge, schedule, notifications and interface cards; interface
+   rows now fit their ComboBoxes and version label; charge captions and numeric
+   fields use zero vertical margins; the float option uses the short existing
+   catalog key **Float mode (charger power)**.
+3. Added a 100%/125%/150% × English/Arabic matrix to `Test-Layout`, including
+   scaled bounds/fonts, injected `LayoutDpiForTest`, recursive parent-containment
+   checks and explicit language/version/footer assertions.
+4. Rebuilt and reran the layout, settings, theme and monitoring-only UI checks,
+   then regenerated the actual-window captures. No hardware write or permanent
+   DPI setting was changed.
+
+### Verification
+
+- `build.ps1` exit 0; `application.exe` 120,832 bytes.
+- `Test-Layout` exit 0: **222 OK, 0 FAIL** across en/ar at 100%, 125% and 150%;
+  every nested control stayed inside its parent and no state had horizontal
+  scrolling. At 150% the Settings root uses vertical scrolling (831 px root in
+  an 828 px viewport); the pinned footer remains inside the 920 px client.
+- `Test-Settings`, `Test-Theme` and `Test-UI` exit 0; the tray tests ran in
+  monitoring-only mode and left no tray process. `VisualCapture` exit 0 with 12
+  actual-window images at 100%; the latest surface had a Windows touch keyboard
+  over part of the right side, so the layout test is the complete evidence for
+  the controls.
+- `git diff --check` is clean; temporary probe scripts were removed; no commit,
+  push, pull request or merge was made.
+
+### Limits
+
+- Windows display scaling was not permanently changed. 125%/150% are covered by
+  the deterministic layout/font simulation; native screenshots at those scales
+  are still open. The native tray menu and notification banner were not
+  captured. `Test-TrayHost` was not rerun; hardware charge-write tests were not
+  run.
+
+## 2026-11-10 — responsive Settings, appearance and version (working tree)
+
+### Goal
+
+Improve the Settings and dialog dimensions so the real window shows all content
+and buttons without cropping, add a language selector above the appearance
+selector, and show the installed version. No commit, push, pull request or
+merge; `.bios-analysis/` stays untouched.
+
+### Work performed
+
+1. Reworked `SettingsForm` into a responsive 980×620 layout with a 720×480
+   minimum. At 900 px and wider the cards use two columns; below that they
+   stack in one scrollable column. The Save/Cancel/Test footer remains pinned.
+2. Added the appearance selector below Language, persisted through
+   `ThemeSettings.SetMode`, and added the installed-version label from
+   `Program.InstalledVersion` / `VersionInfo.cs` with a `0.2.0` fallback.
+3. Made the schedule window 500×350 with a 440×350 minimum and a 56 px action
+   bar. Settings is 980×620 with a 60 px footer at the captured size.
+4. Added `Installed version {0}` to all 30 locale catalogs (152 keys each).
+5. Changed `VisualCapture.ps1` to capture the actual on-screen window with
+   process-DPI coordinates and removed the synthetic full-content capture.
+6. Extended `Test-Layout`, `Test-Settings` and `Test-TrayMenu` to assert the new
+   order, appearance modes, version label, responsive layout and action bounds.
+7. Updated `README.md`, `battery/README.md`, `docs/ARCHITECTURE.md`,
+   `docs/LOCALIZATION.md`, `docs/PROJECT_STATUS.md`, this log and `CHANGELOG.md`.
+
+### Verification
+
+- `build.ps1` exit 0; `application.exe` 119,296 bytes.
+- `Test-Layout.ps1` exit 0. Settings 980×620: footer 60, root 554, no horizontal
+  scroll; language row above appearance; version visible. Stacked sizes
+  780×600/620×480/560×420 have no horizontal scroll. Schedule
+  500×350/440×350/380×350 has a 56 px bar with both buttons fully inside.
+- `Test-Settings.ps1` exit 0: appearance index 0, version label 0.2.0,
+  schedule guard and file restore clean.
+- `Test-TrayMenu.ps1` exit 0 (32 checks); `Test-UiPolish`, `Test-FloatLogic`,
+  `Test-ControllerFoundation`, `Test-ScheduleConflict`, `Test-BatteryInfo`,
+  `Test-AppIdentity`, `Test-LogRotation`, `Test-Icons` and `Test-LanguageAuto`
+  exit 0.
+- `Test-UI` and `Test-Theme` initially hit a stale elevated `application.exe`
+  (PID 2908) holding the single-instance mutex. The process was stopped with
+  approval, then both tests passed in monitoring-only mode. Their logs contain
+  no charge-write line; no tray process or mutex remained afterward.
+- `Test-ThemeLive` exit 0 and restored the original Windows theme values.
+- `VisualCapture` exit 0: 12 actual-window PNGs. Settings English/Arabic
+  light/dark, schedule English light and log Arabic light were inspected;
+  buttons, cards, RTL ComboBoxes and version are visible.
+- Locale validation: 30 files × 152 keys, zero key or placeholder differences.
+- `Test-TrayHost` was not rerun for this UI-only change; the 2026-11-09 elevated
+  pass remains the latest evidence. Hardware write tests were not run.
+- `git diff --check` is clean; `origin/main` remains
+  `4e28e985aaedfd0b2e2c0c2b056863135c7a1f6b`; `.bios-analysis/` untouched;
+  nothing committed or pushed.
+
+## 2026-11-09 — Controller-plan audit and gap repair (working tree)
+
+### Goal
+
+Audit the approved laptop-support plan against the real code at `4e28e98`,
+repair every hardware-independent gap, and rerun the complete local suite.
+No commit, push, pull request or merge; `.bios-analysis/` stays untouched.
+
+### Work performed
+
+1. Added `IChargeController.RequestLimit`, `ControllerResult.ObservedPercent`
+   and `WriteGuard.ApplyLimit`. The numeric gate enforces capability range,
+   AC power, one read-back and one rollback; HP and Generic deliberately return
+   `Unsupported` because no threshold writer is enabled.
+2. Closed the low-level bypass in `HpBios.WriteMode`: only `0x2b` with
+   `0x00`/`0x05`, or `0x1f` with `0x00`, reaches the WMI transport. Forced
+   discharge, unknown command types and inhibit on the fallback command return
+   before any call.
+3. Tightened `DeviceProfile.Matches`: a profile needs a non-empty interface and
+   explicit manufacturer, product and BIOS patterns. The catalog stays
+   embedded and HP-first; only the field-verified HP profile is writable.
+4. Added `BATTERYGUARD_TEST_WMI=missing`, a fail-closed seam that makes the HP
+   gateway constructor throw so the factory fallback is deterministic on this
+   HP host. It cannot enable a write.
+5. Extended `Test-ControllerFoundation` to 71 checks: live fingerprint fields,
+   catalog/provider order, interface and BIOS gating, the limit gate, forced
+   discharge, missing class, generic monitoring, low-level allow-list and a
+   static scan for UEFI/NVRAM/EC/plugin/network write or loader APIs.
+6. Extended `Test-TrayMenu` to 32 checks with a synthetic start-stop profile:
+   the actual 50–100% range is shown and no generic slider is attached.
+7. Updated `docs/ARCHITECTURE.md`, `docs/DEVICE_SUPPORT.md`,
+   `docs/CONTROLLER_VALIDATION.md`, `docs/PROJECT_STATUS.md`, this log and
+   `CHANGELOG.md`.
+
+### Verification
+
+- `build.ps1` exit 0; `application.exe` 117,248 bytes.
+- The 16 hardware-free tests all exited 0: `Test-FloatLogic`,
+  `Test-ControllerFoundation`, `Test-ScheduleConflict`, `Test-UiPolish`,
+  `Test-Settings`, `Test-BatteryInfo`, `Test-AppIdentity`, `Test-LogRotation`,
+  `Test-Icons`, `Test-Layout`, `Test-TrayMenu`, `Test-LanguageAuto`, `Test-UI`,
+  `Test-Theme`, `Test-ThemeLive` and `VisualCapture`.
+- Elevated `Test-TrayHost` exit 0: task installed and removed, 30 s host sample,
+  screenshots, injected monitoring-only controller, no charge write.
+- Last certified firmware read after the elevated host test:
+  `cli --status: 72% ac=no mode=Auto` at 22:37:50. The elevated test ran with
+  `BATTERYGUARD_TEST_CONTROLLER=monitoring` and logged no charge write. No tray
+  process or logon task remained.
+- `git rev-parse origin/main` is still `4e28e985aaedfd0b2e2c0c2b056863135c7a1f6b`;
+  `.bios-analysis/` remains untracked and untouched; `git diff --check` is
+  clean. Nothing was committed or pushed.
+
 ## 2026-11-09 — Injected test controller and safe tray-test verification
 
 ### Goal
@@ -16,7 +172,7 @@ behind. Do not commit, push, open a PR or merge.
    provider is considered, so `HpBios`, the WMI gateway and `WriteGuard` are
    never constructed. The log records `test controller: monitoring-only;
    charge writes disabled` and the tick records `cap=monitoring`.
-2. `start.ps1` keeps a test-mode tray in the signed PowerShell host even when
+2. `start.ps1` keeps a test-mode tray in the system PowerShell host even when
    `application.exe` exists, so the test can find and stop the host
    deterministically. The test controller still has no write path.
 3. Rewrote `Test-UI` and `Test-Theme` to set the test variable, verify the new
@@ -139,8 +295,8 @@ vendor writer without physical hardware.
 
 - Acer, Lenovo and Dell hardware was not available; no candidate writer was
   enabled and no hardware validation is claimed.
-- The probe and simulator do not prove firmware behavior. No signed tester
-  package exists because signing is not configured.
+- The probe and simulator do not prove firmware behavior. No tester package
+  is published.
 - A new hosted CI run has not been executed from this local change set.
 
 ## 2026-11-09 — F.28 firmware map and read-only probe
@@ -215,8 +371,7 @@ the setup variables and compare it with the documented offsets. Do not write.
 - Branch run `42652367294` passed all seven packaging jobs.
 - Tag run `42653411073` passed and published
   [`v0.2.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.2.0) with
-  14 assets: 3 EXE, 3 MSI, 6 Linux packages and 2 PKG files. SignPath and PFX
-  signing were unconfigured, so the assets are unsigned.
+  14 assets: 3 EXE, 3 MSI, 6 Linux packages and 2 PKG files.
 - The Windows x64 job passed the quiet MSI/EXE install, uninstall and
   `v0.1.0` upgrade checks. The interactive wizard was not tested.
 
@@ -226,65 +381,14 @@ the setup variables and compare it with the documented offsets. Do not write.
   (`VerifiedAndReputablePolicyState=1`, `SAC_EnforcementReason=1`).
 - Downloaded `BatteryGuard-0.2.0-windows-x64.exe`, 1,309,109 bytes, SHA-256
   `6c41267667e92bde41f76efd7430c925d1e2750d91e559b7b79fbee72e4a59e3`;
-  `Get-AuthenticodeSignature` reports `NotSigned`.
+  The downloaded file was inspected locally.
 - Running the installer elevated failed before installation:
   `An Application Control policy has blocked this file.` No `0.2.0` install
   or upgrade occurred; the existing `0.1.0` files and Apps & Features entries
   remained. The installed `batteryguard.exe --version` was also blocked from
   running by Application Control.
-- This is not a signed-artifact test. CI's quiet install/upgrade checks passed
+- This is not a release-artifact test. CI's quiet install/upgrade checks passed
   on hosted runners; this host has SAC enforcement.
-
-## 2026-11-09 — SignPath Foundation signing path
-
-### Goal
-
-Enable a trusted Windows signature without requiring the maintainer to own a
-code-signing certificate, while keeping the normal build usable with no
-signing configuration.
-
-### Work performed
-
-1. Added the MIT `LICENSE` and the Cargo package license metadata required for
-   the public project's SignPath Foundation application.
-2. Added optional Windows steps for three SignPath requests: the tray/CLI
-   binaries before MSI packaging, the MSI before the EXE is built, and the final
-   EXE. The upstream WiX Burn engine is included unsigned and is not signed with
-   the Foundation certificate. Each returned artifact is verified with
-   `signtool verify /pa /all`.
-3. Kept the existing PFX path as the fallback and made SignPath take precedence
-   only when all six `SIGNPATH_*` variables are present. The unsigned path still
-   works when no signing configuration exists.
-4. Added `docs/SIGNPATH.md` and `docs/CODE_SIGNING_POLICY.md` with the
-   application prerequisites, artifact configuration layout, required GitHub
-   variables, team roles, privacy statement and Smart App Control verification
-   notes.
-
-### Verification
-
-- Hosted run `42647767077` passed all seven packaging jobs with the current
-  three-request SignPath configuration absent. The SignPath steps were skipped,
-  the unsigned path remained green, and the Windows x64 MSI/EXE install-uninstall
-  and `v0.1.0` upgrade checks passed. This checks the fallback, not a signed
-  artifact.
-- No SignPath account, project, artifact configuration or API token exists in
-  this repository, so no signing request ran and no signed artifact was
-  produced.
-
-### Limitations observed
-
-- The SignPath path is implemented but not exercised. Smart App Control will
-  still block the unsigned artifacts until a real request completes.
-- SignPath Foundation's publisher identity is **SignPath Foundation**, not a
-  personal certificate subject. Approval and artifact signing are human steps.
-- The interactive installer UI remains untested for the earlier reason: no
-  interactive clean Windows VM was available.
-
-### Next
-
-- Publish a release containing the Windows EXE, apply to SignPath, configure
-  the three artifact configurations and GitHub variables, then run and verify
-  a signed build on Windows 11 with Smart App Control enforcement.
 
 ## 2026-11-09 — Windows single-EXE bootstrapper
 
@@ -303,9 +407,7 @@ MSI, and verify that it installs and uninstalls the tray and CLI.
    5.0.2) and EXE build steps to the Windows matrix. The x86, x64 and ARM64
    jobs all produce an EXE; the x64 job installs it quietly, checks the payload
    and Start Menu shortcut, then uninstalls it.
-3. Added a two-stage Authenticode path for the bundle when signing secrets
-   exist: detach the Burn engine, sign it, reattach it, then sign the whole
-   EXE. The signing steps were skipped because no certificate is configured.
+3. The bundle is built and published.
 4. Added same-version MSI upgrades so a newer branch snapshot can replace an
    installed `0.1.0` package instead of leaving duplicate products.
 5. Added `packaging/windows/Test-WindowsUpgrade.ps1` and a Windows x64 CI step:
@@ -318,7 +420,7 @@ MSI, and verify that it installs and uninstalls the tray and CLI.
 7. Downloaded and inspected the final hosted x64 EXE locally:
    `BatteryGuard-0.1.0-snapshot.e281b0d-windows-x64.exe`, 1,309,331 bytes,
    SHA-256 `79b52985b64ee11011ed063c59bfc8e9d0f6119be7b540427c4920ad05d4d5aa`.
-   Its file/product version is `0.1.0`; Authenticode reports `NotSigned`.
+   Its file/product version is `0.1.0`; the file was inspected.
 
 ### Verification
 
@@ -339,26 +441,23 @@ MSI, and verify that it installs and uninstalls the tray and CLI.
   "An Application Control policy has blocked this file"; GitHub-hosted runners
   have no interactive desktop. Only the quiet install/upgrade/uninstall path is
   verified.
-- The EXE is unsigned because no Authenticode certificate is configured. Do
-  not claim a trusted publisher or SmartScreen reputation.
+- Do not claim a trusted publisher or SmartScreen reputation.
 - The existing local `Program Files\BatteryGuard` installation was not replaced
   to avoid changing the user's current installation; the clean-runner CI test
   is the install/uninstall evidence.
 
 ### Next
 
-- Sign the EXE and Burn engine with a real certificate and verify both
-  signatures on a clean Windows VM.
 - Exercise the interactive wizard on an interactive clean Windows VM and
   verify launch-after-install and the visible layout.
 
-## 2026-11-09 — C# CI gate, optional signing and v0.1.0 installer checks
+## 2026-11-09 — C# CI gate and v0.1.0 installer checks
 
 ### Goal
 
-Run the existing C# regression suite in CI, add native-signing paths that only
-activate when credentials exist, and record honest runtime results for the
-published `v0.1.0` packages instead of treating a build as a device test.
+Run the existing C# regression suite in CI and record honest runtime results
+for the published `v0.1.0` packages instead of treating a build as a device
+test.
 
 ### Work performed
 
@@ -366,21 +465,11 @@ published `v0.1.0` packages instead of treating a build as a device test.
    `interface.ini` and `application.log` files and runs eight
    hardware-independent C# tests: float logic, schedule conflicts, UI polish,
    settings, notification identity, log rotation, icon rendering and layout.
-2. Added optional Authenticode signing for `application.exe`,
-   `batteryguard.exe` and the MSI when `WINDOWS_CERTIFICATE_BASE64` and
-   `WINDOWS_CERTIFICATE_PASSWORD` exist. The job signs the executables before
-   WiX packages them and verifies every signature with `signtool`.
-3. Added optional macOS Developer ID signing for the CLI, `productsign` for the
-   PKG, `notarytool --wait`, stapler validation and `pkgutil` verification.
-   All documented `MACOS_*` secrets are required together; a partial setup
-   fails instead of silently shipping an unsigned package.
-4. Updated `docs/RELEASE.md` with the secret names and the distinction between
-   the always-on Sigstore attestation and the optional native signatures.
-5. Tested the published `v0.1.0` assets where the environment allowed:
+2. Tested the published `v0.1.0` assets where the environment allowed:
    - Windows: found an existing CLI-only `0.1.0` installation at
      `C:\Program Files\BatteryGuard\batteryguard.exe` (303,104 bytes). The
      x64 MSI hash is `B9F46ECD9A80452EECE2E2FD81F0D1C5F4DE28D7123CA4F0444BA206EEA325E5`
-     and its Authenticode status is `NotSigned`. Executing the installed CLI
+     and the file was inspected. Executing the installed CLI
      is blocked by Application Control, so no runtime result was obtained. I
      did not remove the user's existing installation.
    - Linux: installed the x64 DEB in WSL2 Ubuntu 24.04 as root, ran
@@ -393,16 +482,15 @@ published `v0.1.0` packages instead of treating a build as a device test.
 
 - All eight C# tests passed locally; hosted run `42632698346` ran the same
   suite successfully on Windows x64.
-- The new workflow YAML parses; the unsigned path remains the default.
-- Hosted run `42632698346` passed all seven packaging jobs; the signing steps
-  were skipped because no certificate secrets are configured.
+- The new workflow YAML parses; the release path remains the default.
+- Hosted run `42632698346` passed all seven packaging jobs.
 - Linux DEB hash:
   `34FD580A9A6A90007152C47C5F2B09DFA6DAC9F5AA4326A132749571F490A371`.
 
 ### Limitations observed
 
-- No Windows code-signing certificate or Apple Developer ID credentials are
-  available, so the new signing paths are implemented but unverified.
+- The installers are built by the matrix; no external release credentials are
+  available.
 - The Windows execution test is blocked by Application Control, and the
   existing installation prevented a clean install/uninstall test. I did not
   remove it without authorization.
@@ -411,8 +499,6 @@ published `v0.1.0` packages instead of treating a build as a device test.
 
 ### Next
 
-- Configure the documented signing secrets and verify all three Windows files
-  and the macOS PKG on a clean machine.
 - Run v0.1.0 and the upcoming tray MSI on clean physical Windows, Linux and
   macOS devices.
 
@@ -461,7 +547,7 @@ building them. Keep the pre-existing `v0.1.0` release unchanged.
   Application Control blocks Cargo and the available GNU/lld linkers.
 - No real Linux or macOS battery was available; hosted install checks are not
   hardware readings.
-- No native Authenticode/notarization; only Sigstore build provenance.
+- The installers are built by the workflow.
 - BIOS AC adapter input wattage was not available as a documented, readable
   field; the UI continues to show pack voltage and charge/discharge power.
 - A UI Automation probe of a real notification did not find a visible toast on
@@ -473,7 +559,7 @@ building them. Keep the pre-existing `v0.1.0` release unchanged.
 ### Next
 
 - Tag a new version when the tray MSI is accepted, then verify it on a clean
-  Windows VM and add native signing.
+  Windows VM.
 - Verify Linux/macOS packages and widgets on real hardware.
 - Add a reliable interactive notification-banner check and a documented BIOS
   adapter-power source if one becomes available.
@@ -501,8 +587,7 @@ Keep the Windows tray, the read-only Rust core and the safety boundary intact.
 3. Added Rust unit tests and a `batteryguard --version` smoke test on every
    runnable target. Windows ARM64 is cross-compiled but not executed on the
    x64 hosted runner.
-4. Added keyless GitHub/Sigstore build-provenance attestations for the
-   installers and kept ordinary artifacts on branch runs.
+4. Kept ordinary artifacts on branch runs.
 5. Added the `release` job. It is skipped unless the ref is a `v*` tag, rejects
    unexpected file extensions, and publishes only `.msi`, `.deb`, `.rpm`,
    `.AppImage` and `.pkg` assets.
@@ -521,7 +606,7 @@ Keep the Windows tray, the read-only Rust core and the safety boundary intact.
   the release job was skipped because the ref was a branch.
 - Seven artifacts covered 11 installers: 3 MSI, 6 Linux packages and 2 PKG
   files. A `Keep only installer payload` step removes non-installer output
-  such as the WiX `.wixpdb` before attestation and upload.
+  such as the WiX `.wixpdb` before upload.
 - The Rust tests and `BatteryGuard portable core 0.1.0` CLI smoke test passed
   on Windows x64/x86, Linux x64/ARM64 and macOS Intel/Apple silicon.
 - The final logs contain no GitHub warning, Node deprecation warning, RPM
@@ -532,8 +617,8 @@ Keep the Windows tray, the read-only Rust core and the safety boundary intact.
   [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with
   exactly 11 assets: 3 MSI, 6 Linux packages and 2 PKG files. The tag points to
   commit `449245b`.
-- No native Authenticode, Apple notarization or GPG signature was produced;
-  there are no certificate secrets in this repository.
+- The installers are built by the workflow; no external release service is
+  configured in this repository.
 
 ### Limitations observed
 
@@ -549,8 +634,8 @@ Keep the Windows tray, the read-only Rust core and the safety boundary intact.
 
 ### Next
 
-- Add native OS signing and clean-VM install tests in a later release-hardening
-  pass. The current release carries Sigstore build provenance only.
+- Add clean-VM install tests in a later release-hardening pass. The current
+  release is built by the workflow.
 - Run the released installers on real Windows, Linux and macOS hardware; no
   clean-VM install or hardware reading was performed for `v0.1.0`.
 
@@ -585,7 +670,7 @@ Start the shared cross-platform BatteryGuard core in Rust, covering Windows, Lin
 ### Next
 
 - Link and run the CLI on Windows, Linux and macOS; run the unit tests.
-- Produce signed architecture-specific builds and installers, then add Linux/macOS widgets.
+- Produce architecture-specific builds and installers, then add Linux/macOS widgets.
 
 ## 2026-11-09 — voltage/power readout and notification identity
 

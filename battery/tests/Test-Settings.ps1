@@ -18,11 +18,15 @@ $root = Split-Path -Parent $PSScriptRoot
 $sources = @(Get-ChildItem -Path (Join-Path $root 'src') -Filter '*.cs' | Sort-Object Name | ForEach-Object { $_.FullName })
 $configPath = Join-Path $root 'settings.json'
 $uiPath = Join-Path $root 'interface.ini'
+$themePath = Join-Path $root 'theme.ini'
 $configBackup = Join-Path $root 'config.test-backup.json'
 $uiBackup = Join-Path $root 'ui.test-backup.txt'
+$themeBackup = Join-Path $root 'theme.test-backup.txt'
 
 Copy-Item $configPath $configBackup -Force
 if (Test-Path $uiPath) { Copy-Item $uiPath $uiBackup -Force }
+$themeExisted = Test-Path $themePath
+if ($themeExisted) { Copy-Item $themePath $themeBackup -Force }
 
 try {
     $env:BATTERYGUARD_HOME = $root
@@ -49,7 +53,9 @@ try {
     $floatMode = $type.GetField('_floatMode', $flags).GetValue($form)
     $schedule = $type.GetField('_schedule', $flags).GetValue($form)
     $scheduleList = $type.GetField('_scheduleList', $flags).GetValue($form)
+    $appearance = $type.GetField('_appearance', $flags).GetValue($form)
     $direction = $type.GetField('_direction', $flags).GetValue($form)
+    $versionLabel = $type.GetField('_versionLabel', $flags).GetValue($form)
     $fullThreshold = $type.GetField('_fullThreshold', $flags).GetValue($form)
     $lowThreshold = $type.GetField('_lowThreshold', $flags).GetValue($form)
 
@@ -62,7 +68,9 @@ try {
     'slider lower    = ' + $slider.LowerValue
     'float mode      = ' + $floatMode.Checked
     'schedule count  = ' + $scheduleList.Items.Count
+    'appearance index= ' + $appearance.SelectedIndex
     'direction index = ' + $direction.SelectedIndex
+    'version label   = ' + $versionLabel.Text
     'schedule checked= ' + $schedule.Checked
     'full threshold  = ' + $fullThreshold.Value
     'low threshold   = ' + $lowThreshold.Value
@@ -129,7 +137,9 @@ try {
 finally {
     Copy-Item $configBackup $configPath -Force
     if (Test-Path $uiBackup) { Copy-Item $uiBackup $uiPath -Force }
-    Remove-Item $configBackup, $uiBackup -Force -ErrorAction SilentlyContinue
+    if ($themeExisted) { Copy-Item $themeBackup $themePath -Force }
+    else { Remove-Item $themePath -Force -ErrorAction SilentlyContinue }
+    Remove-Item $configBackup, $uiBackup, $themeBackup -Force -ErrorAction SilentlyContinue
     '--- restored config ---'
     Get-Content $configPath
 }

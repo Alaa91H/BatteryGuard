@@ -96,6 +96,7 @@ try {
     Assert-ExitCode $newInstall.ExitCode 'new EXE install'
 
     Assert-File (Join-Path $installDir 'application.exe')
+    Assert-File (Join-Path $installDir 'application.exe.config')
     Assert-File (Join-Path $installDir 'batteryguard.exe')
     Assert-File (Join-Path $installDir 'resources\application.ico')
     Assert-File (Join-Path $installDir 'locales\ar.json')

@@ -54,8 +54,6 @@ percentage nor voltage exists.
   bundle the CLI only. The x64 MSI is installed/uninstalled in CI, and the DEB
   and PKG are installed and executed in CI. Arch, Flatpak and `.dmg` are not
   produced.
-- **Signing:** installers carry GitHub/Sigstore build provenance; Windows
-  Authenticode and Apple notarization are not configured.
 - **Widgets/UI:** the existing Windows tray is the only graphical interface.
   Linux and macOS have no widget, tray or menu-bar UI in this phase.
 - **Charge control:** read-only. The Windows C# HP controller remains the only

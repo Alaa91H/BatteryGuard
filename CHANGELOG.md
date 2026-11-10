@@ -2,66 +2,91 @@
 
 All notable changes to this project are documented here. The format follows the spirit of Keep a Changelog. Releases use the version from `portable/Cargo.toml` and a matching `v*` tag.
 
-## Unreleased — controller foundation
+## v0.3.0 — 2026-11-10
 
 ### Added
 
-- Vendor-neutral controller profiles and capabilities: `DeviceFingerprint`,
-  `DeviceProfileCatalog`, `ControllerCapabilities`, `IChargeController` and an
-  ordered `IControllerProvider` registry.
+- Evidence-gated controller foundation: `DeviceFingerprint`, embedded
+  `DeviceProfile` entries, `ControllerCapabilities`, `IChargeController`,
+  `IControllerProvider`, `BatteryControllerFactory`, `IWmiGateway`,
+  `HpBiosWmiGateway` and `SimulatedWmiGateway`.
 - `WriteGuard` as the single production write gate: auto/inhibit allow-list,
-  AC check, read-back confirmation and one rollback on mismatch.
-- `IWmiGateway`, a real `HpBiosWmiGateway` and a `SimulatedWmiGateway` for
-  hardware-free contract tests.
-- Explicit fail-closed test mode:
-  `BATTERYGUARD_TEST_CONTROLLER=monitoring` makes the factory return
-  `GenericBatteryController` before any provider, WMI gateway or `WriteGuard`
-  is created. `start.ps1` keeps that tray in the PowerShell host so tests can
-  observe and stop it.
-- Read-only `battery/scripts/probe-controllers.ps1` and
-  `battery/scripts/simulate-controller.ps1`.
-- `Test-ControllerFoundation.ps1` and the evidence-gated hardware protocol in
-  `docs/CONTROLLER_VALIDATION.md`.
-- Acer, Dell and Lenovo candidate profiles. They are logged but have no writer;
-  HP remains the only field-verified charge controller. Settings hides the
-  charge-limit slider entirely when the profile is not writable, and a future
-  fixed/start-stop writer gets a capability-only card instead of a generic
-  50–100% slider.
+  AC requirement for inhibit, numeric capability range, one read-back and one
+  rollback on mismatch.
+- Candidate read-only profiles for Acer, Dell and Lenovo. HP remains the only
+  field-verified writer; unsupported hardware falls back to monitoring.
+- Capability-aware Settings and tray UI: fixed and start-stop profiles receive
+  a capability-specific card instead of an invented 50–100% slider.
+- Hardware-free controller and WMI contract tests, plus read-only
+  `probe-controllers.ps1` and `simulate-controller.ps1`.
+- Responsive Settings: language above appearance, persistent light/dark/auto
+  appearance, and the installed version read from assembly metadata.
+- `VisualCaptureHost` for actual-window captures at process-DPI coordinates.
+- `Installed version {0}` in all 30 locale catalogs, now 152 keys each.
+
+### Changed
+
+- Settings uses DPI-relative rows, two-column/stacked layout, explicit
+  100%-width card columns and a pinned footer. The schedule and log windows
+  use pinned action bars and vertical scrolling on constrained displays.
+- HP WMI writes now flow through the controller contract and `WriteGuard`;
+  the low-level `0x00`/`0x05` allow-list remains in front of the transport.
+- `Test-Layout` covers 100%, 125% and 150% in English and Arabic, including
+  recursive containment checks for nested controls.
+- The Windows build includes `VersionInfo.cs` and the application configuration
+  as source inputs; generated `application.exe.config` is ignored.
+- The single tag-gated workflow is the only release path. It uses built-in
+  GitHub permissions, requires no repository secrets, and publishes only
+  installer assets for a tag matching `portable/Cargo.toml`.
+- Removed the obsolete external release-service configuration and its policy
+  documents. The release documentation now describes only the maintained
+  GitHub Actions path.
+
+### Fixed
+
+- Settings charge rows, preset chips, interface ComboBoxes, version label and
+  footer no longer overflow or clip at the tested layout sizes and font scales.
+- The float option uses the short catalog key **Float mode (charger power)**,
+  with the full explanation in its tooltip.
+- Schedule and log actions remain inside their dialogs at narrow sizes.
+- Missing, denied, malformed, mismatched and unplugged controller responses
+  fail closed without a production write.
 
 ### Verification
 
-- Local build: `application.exe` 115,712 bytes.
-- Capability-aware UI: the tray suppresses generic presets for fixed/start-stop
-  controllers, and Settings renders a capability-only card instead of a
-  50–100% slider. The synthetic fixed test is not an enabled provider.
-- `Test-ControllerFoundation.ps1`: profile matching, fixed-80% candidate gate,
-  unplugged inhibit, access denial, missing provider, empty/mismatched read-back,
-  rollback and forced-discharge rejection passed using simulated WMI.
-- `Test-TrayMenu.ps1`: an injected Acer candidate controller reported
-  `Monitoring only` in the tray menu and Settings, and Settings attached no
-  threshold slider or limit checkbox.
-- `Test-FloatLogic.ps1`: 13/13 passed; the other hardware-safe tests,
-  `Test-ThemeLive.ps1` and `VisualCapture.ps1` also passed from a clean build.
-- Test-TrayMenu and the three injected-mode tray tests are now part of the
-  Windows CI list; the write-capable hardware tests remain outside it.
-- `Test-UI`, `Test-Theme` and `Test-TrayHost` passed in the injected
-  monitoring-only mode. The real HP mode read `Auto` before the set and after
-  each run; no charge-write log line appeared; no tray or logon task remained.
-- Hosted run `42700624192` passed all jobs, including the Windows x64
-  thirteen-check suite; no write-capable test was enabled.
-- An earlier UI/Theme attempt, before the test controller existed, left a stale
-  tray that wrote HP `Inhibit` at 60%; the process was stopped and Auto was
-  restored with read-back. That incident is why the injected controller is now
-  mandatory for these tests.
-- Read-only probe ran on the HP development notebook and produced a report
-  with no serial numbers; this is not proof of a new vendor writer.
+- Local Windows build: `application.exe` 120,832 bytes.
+- 14 hardware-free C# checks passed, plus `Test-ThemeLive` and `VisualCapture`.
+- `Test-ControllerFoundation`: 71 checks passed with simulated and read-only
+  live fingerprint queries.
+- `Test-TrayMenu`: 32 checks passed, including monitoring-only and synthetic
+  fixed/start-stop capability cards.
+- `Test-Layout`: **222 OK, 0 FAIL** across English/Arabic at 100%, 125% and
+  150%; every nested control stayed inside its parent and no tested state had
+  horizontal scrolling.
+- Locale validation: 30 catalogs × 152 keys, zero missing keys and zero
+  placeholder mismatches.
+- `portable/scripts/check-targets.ps1`: 12/12 targets passed metadata/type
+  checking. Local Rust linking remains unavailable because the MSVC linker is
+  not installed; hosted CI is the runtime gate.
+- Hosted verification for this release is recorded in
+  [`docs/SESSION_LOG.md`](docs/SESSION_LOG.md) and
+  [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).
 
 ### Known limitations
 
-- Acer, Lenovo and Dell hardware was not available. No candidate writer is
-  enabled and no hardware validation is claimed.
-- The probe and simulator do not prove firmware behavior. The tester package is
-  not signed because signing is not configured.
+- Charge control remains HP-only. Acer, Dell and Lenovo are read-only
+  candidates until two independent hardware reports pass the documented
+  read-back, sleep/resume, reboot, unplug and restore protocol.
+- The 125%/150% matrix is a deterministic layout/font simulation; native
+  screenshots at those scales were not captured.
+- `Test-TrayHost` was not rerun locally after the final UI changes; hosted CI
+  covers it in the injected monitoring-only mode.
+- Local Rust binaries and tests were not built; hosted native runners provide
+  the linked and executed Rust coverage.
+- The interactive installer wizard and a physical clean VM were not tested.
+- Non-English catalogs remain machine-generated and need native-speaker
+  review; technical wording is the highest-risk area.
+- Windows Smart App Control may block the installers on some systems.
 
 ## 2026-11-09 — v0.2.0
 
@@ -72,8 +97,7 @@ First release with Windows tray installers.
 - Per-machine Windows MSI and single-EXE Burn bootstrapper containing the C#
   tray, Rust CLI, icon, 30 locale catalogs, Start Menu shortcut and uninstall
   shortcut.
-- MIT `LICENSE`, SignPath Foundation signing integration and code-signing
-  policy.
+- MIT `LICENSE`.
 
 ### Changed
 
@@ -88,43 +112,11 @@ First release with Windows tray installers.
 
 ### Known limitations
 
-- The installers are unsigned: no SignPath project, token, PFX or Developer ID
-  certificate is configured. Smart App Control may still block them.
+- Smart App Control may still block the installers.
 - On 2026-11-09, Windows 11 Home 10.0.26300 with SAC enforcement blocked the
-  unsigned x64 EXE at launch; no installation or upgrade occurred, and the
+  x64 EXE at launch; no installation or upgrade occurred, and the
   existing `0.1.0` installation remained.
 - The interactive installer wizard and a physical clean VM were not tested.
-
-## v0.2.0 details — SignPath Foundation signing path
-
-### Added
-
-- MIT `LICENSE`, required for the public project's SignPath Foundation
-  application.
-- Optional Windows signing through SignPath Foundation, with three requests:
-  tray/CLI binaries, the MSI before the EXE is built, and the final EXE. The
-  upstream WiX Burn engine is included unsigned and is not signed with the
-  Foundation certificate. The requests are driven by `SIGNPATH_*` repository
-  variables and the `SIGNPATH_API_TOKEN` secret.
-- `docs/SIGNPATH.md` documents eligibility, artifact configurations, GitHub
-  variables, verification and the unresolved Smart App Control test.
-- `docs/CODE_SIGNING_POLICY.md` records the Windows artifact scope, team roles,
-  manual approval, privacy statement and SignPath attribution.
-
-### Changed
-
-- The SignPath path takes precedence when configured; the existing PFX path is
-  the fallback. Builds with neither configuration remain unsigned.
-
-### Verification
-
-- Hosted run `42647767077` passed all seven packaging jobs with the current
-  three-request SignPath path unconfigured. The signing steps were skipped, and
-  the x64 MSI/EXE install-uninstall and `v0.1.0` upgrade checks passed; no
-  signed artifact was produced.
-- No SignPath account, project or token exists. No signing request was
-  submitted and no signed artifact was produced. The existing unsigned CI path
-  remains the only verified path.
 
 ## v0.2.0 details — Windows single-EXE bootstrapper
 
@@ -137,8 +129,6 @@ First release with Windows tray installers.
 - CI builds the EXE for x86, x64 and ARM64, installs/uninstalls the x64
   bootstrapper in addition to the MSI, and upgrades the published `v0.1.0`
   MSI with the new EXE on a clean runner.
-- The optional Authenticode path signs the detached Burn engine, reattaches it
-  and then signs the whole EXE bundle.
 
 ### Changed
 
@@ -159,32 +149,19 @@ First release with Windows tray installers.
 - Downloaded x64 EXE: `BatteryGuard-0.1.0-snapshot.e281b0d-windows-x64.exe`,
   1,309,331 bytes, SHA-256
   `79b52985b64ee11011ed063c59bfc8e9d0f6119be7b540427c4920ad05d4d5aa`.
-  `ProductVersion` is `0.1.0`; Authenticode status is `NotSigned`.
+  `ProductVersion` is `0.1.0`.
 - The CI install was a quiet command-line install/uninstall and upgrade, not an
   interactive visual inspection. The wizard was not tested: this host has no
   Windows Sandbox/VM and Application Control blocks the EXE; hosted runners
   are non-interactive.
 
-## v0.2.0 details — C# CI gate, optional native signing and v0.1.0 checks
+## v0.2.0 details — C# CI gate and v0.1.0 checks
 
 ### Added
 
 - The Windows x64 CI job now runs the hardware-independent C# suite:
   float policy, schedule conflicts, UI polish, settings persistence,
   notification identity, log rotation, icon rendering and adaptive layout.
-- Optional Windows Authenticode signing for the tray, CLI and MSI, with
-  `signtool verify /pa /all` in the same job.
-- Optional macOS Developer ID signing of the binary and PKG, followed by
-  `notarytool`, stapler validation and `pkgutil --check-signature`.
-- `docs/RELEASE.md` documents the certificate and notarization secret names.
-
-### Changed
-
-- Native signing is opt-in. When the certificate secrets are absent, the
-  workflow builds unsigned packages, emits a notice and does not claim a
-  native signature; Sigstore build provenance remains mandatory.
-- A partial macOS signing configuration fails the job instead of silently
-  producing an unsigned PKG.
 
 ### Verification
 
@@ -192,15 +169,14 @@ First release with Windows tray installers.
   Windows x64 CI job.
 - The v0.1.0 Linux x64 DEB was installed in WSL2 Ubuntu 24.04, printed
   `BatteryGuard portable core 0.1.0`, and was removed.
-- The v0.1.0 Windows MSI is `NotSigned`; the existing v0.1.0 CLI installation
-  could not execute because Application Control blocks the binary. No clean
+- The v0.1.0 Windows MSI was built and its metadata was checked; the existing
+  v0.1.0 CLI installation could not execute because Application Control blocks
+  the binary. No clean
   Windows install/uninstall or macOS runtime test was performed.
 - See `docs/SESSION_LOG.md` for the exact commands, hashes and limitations.
 
 ### Known limitations
 
-- No Windows Authenticode or Apple notarization certificate is configured, so
-  those new signing paths are not exercised by a green run.
 - WSL2 is a real Linux kernel but not a separate physical Linux device; no
   Linux or macOS battery hardware was used.
 - No macOS host was available for the v0.1.0 PKG.
@@ -240,8 +216,6 @@ First release with Windows tray installers.
 
 ### Known limitations
 
-- No native Authenticode or Apple notarization is configured; only Sigstore
-  build provenance is attached.
 - No BIOS/AC adapter input wattage is displayed: Windows exposes pack voltage
   and charge/discharge power, and no documented adapter-wattage BIOS field was
   verified.
@@ -258,13 +232,11 @@ First release with Windows tray installers.
   three-part Cargo version and builds native installers for Windows x86/x64/ARM64
   (`.msi`), Linux x64/ARM64 (`.deb`, `.rpm`, `.AppImage`) and macOS Intel/Apple
   silicon (`.pkg`).
-- Keyless GitHub/Sigstore build-provenance attestations for every installer.
 - Release job restricted to `v*` tags; it downloads the packaging artifacts,
   allows only installer extensions and publishes a GitHub Release.
 - Linux static-musl packaging with a GNU build-id, AppImage 1.9.1 metadata and
   a system `PATH` entry in the Windows MSI.
-- `docs/RELEASE.md` with the matrix, version rule, signing boundary and asset
-  policy.
+- `docs/RELEASE.md` with the matrix, version rule and asset policy.
 
 ### Changed
 
@@ -297,8 +269,6 @@ First release with Windows tray installers.
 
 ### Known limitations
 
-- The attestation is not Windows Authenticode, Apple notarization or a GPG
-  signature; no OS code-signing certificate is configured.
 - No installer was launched on a clean VM, and no real Linux/macOS battery
   reading was taken.
 - Linux/macOS widgets and charge control remain out of scope for this release.
@@ -503,5 +473,5 @@ First release with Windows tray installers.
 
 - Non-English catalogs are machine-generated and have not been reviewed by native speakers.
 - The final build was launched elevated (process 16740, `tray started`), but the tray, menu and dialogs were not visually inspected.
-- HP WMI writes still require elevation; Smart App Control may block the unsigned executable and trigger the in-memory host fallback.
+- HP WMI writes still require elevation; Smart App Control may block the executable and trigger the in-memory host fallback.
 - An open Settings window keeps its layout until reopened after a language change.

@@ -49,20 +49,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File portable/scripts/test.ps1
 
 ## CI and release
 
-- `.github/workflows/ci.yml` is the only workflow. Do not add a second workflow for packaging, attestation or releases; extend this file instead.
-- Every push builds the installer matrix, creates build-provenance attestations and uploads branch artifacts. Only a `v*` tag may create or update a GitHub Release.
+- `.github/workflows/ci.yml` is the only workflow. Do not add a second workflow for packaging or releases; extend this file instead.
+- Every push builds the installer matrix and uploads branch artifacts. Only a `v*` tag may create or update a GitHub Release.
 - The Windows MSI and Burn EXE bundle the C# tray, Rust CLI, icon, locale catalogs, Start Menu shortcut and uninstall shortcut. Linux and macOS packages remain CLI-only. CI installs/uninstalls the x64 MSI and EXE, upgrades the published `v0.1.0` MSI with the EXE on a clean runner, and installs/runs the DEB and PKG; x86/ARM64 installers and RPM are build-only on the current runners. The interactive installer wizard is not covered by CI.
 - The Windows x64 job runs the C# suite (`Test-FloatLogic`, `Test-ControllerFoundation`, `Test-ScheduleConflict`, `Test-UiPolish`, `Test-Settings`, `Test-AppIdentity`, `Test-LogRotation`, `Test-Icons`, `Test-Layout`, `Test-TrayMenu`, `Test-UI`, `Test-Theme`, `Test-TrayHost`). The last three run in the injected monitoring-only test mode. Do not replace it with a build-only check.
-- Native signing is optional. The preferred free path is SignPath Foundation for this MIT-licensed public project: three signing requests (tray/CLI, MSI before the EXE is built, final EXE). The upstream WiX Burn engine is included unsigned and is not signed with the Foundation certificate. The requests use `SIGNPATH_*` repository variables and the `SIGNPATH_API_TOKEN` secret. The PFX fallback remains `WINDOWS_CERTIFICATE_BASE64`/`WINDOWS_CERTIFICATE_PASSWORD` for Authenticode (tray, CLI, MSI, Burn engine and EXE bundle), and the documented `MACOS_*` certificate/notary secrets remain for macOS. Missing configuration means an unsigned package and a notice, not a failed or falsely signed build. Never commit tokens or certificate material. See `docs/SIGNPATH.md`.
-- The tag must be exactly `v` plus the version in `portable/Cargo.toml` (currently `v0.2.0`). The prepare job rejects a mismatch before building.
+- Release assets are built only by this workflow. Do not add an external release service or publish raw binaries; never commit credentials or tokens.
+- The tag must be exactly `v` plus the version in `portable/Cargo.toml` (currently `v0.3.0`). The prepare job rejects a mismatch before building.
 - Release assets are restricted to `.exe`, `.msi`, `.deb`, `.rpm`, `.AppImage` and `.pkg`. The `.exe` must be the Burn installer, never a raw application binary. Do not publish archives, `.wixpdb`, debug symbols, logs or test data.
-- The current signature is GitHub/Sigstore keyless build provenance through `actions/attest-build-provenance`. It is not Windows Authenticode or Apple notarization. Do not describe it as either, and do not add certificate secrets without explicit approval and a documented verification step.
-- Keep the matrix buildable without repository secrets. `contents: read`, `id-token: write` and `attestations: write` are intentional; the release job alone needs `contents: write`.
+- Keep the matrix buildable without repository secrets. `contents: read` and `actions: read` are intentional; the release job alone needs `contents: write`.
 - After changing the workflow, the Rust version or packaging, wait for a green hosted run and record the run ID in `docs/SESSION_LOG.md`.
 
 `battery/tests/VisualCapture.ps1` renders the Settings, schedule and log windows in English/Arabic and light/dark. It backs up and restores `interface.ini` and `theme.ini`; it needs no hardware, WMI writes or elevation.
 
-`battery/tests/Test-Layout.ps1` resizes the three dialogs through ten representative client sizes, from 780×601 down to 380×300. It checks pinned action bars, content scrolling, the 660 px Settings content width, the 360 px rule layout and the language/direction combo text. It shows the forms off-screen, so it needs no elevation and no hardware writes.
+`battery/tests/Test-Layout.ps1` resizes the three dialogs through representative client sizes, from 980×620 down to 380×350. It checks the two-column/stacked Settings switch, pinned action bars, content scrolling, the 520 px narrow content floor, the language-above-appearance order, the installed version, the 360 px rule layout and combo text. It shows the forms off-screen, so it needs no elevation and no hardware writes.
 
 `battery/tests/Test-AppIdentity.ps1` verifies the Windows notification identity: it runs `AppIdentity.Install()`, then checks the current user's Start Menu shortcut for `System.AppUserModel.ID=BatteryGuard.Tray`, the PowerShell/exe target, arguments and description. It creates or replaces `%APPDATA%\Microsoft\Windows\Start Menu\Programs\BatteryGuard.lnk`; it needs no elevation and no hardware writes. It does not open the real notification banner; a UI Automation probe on this desktop did not expose a visible toast.
 
@@ -71,7 +70,7 @@ PowerShell scripts that contain non-ASCII text must be UTF-8 (BOM is accepted). 
 ## Conventions
 
 - .NET Framework 4.x only; no NuGet, no external runtime packages.
-- The project is MIT licensed. SignPath Foundation eligibility depends on keeping the repository public and free of proprietary components; do not add a commercial-only component without revisiting that decision.
+- The project is MIT licensed. Do not add a commercial-only component.
 - The Rust core uses only the standard library: no crates, no build scripts and no network access.
 - Keep the display name **BatteryGuard**. Keep the C# namespace `BatteryGuardTray` for compatibility with existing scripts and tests.
 - Source, resources, scripts, tests and data files use neutral names; do not add product/version names to new paths.
@@ -92,7 +91,7 @@ PowerShell scripts that contain non-ASCII text must be UTF-8 (BOM is accepted). 
 
 ## Generated files
 
-`application.exe`, `settings.json`, `interface.ini`, `theme.ini`, `capacity.ini`, `application.log`, `application.previous.log`, test screenshots and logs are local/generated. They are ignored by `.gitignore` and must not be committed. `portable/target/`, `dist/`, `packaging/windows/staging/`, `packaging/windows/ProductLocales.wxs` and temporary CI API/log files are generated and ignored.
+`application.exe`, `application.exe.config`, `settings.json`, `interface.ini`, `theme.ini`, `capacity.ini`, `application.log`, `application.previous.log`, test screenshots and logs are local/generated. They are ignored by `.gitignore` and must not be committed. `portable/target/`, `dist/`, `packaging/windows/staging/`, `packaging/windows/ProductLocales.wxs` and temporary CI API/log files are generated and ignored.
 
 ## Documentation
 

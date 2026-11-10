@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · Ladda snart",
   "{0}% · You can disconnect the charger": "{0}% · Du kan koppla bort laddaren",
   "°C": "°C",
-  "Monitoring only": "Endast övervakning"
+  "Monitoring only": "Endast övervakning",
+  "Installed version {0}": "Installed version {0}"
 }

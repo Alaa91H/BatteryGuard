@@ -93,6 +93,6 @@ These utilities are not part of the runtime and require Python 3. Network access
 
 ## Quality status
 
-The catalogs include the device-state key **Monitoring only** for hardware without charge control. The catalogs are structurally complete: 30 files × 151 keys, zero missing keys and zero placeholder mismatches. They are **machine-generated** from the curated English source with targeted glossary corrections. Native-speaker review is still recommended, particularly for long sentences, HP-specific terminology and languages with strong compound-word conventions (German, Finnish, Hungarian-style constructions).
+The catalogs include the device-state key **Monitoring only** for hardware without charge control and the version template **Installed version {0}**. The catalogs are structurally complete: 30 files × 152 keys, zero missing keys and zero placeholder mismatches. They are **machine-generated** from the curated English source with targeted glossary corrections. Native-speaker review is still recommended, particularly for long sentences, HP-specific terminology and languages with strong compound-word conventions (German, Finnish, Hungarian-style constructions).
 
 The most visible terms were corrected explicitly: maximum battery charge level, battery charging control, light/dark appearance theme, schedule window and schedule time range.

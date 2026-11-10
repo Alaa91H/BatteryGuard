@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · Lataa pian",
   "{0}% · You can disconnect the charger": "{0}% · Voit irrottaa laturin",
   "°C": "°C",
-  "Monitoring only": "Vain seuranta"
+  "Monitoring only": "Vain seuranta",
+  "Installed version {0}": "Installed version {0}"
 }

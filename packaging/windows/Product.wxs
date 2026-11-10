@@ -38,6 +38,7 @@
     <ComponentGroup Id="ProductComponents">
       <Component Id="TrayExecutable" Directory="INSTALLFOLDER" Guid="A9E4C6B7-4F4A-4B62-9A5F-8E3A1D0C2B71">
         <File Id="BatteryGuardTrayExe" Source="$(var.SourceDir)\application.exe" KeyPath="yes" />
+        <File Id="BatteryGuardTrayConfig" Source="$(var.SourceDir)\application.exe.config" />
       </Component>
 
       <Component Id="CliExecutable" Directory="INSTALLFOLDER" Guid="7C2D5B4A-9E18-4F73-B6A4-2D0C9E8F1A35">

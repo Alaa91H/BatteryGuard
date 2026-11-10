@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · Φόρτιση σύντομα",
   "{0}% · You can disconnect the charger": "{0}% · Μπορείτε να αποσυνδέσετε το φορτιστή",
   "°C": "°C",
-  "Monitoring only": "Μόνο παρακολούθηση"
+  "Monitoring only": "Μόνο παρακολούθηση",
+  "Installed version {0}": "Installed version {0}"
 }

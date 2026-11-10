@@ -1,10 +1,10 @@
 ﻿<#
 .SYNOPSIS
   Runs BatteryGuard's native Win32 tray UI (src/*.cs) inside a
-  Microsoft-signed PowerShell host.
+  Microsoft PowerShell host.
 
 .DESCRIPTION
-  Smart App Control blocks unsigned executables on this machine, so the
+  Smart App Control blocks the executable on this machine, so the
   separately compiled application.exe cannot start. This launcher compiles
   the exact same C# source in memory with Add-Type and runs it inside
   powershell.exe, which is trusted. The UI is still raw Win32: Shell_NotifyIcon,
@@ -45,7 +45,7 @@ if (-not $isAdmin -and -not $NoElevate) {
 }
 
 # Prefer the compiled exe (30 KB, no PowerShell host) whenever Smart App Control
-# is not blocking unsigned binaries. Fall back to the in-process host otherwise.
+# is not blocking the executable. Fall back to the in-process host otherwise.
 $sacEnforced = $false
 try {
     $policy = Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -Name VerifiedAndReputablePolicyState -ErrorAction Stop
@@ -53,7 +53,7 @@ try {
 }
 catch { $sacEnforced = $false }
 
-# Test mode must stay in this signed PowerShell host so the test can observe
+# Test mode must stay in this system PowerShell host so the test can observe
 # the process and stop it deterministically. The in-app test controller still
 # has no WMI/EC write path.
 $testController = $env:BATTERYGUARD_TEST_CONTROLLER

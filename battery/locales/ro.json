@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · Încărcați în curând",
   "{0}% · You can disconnect the charger": "{0}% · Puteți deconecta încărcătorul",
   "°C": "°C",
-  "Monitoring only": "Doar monitorizare"
+  "Monitoring only": "Doar monitorizare",
+  "Installed version {0}": "Installed version {0}"
 }

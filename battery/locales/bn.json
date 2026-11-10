@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · শীঘ্রই চার্জ করুন৷",
   "{0}% · You can disconnect the charger": "{0}% · আপনি চার্জারটি সংযোগ বিচ্ছিন্ন করতে পারেন৷",
   "°C": "°সে",
-  "Monitoring only": "শুধু পর্যবেক্ষণ"
+  "Monitoring only": "শুধু পর্যবেক্ষণ",
+  "Installed version {0}": "Installed version {0}"
 }

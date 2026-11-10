@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · اشحن الجهاز قريبًا",
   "{0}% · You can disconnect the charger": "{0}% · يمكنك فصل الشاحن",
   "°C": "°م",
-  "Monitoring only": "مراقبة فقط"
+  "Monitoring only": "مراقبة فقط",
+  "Installed version {0}": "الإصدار المثبت {0}"
 }

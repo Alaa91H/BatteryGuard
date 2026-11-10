@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · Заряджайте незабаром",
   "{0}% · You can disconnect the charger": "{0}% · Ви можете від'єднати зарядний пристрій",
   "°C": "°C",
-  "Monitoring only": "Лише моніторинг"
+  "Monitoring only": "Лише моніторинг",
+  "Installed version {0}": "Installed version {0}"
 }

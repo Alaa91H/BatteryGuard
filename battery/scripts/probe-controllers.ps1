@@ -4,7 +4,7 @@
 
 .DESCRIPTION
   Collects the device fingerprint, battery readings, battery/charge-related WMI
-  classes and method names, ACPI device prefixes and relevant signed drivers.
+  classes and method names, ACPI device prefixes and relevant vendor drivers.
   It never invokes a WMI method, never writes a firmware/EC value and never
   changes BatteryGuard settings. Serial numbers are deliberately omitted.
 

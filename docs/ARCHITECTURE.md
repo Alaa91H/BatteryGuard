@@ -12,7 +12,7 @@ BatteryGuard is one .NET Framework 4.x process. There is no service and no netwo
 - A mutex prevents two tray instances.
 - `AppIdentity` sets the process AppUserModelID to `BatteryGuard.Tray` before the tray window is created and maintains a matching Start Menu shortcut. Windows uses that identity for notifications even when the UI is hosted by `powershell.exe`.
 
-When Smart App Control blocks unsigned executables, `scripts/start.ps1` compiles the same `src/*.cs` files with `Add-Type` inside `powershell.exe` and invokes `Program.Main` by reflection. The UI and behavior are identical.
+When Smart App Control blocks the executable, `scripts/start.ps1` compiles the same `src/*.cs` files with `Add-Type` inside `powershell.exe` and invokes `Program.Main` by reflection. The UI and behavior are identical.
 
 ## Components
 
@@ -23,13 +23,13 @@ When Smart App Control blocks unsigned executables, `scripts/start.ps1` compiles
 | `Engine` | Reads battery/controller state, evaluates the charge decision, applies presets and schedules. |
 | `ChargePolicy` / `ChargeDecision` | Pure float/charge decision table, testable without WMI. |
 | `IBatteryController` | Legacy contract for vendor adapters: read mode, set auto, set inhibit. |
-| `IChargeController` | Capability-aware contract: fingerprint, profile, `RequestInhibit`, `RequestAuto` and a structured result. |
+| `IChargeController` | Capability-aware contract: fingerprint, profile, `RequestInhibit`, `RequestAuto`, `RequestLimit` and a structured result. |
 | `DeviceFingerprint` | Read-only SMBIOS/WMI identity: manufacturer, product, board, BIOS, family and SKU; no serial number. |
 | `DeviceProfile` / `DeviceProfileCatalog` | Embedded profile, interface, capabilities, evidence status and wildcard matching. |
 | `ControllerCapabilities` | `AutoInhibit`, `FixedThreshold`, `StartStopThreshold` or `MonitoringOnly`, with allowed limits. |
-| `WriteGuard` | Single safety gate: mode allow-list, AC check, read-back and one rollback on mismatch. |
+| `WriteGuard` | Single safety gate: mode/value allow-list, AC check, threshold range, read-back and one rollback on mismatch. |
 | `IControllerProvider` | Ordered provider registry; HP is the only write-capable provider in this build. |
-| `HpBios` | HP `hpqBIntM` WMI read/write through `IWmiGateway`, with the legacy setters retained for hardware tests. |
+| `HpBios` | HP `hpqBIntM` WMI read/write through `IWmiGateway`, with a pre-transport 0x00/0x05 allow-list and the legacy setters retained for hardware tests. |
 | `HpBiosWmiGateway` / `SimulatedWmiGateway` | Real and hardware-free WMI transports for the HP protocol. |
 | `GenericBatteryController` | Monitoring-only adapter for non-HP and candidate hardware. |
 | `BatteryControllerFactory` | Profile detection, provider registration and fail-closed generic fallback. |
@@ -108,16 +108,14 @@ All platform modules are behind `#[cfg(target_os)]`; the library, test harness a
 1. `prepare` reads `portable/Cargo.toml`, validates a three-part version and, for a tag, requires `refs/tags/v<version>`. It derives a snapshot suffix for branch builds.
 2. Seven native jobs build the CLI for Windows x86/x64/ARM64, Linux x64/ARM64 and macOS Intel/Apple silicon. Linux uses static musl targets. Every runnable target runs the Rust tests and `batteryguard --version`; Windows ARM64 is cross-compiled but not executed on the x64 hosted runner. The Windows x64 job also runs the hardware-independent C# suite, including the controller foundation test.
 3. The packaging jobs create the EXE, MSI, DEB, RPM, AppImage and PKG files. The Windows job also builds the C# tray, generates the 30 locale components and stages the tray, CLI, icon and catalogs; the x64 MSI and EXE are installed, checked for payload and Start Menu/uninstall shortcuts, then removed. The same job installs the published `v0.1.0` MSI, upgrades it with the new EXE, verifies the old product disappeared and exactly one visible Apps & Features entry remains, then uninstalls. The EXE is a WiX Burn bootstrapper around the MSI, with the standard installer UI, version display, launch-after-install and Apps & Features registration. Linux and macOS jobs install their DEB and PKG and run the installed CLI as a smoke test.
-4. When all SignPath variables and the API token exist, the Windows job signs the tray/CLI binaries, the MSI before the EXE is built and the final EXE through three SignPath Foundation requests and verifies each returned file with `signtool`. Otherwise, when PFX secrets exist, it signs those components directly with Authenticode. Without either configuration the packages remain unsigned and the workflow emits a notice. The macOS job signs the CLI and PKG, notarizes it, staples it and verifies it when Apple secrets exist. The release job downloads the artifacts, filters by the installer extension allowlist, attests each subject and uploads the branch artifacts. A tag event then creates the GitHub Release from the filtered installer set; a branch event stops before it.
-
-Artifacts always carry GitHub/Sigstore build provenance, bound to the repository, commit and workflow identity. Native Authenticode/notarization is an additional optional layer; the workflow stores no long-lived signing key and does not claim an OS signature when the certificate secrets are absent.
+4. The Windows job builds the tray/CLI binaries, MSI and EXE; the macOS job builds the PKG. The release job downloads the artifacts, filters by the installer extension allowlist and creates a GitHub Release only for a matching tag; a branch event stops before publication.
 
 ## Window sizing
 
-- Settings: 780×1000 design size, minimum 620×480, `AutoScaleMode.Dpi`. The scrolling content panel holds a 930 px root table; the Save/Cancel/Test footer is docked outside it, so it stays visible. The root keeps a 660 px minimum width and uses horizontal scrolling below that.
-- Schedule window: 500×400 fixed dialog, minimum 440×320, `AutoScaleMode.Dpi`. Its content panel scrolls, the layout narrows to 360 px, the note wraps, and the Save/Cancel buttons stay pinned at the bottom.
+- Settings: 980×620 design size, minimum 720×480, `AutoScaleMode.Dpi`. At 900 px and wider the battery, charge/schedule and notifications/interface cards use two columns; below 900 px they stack in one scrollable column with a 520 px content floor and no horizontal scrolling. The Save/Cancel/Test footer is docked outside the scroll area, so it stays visible. The interface card places Language above Appearance and shows the installed version at the bottom.
+- Schedule window: 500×350 fixed dialog, minimum 440×350, `AutoScaleMode.Dpi`. Its content panel scrolls, the layout narrows to 360 px, the note wraps, and the Save/Cancel buttons stay in a 56 px pinned bar.
 - Activity log: 760×560, minimum 520×360, `AutoScaleMode.Dpi`. The action bar is auto-sized and wraps its status and buttons onto a second row on narrow windows.
-- `UiLayout.Fit` clamps each form to `Screen.WorkingArea - 32` after layout and lowers `MinimumSize` first when the display cannot fit it. On a 1280×720 desktop the Settings window measured 780×601 client with a 54 px pinned footer; its 930 px content remains reachable by scrolling.
+- `UiLayout.Fit` clamps each form to `Screen.WorkingArea - 32` after layout and lowers `MinimumSize` first when the display cannot fit it. `SettingsForm.OnShown` repeats fit/footer/root layout twice for DPI-scaled windows, then the card columns and interface rows keep their content inside the card. At 100% the Settings window measures 980×620 client with a 60 px pinned footer and a 554 px root. `Test-Layout` also builds all three dialogs at 125% and 150% in English and Arabic with scaled bounds and fonts: every nested control stays inside its parent, the 150% Settings root scrolls vertically, and no tested state has a horizontal scrollbar. These are layout simulations, not native 125%/150% screenshots.
 
 ## Localization
 
@@ -172,3 +170,17 @@ Artifacts always carry GitHub/Sigstore build provenance, bound to the repository
 - Non-HP and unsupported HP hardware fails closed to monitoring.
 - The launcher only runs local source/exe and local scripts.
 - The mutex and single-instance guard prevent concurrent tray policies.
+
+## Release path
+
+`.github/workflows/ci.yml` is the only workflow. `prepare` validates the
+three-part version in `portable/Cargo.toml` and rejects a tag that does not
+match it exactly. `build` runs the seven native packaging jobs, tests the Rust
+core and the Windows C# suite, and uploads installer artifacts. `release` runs
+only for a matching `v*` tag, verifies the installer allow-list, and publishes
+the GitHub Release.
+
+The workflow root has `contents: read` and `actions: read`; only the release
+job raises `contents: write`. No repository secret or external release service
+is required. A branch build never publishes, and a tag build cannot bypass the
+native test and packaging jobs.

@@ -17,6 +17,10 @@ battery/capacity.ini
 battery/application.log
 battery/application.previous.log
 battery/application.exe
+battery/application.exe.config
+battery/tests/VisualCaptureHost.exe
+battery/tests/VisualCaptureHost.exe.config
+.bios-analysis/
 battery/*.test-backup.*
 battery/ui.test-backup.txt
 battery/config.test-backup.json
@@ -29,7 +33,6 @@ portable/target/
 dist/
 packaging/windows/staging/
 packaging/windows/ProductLocales.wxs
-.signpath/
 .freebuff/
 
 # Localization generation cache (catalogs themselves are tracked)

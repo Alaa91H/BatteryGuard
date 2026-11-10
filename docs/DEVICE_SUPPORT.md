@@ -31,7 +31,7 @@ Evidence levels: **Documented** means a public interface or independent
 implementation exists without local hardware validation; **Candidate** means a
 possible interface was detected but is unverified; **LabVerified** and
 **FieldVerified** are the only write-eligible levels; **Blocked/prohibited**
-means a BIOS password, locked firmware, Secure Boot requirement, unsigned
+means a BIOS password, locked firmware, Secure Boot requirement, incompatible
 driver or another unsafe path. No profile is currently `LabVerified` or
 `Blocked`; HP is the only `FieldVerified` and writing-capable profile. The
 matrix lists all eleven Phase 0 brands (HP, Acer, Lenovo, Dell, ASUS, MSI,
@@ -51,8 +51,8 @@ automatically.
    BIOS version/release date, family and system SKU from four read-only WMI
    queries. The serial number is deliberately not retained.
 2. `DeviceProfileCatalog` matches the fingerprint against embedded profiles.
-   Matching uses wildcard model/BIOS patterns; no regex comes from a user or a
-   network source.
+   A match requires a non-empty interface plus explicit manufacturer, product
+   and BIOS patterns; no regex comes from a user or a network source.
 3. HP is the only provider whose profile currently has `CanWrite=true`. Its
    `HpBios` controller still uses `hpqBIntM`; any constructor or WMI failure
    falls through to monitoring.
@@ -74,6 +74,11 @@ Tests set `BATTERYGUARD_TEST_CONTROLLER=monitoring`. The factory then returns
 verification only; it is not a device profile and never enables a vendor
 writer.
 
+`BATTERYGUARD_TEST_WMI=missing` is a second fail-closed test seam. It makes the
+HP gateway constructor throw, so `Test-ControllerFoundation` can prove the
+factory falls back to monitoring when the `hpqBIntM` class is unavailable. It
+cannot enable a write.
+
 ## Controller foundation
 
 - `DeviceFingerprint` is the vendor/model/BIOS identity used for profile
@@ -84,18 +89,28 @@ writer.
   `StartStopThreshold` and `MonitoringOnly`. A fixed-80% profile does not show
   a 50–100% slider.
 - `IChargeController` adds capability-aware requests to the existing
-  `IBatteryController` contract. `HpBios` and `GenericBatteryController`
-  implement it; HP keeps the legacy public setters for the hardware tests.
-- `WriteGuard` is the production write path: it rejects unsafe modes, missing
-  capability, unplugged inhibit and unsupported operations, then performs one
-  read-back and one rollback on mismatch. It never retries in a loop.
+  `IBatteryController` contract: `RequestInhibit`, `RequestAuto` and
+  `RequestLimit`. HP and Generic return `Unsupported` for a percentage limit;
+  no threshold writer is enabled. HP keeps the legacy public setters for the
+  hardware tests.
+- `WriteGuard.Apply` is the production mode path: it rejects unsafe modes,
+  missing capability, unplugged inhibit and unsupported operations, then
+  performs one read-back and one rollback on mismatch. `WriteGuard.ApplyLimit`
+  adds the numeric range, AC, read-back and rollback contract for a future
+  verified threshold writer. Neither path retries in a loop.
+- `HpBios.WriteMode` also enforces a pre-transport allow-list: only `0x2b`
+  with `0x00`/`0x05`, or `0x1f` with `0x00`. Any other type or value returns
+  before WMI is called.
 - `IWmiGateway` isolates the HP WMI calls. `HpBiosWmiGateway` is the real
   transport; `SimulatedWmiGateway` replays recorded responses without hardware.
 - `battery/scripts/probe-controllers.ps1` is a read-only inventory for testers.
   `battery/scripts/simulate-controller.ps1` runs the simulator scenarios.
-- `battery/tests/Test-ControllerFoundation.ps1` covers profile matching,
-  capability gating, access denial, unplugged inhibition, empty/mismatched
-  read-back and rollback. It does not touch a real battery.
+- `battery/tests/Test-ControllerFoundation.ps1` covers live fingerprint
+  fields, catalog order, the interface/BIOS match requirement, capability
+  gating, the numeric limit gate, access denial, unplugged inhibition, empty/
+  unexpected/mismatched read-back, rollback, the low-level mode allow-list,
+  provider-construction fallback, generic monitoring requests and a static
+  no-firmware-writer scan. It does not touch a real battery.
 
 See [`docs/CONTROLLER_VALIDATION.md`](CONTROLLER_VALIDATION.md) for the hardware
 protocol, acceptance criteria and report template.
@@ -107,7 +122,9 @@ protocol, acceptance criteria and report template.
   diagnostics but never requested.
 - Every production write goes through `WriteGuard`. It validates the capability
   and AC state, performs exactly one read-back, and rolls back once on a
-  mismatch. It does not retry endlessly.
+  mismatch. It does not retry endlessly. The lower-level `WriteMode` allow-list
+  is a second barrier: even the legacy hardware-test setters cannot emit
+  `0x02` or write inhibit through the `0x1f` fallback command.
 - A missing provider, access-denied error, unexpected byte or unknown device
   fails closed to monitoring.
 - No EC/ACPI register pokes and no vendor utility automation. Writing unknown
@@ -203,11 +220,11 @@ The Windows API cannot see these stores on this machine, so the only remaining
 read-only option is a UEFI shell. The procedure below only reads; it does not
 write NVRAM.
 
-1. Prepare a FAT32 USB stick with an EDK2 `Shell.efi`, or use a signed vendor
-   shell if one is available. Booting an unsigned shell usually requires
+1. Prepare a FAT32 USB stick with an EDK2 `Shell.efi`, or use a vendor-provided
+   shell if one is available. Booting a self-built shell usually requires
    disabling Secure Boot, which is itself a firmware change and can trigger
    BitLocker recovery. Have the recovery key ready, re-enable Secure Boot, and
-   treat this step as optional: a signed shell avoids it entirely.
+   treat this step as optional: a vendor-provided shell avoids it entirely.
 2. Boot the stick from the HP F9 boot menu and start the shell.
 3. Capture the variables (replace `fs0:` with the USB volume shown by `map`):
 

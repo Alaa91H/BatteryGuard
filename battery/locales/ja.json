@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · すぐに充電してください",
   "{0}% · You can disconnect the charger": "{0}% · 充電器を取り外すことができます",
   "°C": "℃",
-  "Monitoring only": "監視のみ"
+  "Monitoring only": "監視のみ",
+  "Installed version {0}": "Installed version {0}"
 }

@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · Скоро зарядится",
   "{0}% · You can disconnect the charger": "{0}% · Вы можете отключить зарядное устройство.",
   "°C": "°С",
-  "Monitoring only": "Только мониторинг"
+  "Monitoring only": "Только мониторинг",
+  "Installed version {0}": "Installed version {0}"
 }

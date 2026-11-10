@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · טען בקרוב",
   "{0}% · You can disconnect the charger": "{0}% · ניתן לנתק את המטען",
   "°C": "מעלות צלזיוס",
-  "Monitoring only": "ניטור בלבד"
+  "Monitoring only": "ניטור בלבד",
+  "Installed version {0}": "Installed version {0}"
 }

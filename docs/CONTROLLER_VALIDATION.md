@@ -29,7 +29,7 @@ powershell -NoProfile -ExecutionPolicy Bypass `
 ```
 
 The probe reads the SMBIOS fingerprint, battery readings, battery/charge-related
-WMI class and method names, normalized ACPI prefixes and selected signed
+WMI class and method names, normalized ACPI prefixes and selected vendor
 drivers. It does not invoke a WMI method and does not write firmware, the EC,
 NVRAM or BatteryGuard settings. Serial numbers are not collected.
 
@@ -94,6 +94,10 @@ A profile may move from `Candidate` or `Documented` to `LabVerified` only when:
 - the write is followed by a confirmed read-back;
 - a failed or mismatched read-back rolls back to auto and does not retry in a
   loop;
+- a numeric threshold writer uses `WriteGuard.ApplyLimit` and passes its range,
+  AC, read-back and rollback contract; `RequestLimit` alone is not evidence;
+- profile matching requires a non-empty interface and explicit manufacturer,
+  product and BIOS patterns; an empty pattern set never matches;
 - unplugged, sleep/resume, reboot, access-denied and unknown-model paths fail
   closed;
 - the firmware/vendor utility still accepts the restored setting;
@@ -128,6 +132,5 @@ Owner approved the test: yes/no
 - No second vendor device is available in this development environment.
 - The Acer, Dell and Lenovo entries are candidate profiles only; no writer is
   registered for them.
-- No tester package is signed because the project has no signing configuration.
-  Do not describe an unsigned test script as signed.
+- No tester package is distributed; run the scripts from this repository.
 - A probe result or a simulator pass is not hardware validation.

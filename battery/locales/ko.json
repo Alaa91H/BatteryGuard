@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · 곧 충전됨",
   "{0}% · You can disconnect the charger": "{0}% · 충전기 연결을 끊을 수 있습니다.",
   "°C": "℃",
-  "Monitoring only": "모니터링 전용"
+  "Monitoring only": "모니터링 전용",
+  "Installed version {0}": "Installed version {0}"
 }

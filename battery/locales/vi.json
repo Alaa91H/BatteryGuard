@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · Sắp sạc",
   "{0}% · You can disconnect the charger": "{0}% · Bạn có thể ngắt kết nối bộ sạc",
   "°C": "°C",
-  "Monitoring only": "Chỉ giám sát"
+  "Monitoring only": "Chỉ giám sát",
+  "Installed version {0}": "Installed version {0}"
 }

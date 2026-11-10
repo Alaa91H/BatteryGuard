@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0} % · Recharger bientôt",
   "{0}% · You can disconnect the charger": "{0}% · Vous pouvez débrancher le chargeur",
   "°C": "°C",
-  "Monitoring only": "Surveillance uniquement"
+  "Monitoring only": "Surveillance uniquement",
+  "Installed version {0}": "Installed version {0}"
 }

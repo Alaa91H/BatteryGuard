@@ -27,6 +27,21 @@ namespace BatteryGuardTray
         internal static readonly string ConfigPathVisible = Path.Combine(BaseDirectory, "settings.json");
         internal static readonly string LogPathVisible = Path.Combine(BaseDirectory, "application.log");
         internal static long MaxLogBytes = 1024 * 1024;
+
+        internal static string InstalledVersion
+        {
+            get
+            {
+                try
+                {
+                    Version version = typeof(Program).Assembly.GetName().Version;
+                    if (version != null && version.Major > 0)
+                        return version.Major + "." + version.Minor + "." + Math.Max(0, version.Build);
+                }
+                catch { }
+                return "0.3.0";
+            }
+        }
         private static Mutex _mutex;
 
         private static string ResolveBaseDirectory()
@@ -69,8 +84,10 @@ namespace BatteryGuardTray
         private static void Main(string[] args)
         {
             MigrateLegacyDataFiles();
-            Native.SetProcessDPIAware();
 
+            // WinForms reads DpiAwareness from application.exe.config before
+            // creating the first window. Calling SetProcessDPIAware here would
+            // force System-aware mode and prevent the configured scaling.
             try
             {
                 Application.EnableVisualStyles();

@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "%{0} · Yakında şarj edin",
   "{0}% · You can disconnect the charger": "%{0} · Şarj cihazının bağlantısını kesebilirsiniz",
   "°C": "°C",
-  "Monitoring only": "Yalnızca izleme"
+  "Monitoring only": "Yalnızca izleme",
+  "Installed version {0}": "Installed version {0}"
 }

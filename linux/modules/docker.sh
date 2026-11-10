@@ -21,7 +21,7 @@ install_docker() {
     install -m 0755 -d /etc/apt/keyrings
     if [[ ! -s /etc/apt/keyrings/docker.asc ]]; then
         fetch_to "https://download.docker.com/linux/${repo_os}/gpg" /etc/apt/keyrings/docker.asc ||
-            die "could not download the Docker signing key"
+            die "could not download the Docker repository key"
         chmod a+r /etc/apt/keyrings/docker.asc
     fi
 

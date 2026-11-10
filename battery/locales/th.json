@@ -149,5 +149,6 @@
   "{0}% · Charge soon": "{0}% · ชาร์จเร็วๆ นี้",
   "{0}% · You can disconnect the charger": "{0}% · คุณสามารถถอดที่ชาร์จออกได้",
   "°C": "องศาเซลเซียส",
-  "Monitoring only": "ตรวจสอบเท่านั้น"
+  "Monitoring only": "ตรวจสอบเท่านั้น",
+  "Installed version {0}": "Installed version {0}"
 }
