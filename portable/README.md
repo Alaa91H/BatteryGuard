@@ -11,10 +11,11 @@ existing Windows tray application remains in `battery/` and is unchanged.
 - **Cross-target type-check:** all 12 targets listed in
   [`PLATFORMS.md`](PLATFORMS.md) compile the library, test harness and CLI with
   `rustc --emit=metadata`.
-- **Hosted CI:** GitHub Actions run `42629998330` linked and tested the core,
-  ran `batteryguard --version` on Windows x64/x86, Linux x64/ARM64 and macOS
-  Intel/Apple silicon, built 3 MSI, 6 Linux packages and 2 PKG files, and
-  installed/ran the DEB and PKG packages on their native runners. The Windows
+- **Hosted CI:** GitHub Actions run `42863877263` linked and tested the core
+  for the `v0.3.0` release, ran `batteryguard --version` on Windows x64/x86,
+  Linux x64/ARM64 and macOS Intel/Apple silicon, built 3 EXE bootstrappers,
+  3 MSI, 6 Linux packages and 2 PKG files, and installed/ran the DEB and PKG
+  packages on their native runners. The Windows
   x64 MSI also installs the C# tray and its Start Menu shortcuts; x86 and ARM64
   are built but not cross-installed. Every installer is produced by the native
   package job.

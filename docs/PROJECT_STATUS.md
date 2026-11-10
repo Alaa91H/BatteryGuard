@@ -3,7 +3,7 @@
 **Date:** 2026-11-10
 **Application:** BatteryGuard tray monitor
 **Build:** `battery/application.exe` — 120,832 bytes
-**CI:** single tag-gated workflow; branch run `42652367294` and tag run `42653411073` green with all seven packaging jobs, the C# suite, the Windows tray MSI and EXE, and a clean-runner upgrade from the published `v0.1.0` MSI; the published `v0.2.0` release has 14 installers, including 3 EXE and 3 MSI
+**CI:** single tag-gated workflow; branch run `42859152318` (attempt 2) and tag run `42863877263` green with all seven packaging jobs, the C# suite, the Windows tray MSI and EXE, and a clean-runner upgrade from the published `v0.1.0` MSI; the published `v0.3.0` release has 14 installers, including 3 EXE and 3 MSI
 
 ## Completed
 
@@ -13,7 +13,7 @@
 - **Device controller foundation:** `DeviceFingerprint`, `DeviceProfileCatalog`, `ControllerCapabilities`, `IChargeController`, `WriteGuard`, `IControllerProvider` and `IWmiGateway`; `HpBiosWmiGateway` remains the only real write transport. HP is the only verified writer. Acer, Dell and Lenovo are candidate profiles and remain read-only. The tray omits generic presets for non-`AutoInhibit` capabilities, and Settings uses a capability-only card for fixed/start-stop profiles. `Test-ControllerFoundation` covers live fingerprint fields, catalog/interface/BIOS matching, the numeric `ApplyLimit` gate, unplugged inhibition, access denial, missing-provider fallback, empty/unexpected/mismatched read-back, rollback, the low-level mode allow-list, generic monitoring requests and forced-discharge rejection without hardware.
 - **Voltage and power readout.** The tray tooltip, menu, status balloon and Settings battery card show the current pack voltage and charge/discharge power, for example `11.8 V · 0.0 W`. Unavailable values are omitted; zero watts is shown when voltage confirms a battery reading. This is battery-pack power, not AC adapter input wattage.
 - **Windows tray MSI and EXE.** The branch MSI installs `application.exe`, `batteryguard.exe`, the icon and all 30 locale catalogs under `Program Files\BatteryGuard`; the EXE is a Burn bootstrapper around the same MSI with a standard wizard, icon, version, launch-after-install and Apps & Features entry. Both create an all-users Start Menu shortcut with `BatteryGuard.Tray` and an **Uninstall BatteryGuard** shortcut. The x64 install/uninstall paths for both are tested in CI; x86 and ARM64 are built but not cross-installed on the x64 runner.
-- **C# CI gate.** The Windows x64 job runs thirteen C# checks before packaging: `Test-FloatLogic`, `Test-ControllerFoundation`, `Test-ScheduleConflict`, `Test-UiPolish`, `Test-Settings`, `Test-AppIdentity`, `Test-LogRotation`, `Test-Icons`, `Test-Layout`, `Test-TrayMenu`, `Test-UI`, `Test-Theme` and `Test-TrayHost`. The last three start the real tray with `BATTERYGUARD_TEST_CONTROLLER=monitoring`, so no provider, WMI gateway or `WriteGuard` exists. The local clean-build pass also runs `Test-BatteryInfo`, `Test-LanguageAuto`, `Test-ThemeLive` and `VisualCapture`; none touched hardware. The UI gate covers monitoring-only and a synthetic fixed-80% writable profile. Hosted run `42700624192` on commit `02e44bf` passed all jobs, including the Windows x64 thirteen-check suite.
+- **C# CI gate.** The Windows x64 job runs thirteen C# checks before packaging: `Test-FloatLogic`, `Test-ControllerFoundation`, `Test-ScheduleConflict`, `Test-UiPolish`, `Test-Settings`, `Test-AppIdentity`, `Test-LogRotation`, `Test-Icons`, `Test-Layout`, `Test-TrayMenu`, `Test-UI`, `Test-Theme` and `Test-TrayHost`. The last three start the real tray with `BATTERYGUARD_TEST_CONTROLLER=monitoring`, so no provider, WMI gateway or `WriteGuard` exists. The local clean-build pass also runs `Test-BatteryInfo`, `Test-LanguageAuto`, `Test-ThemeLive` and `VisualCapture`; none touched hardware. The UI gate covers monitoring-only and a synthetic fixed-80% writable profile. Hosted run `42700624192` on commit `02e44bf` passed all jobs, including the Windows x64 thirteen-check suite; release run `42859152318` passed the same suite on commit `0d9cbf8`.
 - Charge ceiling, resume point, float mode, scheduled time windows, overlap detection and conflict banners.
 - Battery health, capacity, cycle, temperature and remaining-time display.
 - System notifications, test notification, log viewer, export and 1 MiB rotation.
@@ -67,6 +67,9 @@ Passed across the latest local sessions (2026-11-09 and 2026-11-10):
 | GitHub Actions `42652367294` | Branch run for `0.2.0` succeeded; all 7 packaging jobs; 14 installers; x64 MSI/EXE and `v0.1.0` upgrade checks passed |
 | GitHub Actions `42653411073` | Tag run succeeded; `v0.2.0` published with 14 assets (3 EXE, 3 MSI, 6 Linux packages, 2 PKG) |
 | GitHub Actions `42700624192` | Branch run for the controller foundation and injected test mode succeeded; all jobs green, including the Windows x64 thirteen-test suite |
+| GitHub Actions `42857574278` | First `v0.3.0` branch run; the three Windows MSI jobs failed at `Package Windows MSI` because `application.exe.config` was missing from the WiX staging directory; fixed in `0d9cbf8` |
+| GitHub Actions `42859152318` | `v0.3.0` branch run (attempt 2) succeeded; all 7 packaging jobs; 14 installers; thirteen-check C# suite, x64 MSI/EXE install-uninstall and `v0.1.0` → EXE upgrade passed; the rerun also carried the macOS arm64 job that a queue cancellation had interrupted during a GitHub Actions partial outage |
+| GitHub Actions `42863877263` | Tag run succeeded; `v0.3.0` published with 14 assets (3 EXE, 3 MSI, 6 Linux packages, 2 PKG) |
 | Local SAC test (2026-11-09) | Windows 11 Home 10.0.26300 with SAC enforcement blocked the `v0.2.0` x64 EXE at launch; no install or upgrade occurred; existing `0.1.0` remained |
 
 ### Injected-mode tray tests
@@ -148,6 +151,21 @@ The Settings reflection test reports `980×620` client size at 100%, with a 60 p
   `0.2.0` installation or upgrade occurred; the existing `0.1.0` installation
   and Apps & Features entries remained.
 
+## Published v0.3.0 release
+
+- Release: [`v0.3.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.3.0),
+  published 2026-11-10 from annotated tag `v0.3.0` (commit `0d9cbf8`) by run
+  `42863877263`.
+- Assets: 14 — three Windows EXE bootstrappers, three Windows MSIs, three
+  x64 Linux packages, three ARM64 Linux packages and two macOS PKGs. The
+  Windows payload is the C# tray plus the Rust CLI, all 30 locale catalogs and
+  the Start Menu/uninstall shortcuts; Linux and macOS remain CLI-only.
+- CI ran the quiet x64 MSI/EXE install, uninstall and published `v0.1.0`
+  upgrade checks; the interactive wizard was not visually tested.
+- **Not carried forward:** the `v0.3.0` installers were not tested against
+  Smart App Control. The 2026-11-09 SAC block applies only to the `v0.2.0`
+  x64 EXE and must not be generalized to this release.
+
 ## Portable core (phase 1)
 
 - `portable/src/model.rs`, `format.rs` and `policy.rs` implement the shared battery model, electrical/duration formatting and the 13-case charge/float policy.
@@ -168,6 +186,7 @@ The Settings reflection test reports `980×620` client size at 100%, with a 60 p
 - Branch run `42638941970` added the clean-runner `v0.1.0` → EXE upgrade test and produced 14 installers. The x64 job passed MSI/EXE install-uninstall and the upgrade, including one visible Apps & Features entry and a clean uninstall. Earlier runs exposed duplicate bundle/MSI registration, missing Cargo paths (`42622500646`), Unix packaging paths, the invalid `CommonProgramsFolder` WiX id and cross-architecture MSI installation; all were fixed.
 - Tag run `42624635716` passed all jobs and published [`v0.1.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.1.0) with exactly the 11 installer files; the tag points to commit `449245b` and remains CLI-only.
 - Branch run `42652367294` validated the `0.2.0` version bump and the same seven-job matrix. Tag run `42653411073` published [`v0.2.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.2.0) with 14 assets, including three EXE bootstrappers and three MSIs.
+- Branch run `42859152318` (attempt 2) validated `0.3.0` with the same seven-job matrix and the thirteen-check C# suite. Its first attempt, `42857574278`, failed the three Windows MSI jobs on a missing staged `application.exe.config`; commit `0d9cbf8` fixed the staging step. Tag run `42863877263` published [`v0.3.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.3.0) with 14 assets, including three EXE bootstrappers and three MSIs.
 
 ## Known limitations
 

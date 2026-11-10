@@ -1,6 +1,79 @@
 # Session log
 
-## 2026-11-10 — DPI layout matrix and clipping repair (working tree)
+## 2026-11-10 — v0.3.0 release (published)
+
+### Goal
+
+Publish the controller-foundation and responsive-UI work as `v0.3.0`, with a
+green native package matrix, a tagged GitHub Release and documentation that
+matches the actual runs. No charge write, hardware test or permanent display
+change was made.
+
+### Work performed
+
+1. Bumped `portable/Cargo.toml`, `Cargo.lock`, `VersionInfo.cs` and the
+   installed-version fallback to `0.3.0`.
+2. Added the previously untracked source inputs `VersionInfo.cs`,
+   `resources/application.config`, `VisualCaptureHost.cs` and its manifest.
+   Generated `application.exe.config`, capture binaries and `.bios-analysis/`
+   are ignored.
+3. Consolidated the controller-foundation, responsive-layout, localization and
+   release-workflow changes into the `v0.3.0` changelog section.
+4. Removed the obsolete external release-service configuration and policy
+   documents. The workflow uses only built-in GitHub permissions and requires
+   no repository secrets.
+5. Committed the release as `995d85a` and fixed the Windows staging step in
+   `0d9cbf8` after the first matrix exposed a missing
+   `application.exe.config`.
+6. Only `main` existed locally and on `origin`; there were no other branches to
+   merge. No pull request or merge commit was needed.
+7. Created annotated tag `v0.3.0` on `0d9cbf8` and pushed it.
+
+### Verification
+
+- Local Windows build: `application.exe` 120,832 bytes.
+- 16/16 local hardware-free checks passed: float logic, controller foundation,
+  schedule conflicts, UI polish, settings, battery info, app identity, log
+  rotation, icons, layout, tray menu, language auto, theme-live, visual capture,
+  UI and theme. `Test-TrayHost` was not rerun locally because the shell was not
+  elevated.
+- `Test-ControllerFoundation`: 71 checks; `Test-TrayMenu`: 32 checks.
+- `Test-Layout`: 222 OK, 0 FAIL across English/Arabic at 100%, 125% and 150%.
+- Locale validation: 30 catalogs × 152 keys, zero missing keys and zero
+  placeholder mismatches.
+- `portable/scripts/check-targets.ps1`: 12/12 metadata/type targets passed.
+  Local Rust linking remained unavailable because the MSVC linker is absent.
+- Branch run `42857574278` failed the three Windows MSI jobs at
+  `Package Windows MSI` because `application.exe.config` was missing from
+  `packaging/windows/staging`. Commit `0d9cbf8` added the copy.
+- Branch run `42859152318` (attempt 2) passed all seven packaging jobs,
+  including the x64 C# suite, MSI/EXE smoke checks, the `v0.1.0` → EXE upgrade,
+  DEB/PKG install-and-run checks and all Rust targets. The first macOS arm64
+  attempt was cancelled while queued for 15 minutes during a GitHub Actions
+  partial outage; the rerun passed.
+- Tag run `42863877263` passed every job, including `Publish GitHub Release`.
+- Release: [`v0.3.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.3.0),
+  published 2026-11-10 from tag `v0.3.0` (commit `0d9cbf8`) with 14 assets:
+  3 Windows EXE bootstrappers, 3 Windows MSIs, 6 Linux packages and 2 macOS
+  PKGs.
+- GitHub emitted a capacity notice for macOS arm64 runners. It was a queue
+  delay, not a build failure; the rerun completed successfully.
+
+### Limits
+
+- The release tag intentionally points to the code commit `0d9cbf8`; the final
+  documentation-only update follows on `main`.
+- No v0.3.0 Smart App Control test was performed. The earlier `v0.2.0` test
+  remains the latest evidence and must not be generalized.
+- The interactive installer wizard, launch-after-install UI and a physical
+  clean VM were not tested.
+- 125%/150% remain layout/font simulations; native screenshots at those scales
+  were not captured.
+- No hardware charge write or non-HP device validation was performed.
+- Acer, Dell and Lenovo remain read-only candidates; HP remains the only
+  field-verified writer.
+
+## 2026-11-10 — DPI layout matrix and clipping repair (released in `v0.3.0`)
 
 ### Goal
 

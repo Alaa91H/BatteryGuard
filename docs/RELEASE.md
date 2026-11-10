@@ -148,6 +148,21 @@ the interactive wizard or a physical clean VM.
   [`v0.2.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.2.0) with
   three Windows EXE bootstrappers, three MSIs, six Linux packages and two
   macOS PKGs. The artifacts are built by the same workflow.
+- Branch run `42857574278` was the first `0.3.0` matrix and failed the three
+  Windows MSI jobs at `Package Windows MSI` with
+  `error WIX0103: Cannot find the File file ... application.exe.config`. The
+  staging step now copies the generated application configuration; commit
+  `0d9cbf8` fixed it.
+- Branch run `42859152318` (attempt 2) passed all seven packaging jobs for
+  Cargo `0.3.0`: the thirteen-check C# suite, the x64 MSI/EXE install and
+  uninstall, the published `v0.1.0` → EXE upgrade, the native DEB/PKG
+  install-and-run checks and every Rust target. The first macOS arm64 attempt
+  was cancelled while queued during a GitHub Actions partial outage; the rerun
+  passed. That was a capacity notice, not a build warning.
+- Tag run `42863877263` passed every job and published
+  [`v0.3.0`](https://github.com/Alaa91H/BatteryGuard/releases/tag/v0.3.0) with
+  three Windows EXE bootstrappers, three MSIs, six Linux packages and two
+  macOS PKGs on 2026-11-10. The tag points to commit `0d9cbf8`.
 - Local Smart App Control check (2026-11-09): Windows 11 Home 10.0.26300 with
   SAC enforcement (`VerifiedAndReputablePolicyState=1`) blocked the
   x64 EXE before installation with `An Application Control policy has blocked

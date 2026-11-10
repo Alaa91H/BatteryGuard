@@ -68,9 +68,13 @@ All notable changes to this project are documented here. The format follows the 
 - `portable/scripts/check-targets.ps1`: 12/12 targets passed metadata/type
   checking. Local Rust linking remains unavailable because the MSVC linker is
   not installed; hosted CI is the runtime gate.
-- Hosted verification for this release is recorded in
-  [`docs/SESSION_LOG.md`](docs/SESSION_LOG.md) and
-  [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).
+- Hosted verification: branch run `42859152318` (attempt 2) passed all seven
+  packaging jobs — the thirteen-check C# suite, the x64 MSI/EXE install and
+  uninstall, the `v0.1.0` → EXE upgrade, the native DEB/PKG install-and-run
+  checks and every Rust target. Tag run `42863877263` published the release
+  with 14 assets on 2026-11-10 from commit `0d9cbf8`. The first branch run,
+  `42857574278`, failed the Windows MSI jobs on a missing staged
+  `application.exe.config`; `0d9cbf8` fixed it before tagging.
 
 ### Known limitations
 
